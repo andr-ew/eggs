@@ -48,7 +48,7 @@ pattern, mpat = {}, {}
 for i = 1,3 do
     pattern[i] = {}
     mpat[i] = {}
-    for ii = 1,4 do
+    for ii = 1,6 do
         pattern[i][ii] = pattern_time.new() 
         mpat[i][ii] = multipattern.new(pattern[i][ii])
     end

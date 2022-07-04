@@ -45,13 +45,44 @@ function App.grid(args)
                     state = { slew_time, function(v) slew_time = v end }
                 }
             end)
-            local last_volts = 0
+
+            local oct = 0
+            local x, y = 1, 1
+            local gate = 0
+
+            local function update_gate()
+                crow.output[outs.gate].volts = gate * 5
+            end
+            local function update_pitch()
+                local volts = tune.volts(
+                    x, y, nil, oct, params:get('scale_preset')
+                )
+                crow.output[outs.cv].slew = slew * (
+                    slew_times[slew_time] 
+                    --+ (math.random() * 0.05 * (math.random(0, 1) * 2 - 1))
+                )
+                crow.output[outs.cv].volts = volts
+
+                nest.grid.make_dirty()
+            end
+
+
+            local _oct = to.pattern(mpat[track], 'oct '..track, Grid.number, function()
+                return {
+                    x = { 1, 6 }, y = 8, min = -2, max = 3, lvl = hl,
+                    state = { oct, function(v) oct = v; update_pitch() end }
+                }
+            end)
+
+            local pat = pattern[track]
+            local _keymap_recorder = PatternRecorder()
+            local _parameter_recorder = PatternRecorder()
 
             local _keymap, reset_keymap = to.pattern(
                 mpat[track], 'keymap '..track, Grid.momentary, 
                 function()
                     return {
-                        x = { 1, 16 }, y = { 3, 8 }, 
+                        x = { 1, 16 }, y = { 3, 7 }, 
                         -- count = 1,
                         lvl = function(_, x, y)
                             return tune.is_tonic(x, y, params:get('scale_preset')) 
@@ -61,26 +92,14 @@ function App.grid(args)
                         action = function(v, t, d, add, rem, l)
                             if #l > 0 then 
                                 local k = l[#l]
-                                local id = k.x + (k.y * 16)
-                                local volts = tune.volts(
-                                    k.x, k.y, nil, nil, params:get('scale_preset')
-                                )
 
-                                -- crow.output[outs.cv].shape = last_volts > volts and (
-                                --     'exponential' 
-                                -- ) or (
-                                --     'logarithmic'
-                                -- )
-                                crow.output[outs.cv].slew = slew * (
-                                    slew_times[slew_time] 
-                                    --+ (math.random() * 0.05 * (math.random(0, 1) * 2 - 1))
-                                )
-                                crow.output[outs.cv].volts = volts
-                                crow.output[outs.gate].volts = 5
+                                x, y = k.x, k.y
+                                gate = 1
 
-                                local last_volts = volts
+                                update_pitch()
+                                update_gate()
                             else
-                                crow.output[outs.gate].volts = 0
+                                gate = 0; update_gate()
                             end
                         end
                     }
@@ -94,24 +113,29 @@ function App.grid(args)
 
             reset_keys[track] = reset
 
-            local _patrec = PatternRecorder()
-
             --TODO: rate & reverse components per pattern
 
             return function()
-                _keymap()
-
-                _slew()
-                if show_slew_time then _slew_time() end
-        
-                _patrec{
+                _keymap_recorder{
                     x = { 5, 8 }, y = 1, count = 1,
-                    pattern = pattern[track], 
+                    pattern = { pat[1], pat[2], pat[3], pat[4] }, 
                     varibright = varibright,
                     action = function(v, t, d, add, rem, l)
                         playing[track] = l[1]
                         reset()
                     end
+                }
+
+                _slew()
+                if show_slew_time then _slew_time() end
+
+                _keymap()
+
+                _oct()
+                _parameter_recorder{
+                    x = { 7, 8 }, y = 8,
+                    pattern = { pat[5], pat[6] }, 
+                    varibright = varibright,
                 }
             end
         end
@@ -161,7 +185,7 @@ function App.grid(args)
     return function(props)
         
         _tab{
-            x = { 0 + 1, 0 + #_pages }, y = 1, --lvl = hl,
+            x = { 0 + 1, 0 + #_pages }, y = 1, lvl = hl,
             state = { 
                 page, 
                 function(v) 
