@@ -3,6 +3,7 @@
 --global variables
 
 g = grid.connect()
+varibright = (g and g.device and g.device.cols >= 16) and true or false
 
 --external libs
 
@@ -28,6 +29,7 @@ tune.setup { presets = 8, scales = include 'lib/tune/scales' }
 
 --script lib files
 
+include 'eggs/lib/params'
 Eggs = include 'eggs/lib/ui'
 
 --set up global patterns
@@ -43,30 +45,36 @@ function pattern_time:resume()
 end
 
 pattern, mpat = {}, {}
-for i = 1,5 do
-    pattern[i] = pattern_time.new() 
-    mpat[i] = multipattern.new(pattern[i])
+for i = 1,3 do
+    pattern[i] = {}
+    mpat[i] = {}
+    for ii = 1,5 do
+        pattern[i][ii] = pattern_time.new() 
+        mpat[i][ii] = multipattern.new(pattern[i][ii])
+    end
 end
 
 --set up nest v2 UI
 
 local _app = {
     grid = Eggs.grid(),
-    --norns = function() end,
+    norns = Eggs.norns(),
 }
 
 nest.connect_grid(_app.grid, g, 240)
--- nest.connect_enc(_app.norns)
--- nest.connect_key(_app.norns)
--- nest.connect_screen(_app.norns, 24)
+nest.connect_enc(_app.norns)
+nest.connect_key(_app.norns)
+nest.connect_screen(_app.norns, 24)
 
 --init/cleanup
 
 function init()
+    tune.read()
     params:read()
     params:bang()
 end
 
 function cleanup() 
+    tune.write()
     params:write()
 end
