@@ -13,27 +13,39 @@ function App.grid(args)
     for track = 1,2 do
         local off = track==2 and 2 or 0
         local outs = { cv = 1+off, gate = 2+off }
+        crow.output[outs.cv].shape = 'exponential' 
 
         Pages[track] = function()
-            local gate_fwd = 1
-            local _gate_fwd = to.pattern(mpat[track], 'gate fwd '..track, Grid.toggle, function()
+
+            local slew = 0
+            local show_slew_time = false
+            local set_slew = multipattern.wrap_set(
+                mpat[track], 'slew '..track, function(v)
+                    slew = v
+                end
+            )
+            local _slew = Grid.momentary(function()
                 return {
-                    x = 2, y = 1, lvl = { 4, 15 },
-                    state = { gate_fwd, function(v) gate_fwd = v end },
+                    x = 1, y = 2, lvl = { 0, 15 },
+                    state = { 
+                        slew, 
+                        function(v) 
+                            set_slew(v)
+                            show_slew_time = v==1
+                        end 
+                    }
                 }
             end)
 
-            local gate = 0
-            local function set_gate(v)
-                gate = v
-                crow.output[outs.gate].volts = gate * 5
-            end
-            local _gate = to.pattern(mpat[track], 'gate '..track, Grid.momentary, function()
-                return {
-                    x = 3, y = 1,
-                    state = { gate, set_gate },
+            local slew_times = { 0.05, 0.07, 0.1, 0.2, 0.3, 0.4, 0.5, 1 }
+            local slew_time = 1
+            local _slew_time = to.pattern(mpat[track], 'slew time '..track, Grid.number, function()
+                return { 
+                    x = { 2, 8 }, y = 2, lvl = hl,
+                    state = { slew_time, function(v) slew_time = v end }
                 }
             end)
+            local last_volts = 0
 
             local _keymap, reset_keymap = to.pattern(
                 mpat[track], 'keymap '..track, Grid.momentary, 
@@ -54,14 +66,21 @@ function App.grid(args)
                                     k.x, k.y, nil, nil, params:get('scale_preset')
                                 )
 
+                                -- crow.output[outs.cv].shape = last_volts > volts and (
+                                --     'exponential' 
+                                -- ) or (
+                                --     'logarithmic'
+                                -- )
+                                crow.output[outs.cv].slew = slew * (
+                                    slew_times[slew_time] 
+                                    --+ (math.random() * 0.05 * (math.random(0, 1) * 2 - 1))
+                                )
                                 crow.output[outs.cv].volts = volts
-                                if gate_fwd>0 then
-                                    set_gate(1)
-                                end
+                                crow.output[outs.gate].volts = 5
+
+                                local last_volts = volts
                             else
-                                if gate_fwd>0 then
-                                    set_gate(0)
-                                end
+                                crow.output[outs.gate].volts = 0
                             end
                         end
                     }
@@ -77,17 +96,17 @@ function App.grid(args)
 
             local _patrec = PatternRecorder()
 
-            return function()
-                _gate_fwd()
-                _gate()
+            --TODO: rate & reverse components per pattern
 
+            return function()
                 _keymap()
+
+                _slew()
+                if show_slew_time then _slew_time() end
         
                 _patrec{
-                    x = { 1, 4 }, y = 2, count = 1,
-                    pattern = { 
-                        pattern[track][1],pattern[track][2],pattern[track][3],pattern[track][4], 
-                    }, 
+                    x = { 5, 8 }, y = 1, count = 1,
+                    pattern = pattern[track], 
                     varibright = varibright,
                     action = function(v, t, d, add, rem, l)
                         playing[track] = l[1]
@@ -142,7 +161,7 @@ function App.grid(args)
     return function(props)
         
         _tab{
-            x = { 4 + 1, 4 + #_pages }, y = 1, lvl = hl,
+            x = { 0 + 1, 0 + #_pages }, y = 1, --lvl = hl,
             state = { 
                 page, 
                 function(v) 
