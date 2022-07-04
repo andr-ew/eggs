@@ -7,22 +7,31 @@ function App.grid(args)
     
     local Pages = {}
     
-    --local
-    reset_keys = {}
-    --local
-    playing = {}
+    local reset_keys = {}
+    local playing = {}
 
     for track = 1,2 do
         local off = track==2 and 2 or 0
         local outs = { cv = 1+off, gate = 2+off }
 
         Pages[track] = function()
-            local gate = 0
-            local link = true
-
-            local _gate = to.pattern(mpat[track], 'gate '..track, Grid.momentary, function() 
+            local gate_fwd = 1
+            local _gate_fwd = to.pattern(mpat[track], 'gate fwd '..track, Grid.toggle, function()
                 return {
-                    x = 3, y = 1
+                    x = 2, y = 1, lvl = { 4, 15 },
+                    state = { gate_fwd, function(v) gate_fwd = v end },
+                }
+            end)
+
+            local gate = 0
+            local function set_gate(v)
+                gate = v
+                crow.output[outs.gate].volts = gate * 5
+            end
+            local _gate = to.pattern(mpat[track], 'gate '..track, Grid.momentary, function()
+                return {
+                    x = 3, y = 1,
+                    state = { gate, set_gate },
                 }
             end)
 
@@ -46,16 +55,19 @@ function App.grid(args)
                                 )
 
                                 crow.output[outs.cv].volts = volts
-                                crow.output[outs.gate].volts = 5
+                                if gate_fwd>0 then
+                                    set_gate(1)
+                                end
                             else
-                                crow.output[outs.gate].volts = 0
+                                if gate_fwd>0 then
+                                    set_gate(0)
+                                end
                             end
                         end
                     }
                 end
             )
 
-            --TODO, reset when pattern stop, if playing==nil reset when changing page
             local reset = function()
                 reset_keymap()
                 crow.output[outs.gate].volts = 0
@@ -66,6 +78,9 @@ function App.grid(args)
             local _patrec = PatternRecorder()
 
             return function()
+                _gate_fwd()
+                _gate()
+
                 _keymap()
         
                 _patrec{
