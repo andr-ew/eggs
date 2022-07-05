@@ -53,7 +53,7 @@ function App.grid(args)
             local function update_gate()
                 crow.output[outs.gate].volts = gate * 5
             end
-            --TODO: crow input transpose
+            --TODO: crow input 1 transpose track 1 (diatonic)
             local function update_pitch()
                 local volts = tune.volts(
                     x, y, nil, oct, params:get('scale_preset')
@@ -84,7 +84,6 @@ function App.grid(args)
                 { mpat[track][5], mpat[track][6] }, 'pattern rate '..track, Grid.number, 
                 function() 
                     local p = pat[playing[track]]
-                    print('playing', playing[track], p)
                     return {
                         x = { 2, 8 }, y = 2,
                         state = { 
@@ -133,8 +132,6 @@ function App.grid(args)
 
             reset_keys[track] = reset
 
-            --TODO: rate & reverse components per pattern
-
             return function()
                 _keymap_recorder{
                     x = { 5, 8 }, y = 1, count = 1,
@@ -170,27 +167,159 @@ function App.grid(args)
     Pages[3] = function()
         local track = 3
 
-        local _keymap = to.pattern(mpat[track], 'keymap '..track, Grid.momentary, function()
-            return {
-                x = { 1, 16 }, y = { 3, 8 }, count = 6,
-                lvl = function(_, x, y)
-                    return tune.is_tonic(x, y, params:get('scale_preset')) 
-                        and { 4, 15 } 
-                        or { 0, 15 }
-                end,
-                action = function(v, t, d, add, rem)
-                    local k = add or rem
-                    local id = k.x + (k.y * 16)
-                    local vel = math.random()*0.2 + 0.85
+        params:add{
+            id = 'jf mode', type = 'number',
+            min = 0, max = 1, default = 1,
+            action = function(v)
+                crow.ii.jf.mode(v)
+            end
+        }
+        
+        local oct = 0
+        local bend = 0
+        local nums = { -5, -4, -3, -2, 1, 2, 3, 4, 5 }
+        local numerator = tab.key(nums, 1)
+        local denominator = 1
 
-                    if add then 
-                    elseif rem then end
-                end
+        local function update_run()
+            local num = nums[numerator] 
+            local r = num/denominator
+            if num > 0 then r = r - 1 end
+            if num < 0 then r = r + 1 end
+            crow.ii.jf.run_mode(1)
+            crow.ii.jf.run(r * 5)
+        end
+
+        local _one = Grid.fill()
+        local _numerator = to.pattern(mpat[track], 'numerator', Grid.number, function()
+            return {
+                x = { 8, 16 }, y = 1,
+                state = { numerator, function(v) numerator = v; update_run() end }
+            }
+        end)
+        local _denominator = to.pattern(mpat[track], 'denominator ', Grid.number, function()
+            return {
+                x = { 12, 16 }, y = 2,
+                state = { denominator, function(v) denominator = v; update_run() end }
             }
         end)
 
+        local function update_transpose()
+            crow.ii.jf.transpose(oct + bend)
+        end
+
+        crow.input[2].mode('stream', 0.001)
+        crow.input[2].stream = function(v)
+            --convert to linear
+            bend = math.log(
+                math.max(0.00001, ((v / 5) + 1)) * math.exp(1)
+            ) 
+            --bend = v/5
+            update_transpose()
+        end
+
+
+        local _oct = to.pattern(mpat[track], 'oct '..track, Grid.number, function()
+            return {
+                x = { 1, 6 }, y = 8, min = -2, max = 3, lvl = hl,
+                state = { 
+                    oct, 
+                    function(v) 
+                        oct = v 
+                        update_transpose()
+                    end 
+                }
+            }
+        end)
+
+        local pat = pattern[track]
+        local _keymap_recorder = PatternRecorder()
+        local _parameter_recorder = PatternRecorder()
+
+        local time_factors = { 4, 3, 2, 1, 1/2, 1/3, 1/4 }
+        local _pattern_rate = to.pattern(
+            { mpat[track][5], mpat[track][6] }, 'pattern rate '..track, Grid.number, 
+            function() 
+                local p = pat[playing[track]]
+                return {
+                    x = { 2, 8 }, y = 2,
+                    state = { 
+                        p and tab.key(time_factors, p.time_factor) or 0,
+                        function(v)
+                            local pp = pat[playing[track]]
+                            if pp then pp:set_time_factor(time_factors[v]) end
+                        end
+                    }
+                }
+            end
+        )
+
+        --TODO: when synth mode off, keymap uses transpose + trig commands
+        --TODO: gate forwarding switch
+        local _keymap, reset_keymap = to.pattern(
+            mpat[track], 'keymap '..track, Grid.momentary, function()
+                return {
+                    x = { 1, 16 }, y = { 3, 7 }, count = 6,
+                    lvl = function(_, x, y)
+                        return tune.is_tonic(x, y, params:get('scale_preset')) 
+                            and { 4, 15 } 
+                            or { 0, 15 }
+                    end,
+                    action = function(v, t, d, add, rem)
+                        local k = add or rem
+                        local vel = math.random()*0.2 + 0.85
+                        local volts = tune.volts(
+                            k.x, k.y, nil, -3, params:get('scale_preset')
+                        )
+
+                        if add then 
+                            crow.ii.jf.play_note(volts, 3.5 * vel)
+                        elseif rem then 
+                            crow.ii.jf.play_note(volts, 0)
+                        end
+                    end
+                }
+            end
+        )
+
+        local reset = function()
+            reset_keymap()
+            for i = 1,6 do
+                crow.ii.jf.trigger(i, 0)
+            end
+        end
+        reset_keys[track] = reset
+        reset()
+
         return function()
+            _keymap_recorder{
+                x = { 5, 7 }, y = 1, count = 1,
+                pattern = { pat[1], pat[2], pat[3] }, 
+                varibright = varibright,
+                action = function(v, t, d, add, rem, l)
+                    playing[track] = l[1]
+                    reset()
+                end
+            }
+
+            _one{
+                x = 12, y = { 1, 2 }, lvl = 4
+            }
+            _numerator()
+            _denominator()
+
+            if playing[track] then
+                _pattern_rate()
+            end
+
             _keymap()
+
+            _oct()
+            _parameter_recorder{
+                x = { 7, 8 }, y = 8,
+                pattern = { pat[5], pat[6] }, 
+                varibright = varibright,
+            }
         end
     end
 
