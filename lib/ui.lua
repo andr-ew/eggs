@@ -195,8 +195,8 @@ function App.grid(args)
     end
 
     Pages[4] = function()
-        local _scale_degrees = Tune.grid.scale_degrees{ left = 2, top = 4 }
-        local _tonic = Tune.grid.tonic{ left = 2, top = 7 }
+        local _scale_degrees = Tune.grid.scale_degrees{ left = 1, top = 4 }
+        local _tonic = Tune.grid.tonic{ left = 1, top = 7 }
 
         return function()
             _scale_degrees{ preset = params:get('scale_preset') }
