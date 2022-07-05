@@ -68,6 +68,7 @@ nest.connect_screen(_app.norns, 24)
 
 --init/cleanup
 
+--TODO: pattern save/load
 function init()
     tune.read()
     params:read()

@@ -15,8 +15,8 @@ function App.grid(args)
         local outs = { cv = 1+off, gate = 2+off }
         crow.output[outs.cv].shape = 'exponential' 
 
+        --TODO: use params for session persistence
         Pages[track] = function()
-
             local slew = 0
             local show_slew_time = false
             local set_slew = multipattern.wrap_set(
@@ -53,6 +53,7 @@ function App.grid(args)
             local function update_gate()
                 crow.output[outs.gate].volts = gate * 5
             end
+            --TODO: crow input transpose
             local function update_pitch()
                 local volts = tune.volts(
                     x, y, nil, oct, params:get('scale_preset')
@@ -77,6 +78,25 @@ function App.grid(args)
             local pat = pattern[track]
             local _keymap_recorder = PatternRecorder()
             local _parameter_recorder = PatternRecorder()
+
+            local time_factors = { 4, 3, 2, 1, 1/2, 1/3, 1/4 }
+            local _pattern_rate = to.pattern(
+                { mpat[track][5], mpat[track][6] }, 'pattern rate '..track, Grid.number, 
+                function() 
+                    local p = pat[playing[track]]
+                    print('playing', playing[track], p)
+                    return {
+                        x = { 2, 8 }, y = 2,
+                        state = { 
+                            p and tab.key(time_factors, p.time_factor) or 0,
+                            function(v)
+                                local pp = pat[playing[track]]
+                                if pp then pp:set_time_factor(time_factors[v]) end
+                            end
+                        }
+                    }
+                end
+            )
 
             local _keymap, reset_keymap = to.pattern(
                 mpat[track], 'keymap '..track, Grid.momentary, 
@@ -127,7 +147,13 @@ function App.grid(args)
                 }
 
                 _slew()
-                if show_slew_time then _slew_time() end
+                if show_slew_time then 
+                    _slew_time() 
+                else
+                    if playing[track] then
+                        _pattern_rate()
+                    end
+                end
 
                 _keymap()
 
@@ -183,7 +209,6 @@ function App.grid(args)
     local _tab = Grid.number()
 
     return function(props)
-        
         _tab{
             x = { 0 + 1, 0 + #_pages }, y = 1, lvl = hl,
             state = { 
