@@ -59,7 +59,6 @@ function App.grid(args)
                 }
             end)
 
-
             local x, y = 1, 1
             local gate = 0
 
@@ -189,12 +188,13 @@ function App.grid(args)
         local track = 3
 
         params:add{
-            id = 'jf mode', type = 'number',
-            min = 0, max = 1, default = 1,
+            id = 'jf synth mode', type = 'binary', 
+            behavior = 'toggle', default = 1,
             action = function(v)
                 crow.ii.jf.mode(v)
             end
         }
+        local _mode = Grid.toggle()
 
         local bend = 0
         local nums = { -5, -4, -3, -2, 1, 2, 3, 4, 5 }
@@ -286,8 +286,6 @@ function App.grid(args)
             end
         )
 
-        --TODO: when synth mode off, keymap uses transpose + trig commands
-        --TODO: gate forwarding switch
         local _keymap, reset_keymap = to.pattern(
             mpat[track], 'keymap '..track, Grid.momentary, function()
                 return {
@@ -324,6 +322,10 @@ function App.grid(args)
         reset()
         
         return function()
+            _mode{
+                x = 1, y = 2,
+                state = of.param('jf synth mode')
+            }
             _keymap_recorder{
                 x = { 5, 7 }, y = 1, count = 1,
                 pattern = { pat[1], pat[2], pat[3] }, 
@@ -369,10 +371,14 @@ function App.grid(args)
     local _pages = {}; for i, Page in ipairs(Pages) do _pages[i] = Page() end
 
     local _tab = Grid.number()
+    local _tab_bg = Grid.fill()
 
     return function(props)
+        _tab_bg{
+            x = { 1, 3 }, y = 1, lvl = 4,
+        }
         _tab{
-            x = { 0 + 1, 0 + #_pages }, y = 1, lvl = hl,
+            x = { 0 + 1, 0 + #_pages }, y = 1, --lvl = hl,
             state = { 
                 page, 
                 function(v) 
