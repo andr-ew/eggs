@@ -73,9 +73,37 @@ function init()
     tune.read()
     params:read()
     params:bang()
+
+    -- do
+    --     local data = tab.load(norns.state.data..'patterns.data')
+    --     if data then
+    --         for i,pats in ipairs(data) do
+    --             for ii, pat in ipairs(pats) do
+    --                 for k,v in pairs(pat) do
+    --                     pattern[i][ii][k] = v
+    --                 end
+    --             end
+    --         end
+    --     end
+    -- end
 end
 
 function cleanup() 
     tune.write()
     params:write()
+
+    -- do
+    --     local data = {}
+    --     for i,pats in ipairs(pattern) do
+    --         data[i] = {}
+    --         for ii, pat in ipairs(pats) do
+    --             local d = data[i][ii]
+    --             d.time = pat.time
+    --             d.count = pat.count
+    --             d.time_factor = pat.time_factor
+    --         end
+    --     end
+
+    --     tab.save(data, norns.state.data..'patterns.data')
+    -- end
 end

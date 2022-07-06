@@ -2,6 +2,8 @@ local App = {}
 
 local page = 1
 
+params:add_separator('tracks')
+
 function App.grid(args)
     local hl = { 4, 15 }
     
@@ -15,9 +17,9 @@ function App.grid(args)
         local outs = { cv = 1+off, gate = 2+off }
         crow.output[outs.cv].shape = 'exponential' 
 
-        --TODO: use params for session persistence
         Pages[track] = function()
             local slew = 0
+
             local show_slew_time = false
             local set_slew = multipattern.wrap_set(
                 mpat[track], 'slew '..track, function(v)
@@ -26,7 +28,7 @@ function App.grid(args)
             )
             local _slew = Grid.momentary(function()
                 return {
-                    x = 1, y = 2, lvl = { 0, 15 },
+                    x = 1, y = 2, lvl = hl,
                     state = { 
                         slew, 
                         function(v) 
@@ -38,28 +40,34 @@ function App.grid(args)
             end)
 
             local slew_times = { 0.05, 0.07, 0.1, 0.2, 0.3, 0.4, 0.5, 1 }
-            local slew_time = 1
+
+            params:add{
+                id = 'slew time '..track, type = 'option',
+                options = slew_times,
+            }
+
             local _slew_time = to.pattern(mpat[track], 'slew time '..track, Grid.number, function()
                 return { 
                     x = { 2, 8 }, y = 2, lvl = hl,
-                    state = { slew_time, function(v) slew_time = v end }
+                    state = of.param('slew time '..track),
                 }
             end)
 
-            local oct = 0
+
             local x, y = 1, 1
             local gate = 0
 
             local function update_gate()
                 crow.output[outs.gate].volts = gate * 5
             end
+
             --TODO: crow input 1 transpose track 1 (diatonic)
             local function update_pitch()
                 local volts = tune.volts(
-                    x, y, nil, oct, params:get('scale_preset')
+                    x, y, nil, params:get('oct '..track), params:get('scale_preset')
                 )
                 crow.output[outs.cv].slew = slew * (
-                    slew_times[slew_time] 
+                    slew_times[params:get('slew time '..track)] 
                     --+ (math.random() * 0.05 * (math.random(0, 1) * 2 - 1))
                 )
                 crow.output[outs.cv].volts = volts
@@ -67,11 +75,15 @@ function App.grid(args)
                 nest.grid.make_dirty()
             end
 
+            params:add{
+                id = 'oct '..track, type = 'number', min = -2, max = 3,
+                action = update_pitch
+            }
 
             local _oct = to.pattern(mpat[track], 'oct '..track, Grid.number, function()
                 return {
                     x = { 1, 6 }, y = 8, min = -2, max = 3, lvl = hl,
-                    state = { oct, function(v) oct = v; update_pitch() end }
+                    state = of.param('oct '..track),
                 }
             end)
 
@@ -174,39 +186,52 @@ function App.grid(args)
                 crow.ii.jf.mode(v)
             end
         }
-        
-        local oct = 0
+
         local bend = 0
         local nums = { -5, -4, -3, -2, 1, 2, 3, 4, 5 }
-        local numerator = tab.key(nums, 1)
-        local denominator = 1
+        -- local numerator = tab.key(nums, 1)
+        -- local denominator = 1
 
         local function update_run()
-            local num = nums[numerator] 
-            local r = num/denominator
+            local num = nums[params:get('jf fm numerator')] 
+            local r = num/params:get('jf fm denominator')
             if num > 0 then r = r - 1 end
             if num < 0 then r = r + 1 end
             crow.ii.jf.run_mode(1)
             crow.ii.jf.run(r * 5)
         end
 
+        params:add{
+            id = 'jf fm numerator', type = 'option', options = nums, action = update_run
+        }
+        params:add{
+            id = 'jf fm denominator', type = 'number', min = 1, max = 5, action = update_run
+        }
+
+
         local _one = Grid.fill()
         local _numerator = to.pattern(mpat[track], 'numerator', Grid.number, function()
             return {
                 x = { 8, 16 }, y = 1,
-                state = { numerator, function(v) numerator = v; update_run() end }
+                state = of.param('jf fm numerator')
             }
         end)
         local _denominator = to.pattern(mpat[track], 'denominator ', Grid.number, function()
             return {
                 x = { 12, 16 }, y = 2,
-                state = { denominator, function(v) denominator = v; update_run() end }
+                state = of.param('jf fm denominator')
             }
         end)
 
         local function update_transpose()
-            crow.ii.jf.transpose(oct + bend)
+            crow.ii.jf.transpose(params:get('oct '..track) + bend)
         end
+
+        params:add{
+            id = 'oct '..track, type = 'number', min = -2, max = 3,
+            action = update_transpose,
+        }
+        
 
         crow.input[2].mode('stream', 0.001)
         crow.input[2].stream = function(v)
@@ -214,6 +239,10 @@ function App.grid(args)
             bend = math.log(
                 math.max(0.00001, ((v / 5) + 1)) * math.exp(1)
             ) 
+            -- bend = math.log(
+            --     math.max(0.00001, ((v / 5) + 1)) * 2,
+            --     2
+            -- ) 
             --bend = v/5
             update_transpose()
         end
@@ -222,19 +251,15 @@ function App.grid(args)
         local _oct = to.pattern(mpat[track], 'oct '..track, Grid.number, function()
             return {
                 x = { 1, 6 }, y = 8, min = -2, max = 3, lvl = hl,
-                state = { 
-                    oct, 
-                    function(v) 
-                        oct = v 
-                        update_transpose()
-                    end 
-                }
+                state = of.param('oct '..track)
             }
         end)
 
         local pat = pattern[track]
-        local _keymap_recorder = PatternRecorder()
+        local _keymap_recorder, _, _, data = PatternRecorder()
         local _parameter_recorder = PatternRecorder()
+
+        jf_krec_data = data
 
         local time_factors = { 4, 3, 2, 1, 1/2, 1/3, 1/4 }
         local _pattern_rate = to.pattern(
@@ -296,6 +321,7 @@ function App.grid(args)
                 x = { 5, 7 }, y = 1, count = 1,
                 pattern = { pat[1], pat[2], pat[3] }, 
                 varibright = varibright,
+                --table = jf_krec,
                 action = function(v, t, d, add, rem, l)
                     playing[track] = l[1]
                     reset()
