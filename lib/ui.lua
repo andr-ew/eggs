@@ -10,7 +10,13 @@ function App.grid(args)
     local Pages = {}
     
     local reset_keys = {}
-    local playing = {}
+    --local playing = {}
+
+    function get_playing(track)
+        for i,v in ipairs(pattern_states[track].keymap) do
+            if v >= 3 then return i end
+        end
+    end
 
     for track = 1,2 do
         local off = track==2 and 2 or 0
@@ -95,13 +101,13 @@ function App.grid(args)
             local _pattern_rate = to.pattern(
                 { mpat[track][5], mpat[track][6] }, 'pattern rate '..track, Grid.number, 
                 function() 
-                    local p = pat[playing[track]]
+                    local p = pat[get_playing(track)]
                     return {
                         x = { 2, 8 }, y = 2,
                         state = { 
                             p and tab.key(time_factors, p.time_factor) or 0,
                             function(v)
-                                local pp = pat[playing[track]]
+                                local pp = pat[get_playing(track)]
                                 if pp then pp:set_time_factor(time_factors[v]) end
                             end
                         }
@@ -144,13 +150,15 @@ function App.grid(args)
 
             reset_keys[track] = reset
 
+            local p_st = pattern_states[track]
+
             return function()
                 _keymap_recorder{
                     x = { 5, 8 }, y = 1, count = 1,
                     pattern = { pat[1], pat[2], pat[3], pat[4] }, 
+                    state = { pattern_states[track].keymap },
                     varibright = varibright,
                     action = function(v, t, d, add, rem, l)
-                        playing[track] = l[1]
                         reset()
                     end
                 }
@@ -159,7 +167,7 @@ function App.grid(args)
                 if show_slew_time then 
                     _slew_time() 
                 else
-                    if playing[track] then
+                    if get_playing(track) then
                         _pattern_rate()
                     end
                 end
@@ -170,6 +178,7 @@ function App.grid(args)
                 _parameter_recorder{
                     x = { 7, 8 }, y = 8,
                     pattern = { pat[5], pat[6] }, 
+                    state = { pattern_states[track].parameter },
                     varibright = varibright,
                 }
             end
@@ -256,22 +265,20 @@ function App.grid(args)
         end)
 
         local pat = pattern[track]
-        local _keymap_recorder, _, _, data = PatternRecorder()
+        local _keymap_recorder = PatternRecorder()
         local _parameter_recorder = PatternRecorder()
-
-        jf_krec_data = data
 
         local time_factors = { 4, 3, 2, 1, 1/2, 1/3, 1/4 }
         local _pattern_rate = to.pattern(
             { mpat[track][5], mpat[track][6] }, 'pattern rate '..track, Grid.number, 
             function() 
-                local p = pat[playing[track]]
+                local p = pat[get_playing(track)]
                 return {
                     x = { 2, 8 }, y = 2,
                     state = { 
                         p and tab.key(time_factors, p.time_factor) or 0,
                         function(v)
-                            local pp = pat[playing[track]]
+                            local pp = pat[get_playing(track)]
                             if pp then pp:set_time_factor(time_factors[v]) end
                         end
                     }
@@ -315,15 +322,14 @@ function App.grid(args)
         end
         reset_keys[track] = reset
         reset()
-
+        
         return function()
             _keymap_recorder{
                 x = { 5, 7 }, y = 1, count = 1,
                 pattern = { pat[1], pat[2], pat[3] }, 
+                state = { pattern_states[track].keymap },
                 varibright = varibright,
-                --table = jf_krec,
                 action = function(v, t, d, add, rem, l)
-                    playing[track] = l[1]
                     reset()
                 end
             }
@@ -334,7 +340,7 @@ function App.grid(args)
             _numerator()
             _denominator()
 
-            if playing[track] then
+            if get_playing(track) then
                 _pattern_rate()
             end
 
@@ -344,6 +350,7 @@ function App.grid(args)
             _parameter_recorder{
                 x = { 7, 8 }, y = 8,
                 pattern = { pat[5], pat[6] }, 
+                state = { pattern_states[track].parameter },
                 varibright = varibright,
             }
         end
@@ -373,7 +380,7 @@ function App.grid(args)
                     nest.screen.make_dirty()
 
                     for i,res in ipairs(reset_keys) do 
-                        if not playing[i] then res() end
+                        if not get_playing(i) then res() end
                     end
                 end 
             }

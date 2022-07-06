@@ -44,14 +44,20 @@ function pattern_time:resume()
     end
 end
 
-pattern, mpat = {}, {}
+pattern, mpat, pattern_states = {}, {}, {}
 for i = 1,3 do
     pattern[i] = {}
     mpat[i] = {}
+    pattern_states[i] = {}
     for ii = 1,6 do
         pattern[i][ii] = pattern_time.new() 
         mpat[i][ii] = multipattern.new(pattern[i][ii])
     end
+
+    pattern_states[i] = { 
+        keymap = { 0, 0, 0, 0 },
+        parameter = { 0, 0 },
+    }
 end
 
 --set up nest v2 UI
@@ -74,36 +80,50 @@ function init()
     params:read()
     params:bang()
 
-    -- do
-    --     local data = tab.load(norns.state.data..'patterns.data')
-    --     if data then
-    --         for i,pats in ipairs(data) do
-    --             for ii, pat in ipairs(pats) do
-    --                 for k,v in pairs(pat) do
-    --                     pattern[i][ii][k] = v
-    --                 end
-    --             end
-    --         end
-    --     end
-    -- end
+    do
+        local data = tab.load(norns.state.data..'patterns.data')
+        if data then
+            for i,pats in ipairs(data.pattern) do
+                for ii, pat in ipairs(pats) do
+                    for k,v in pairs(pat) do
+                        pattern[i][ii][k] = v
+                    end
+
+                    if pattern[i][ii].play > 0 then
+                        pattern[i][ii]:start()
+                    end
+                end
+            end
+
+            pattern_states = data.pattern_states
+        end
+    end
 end
 
 function cleanup() 
     tune.write()
     params:write()
 
-    -- do
-    --     local data = {}
-    --     for i,pats in ipairs(pattern) do
-    --         data[i] = {}
-    --         for ii, pat in ipairs(pats) do
-    --             local d = data[i][ii]
-    --             d.time = pat.time
-    --             d.count = pat.count
-    --             d.time_factor = pat.time_factor
-    --         end
-    --     end
+    do
+        local data = {
+            pattern = {},
+            pattern_states = pattern_states,
+        }
+        for i,pats in ipairs(pattern) do
+            data.pattern[i] = {}
+            for ii, pat in ipairs(pats) do
+                local d = {}
+                d.count = pat.count
+                d.event = pat.event
+                d.time = pat.time
+                d.time_factor = pat.time_factor
+                d.step = pat.step
+                d.play = pat.play
+                
+                data.pattern[i][ii] = d
+            end
+        end
 
-    --     tab.save(data, norns.state.data..'patterns.data')
-    -- end
+        tab.save(data, norns.state.data..'patterns.data')
+    end
 end
