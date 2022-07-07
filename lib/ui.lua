@@ -1,8 +1,232 @@
 local App = {}
 
 local page = 1
+            
+local level = 7
+local modes = { 'transient', 'sustain', 'cycle' }
+local shapes = {
+    'linear',
+    'sine',
+    'logarithmic',
+    'exponential',
+    'now',
+    'wait',
+    'over',
+    'under',
+    'rebound',
+}
 
-params:add_separator('tracks')
+local function update_gate(track, v)
+    local off = track==2 and 2 or 0
+    local out = 2+off
+    --crow.output[outs.gate].volts = gate * 5
+    local mode = modes[params:get('mode '..track)]
+
+    if mode == 'sustain' then
+        crow.output[out](v > 0)
+    else
+        if v > 0 then crow.output[out]() end
+    end
+end
+
+
+function App.norns(args)
+    local x,y = {}, {}
+
+    local mar = { left = 2, top = 4, right = 2, bottom = 0 }
+    local w = 128 - mar.left - mar.right
+    local h = 64 - mar.top - mar.bottom
+
+    x[1] = mar.left
+    x[2] = 128/2
+    y[1] = mar.top
+    y[2] = nil
+    y[3] = mar.top + h*(5.5/8)
+    y[4] = mar.top + h*(7/8)
+
+    local e = {
+        { x = x[1], y = y[1] },
+        { x = x[1], y = y[3] },
+        { x = x[2], y = y[3] },
+        { x = x[2], y = y[1] },
+    }
+    local k = {
+        {  },
+        { x = x[1], y = y[4] },
+        { x = x[2], y = y[4] },
+    }
+    
+    local Pages = {}
+
+    for track = 1,2 do
+        local off = track==2 and 2 or 0
+        local outs = { cv = 1+off, gate = 2+off }
+
+        Pages[track] = function()
+            params:add_separator('env '..track)
+
+            local function update_dyn()
+                local time = params:get('time '..track)
+                local ramp = params:get('ramp '..track)
+                local a, r
+
+                if ramp > 0 then
+                    r = time * (0.5 + ramp/2)
+                    a = time * (0.5 - ramp/2)
+                else
+                    r = time * (0.5 - -ramp/2)
+                    a = time * (0.5 + -ramp/2)
+                end
+
+                crow.output[outs.gate].dyn.a = a
+                crow.output[outs.gate].dyn.r = r
+
+                nest.screen.make_dirty()
+            end
+            local function update_asl()
+                local mode = modes[params:get('mode '..track)]
+                local shape = "'"..shapes[params:get('shape '..track)].."'"
+                local retrig = false
+
+                if mode == 'transient' then
+                    local action = "{"..
+                        "to("..level..", dyn{a = 1}, "..shape.."),"..
+                            "lock{"..
+                                "to(0, dyn{r = 1}, "..shape..")"..
+                            "}"..
+                        "}"
+                    crow.output[outs.gate].action = action
+                elseif mode == 'sustain' then
+                    crow.output[outs.gate].action = "{"..
+                        "held{ to("..level..", dyn{a = 1}, "..shape..") },"..
+                        "lock{"..
+                            "to(0, dyn{r = 1}, "..shape..")"..
+                        "}"..
+                    "}"
+                elseif mode == 'cycle' then
+                    crow.output[outs.gate].action = "{"..
+                        "lock{"..
+                            "loop{"..
+                                "to("..level..", dyn{a = 1}, "..shape.."),"..
+                                "to(0, dyn{r = 1}, "..shape.."),"..
+                            "}"..
+                        "}"..
+                    "}"
+                end
+
+                update_dyn()
+            end
+
+            params:add{
+                id = 'shape '..track, name = 'shape',
+                type = 'option', options = shapes,
+                action = update_asl,
+            }
+            params:add{
+                id = 'mode '..track, name = 'mode',
+                type = 'option', options = modes,
+                action = update_asl,
+            }
+            params:add{
+                id = 'time '..track, name = 'time', type = 'control',
+                controlspec = cs.new(0.001, 16, 'exp', 0, 0.04, "s"),
+                action = update_dyn,
+            }
+            params:add{
+                id = 'ramp '..track, name = 'ramp', type = 'control',
+                controlspec = cs.def { min = -1, max = 1, default = 0 },
+                action = update_dyn,
+            }
+
+            local _time = to.pattern(mpat[track], 'time '..track, Text.enc.control, function() 
+                return {
+                    n = 1, x = e[1].x, y = e[1].y, label = 'time',
+                    state = of.param('time '..track), 
+                    controlspec = of.controlspec('time '..track)
+                }
+            end)
+            local _shape = to.pattern(mpat[track], 'shape '..track, Text.enc.number, function() 
+                return {
+                    x = e[2].x, y = e[2].y, n = 2,
+                    min = 1, step = 1, inc = 1, max = #shapes,
+                    label = 'shape',
+                    formatter = function(v) 
+                        local shape = shapes[v]
+                        if shape == 'logarithmic' then shape = 'log' end
+                        if shape == 'exponential' then shape = 'expo' end
+                        return shape
+                    end,
+                    state = of.param('shape '..track)
+                }
+            end)
+            local _ramp = to.pattern(mpat[track], 'ramp '..track, Text.enc.control, function() 
+                return {
+                    n = 3, x = e[3].x, y = e[3].y, label = 'ramp',
+                    state = of.param('ramp '..track), 
+                    controlspec = of.controlspec('ramp '..track)
+                }
+            end)
+            local _mode = to.pattern(mpat[track], 'mode '..track, Text.key.option, function() 
+                return {
+                    n = { 2, 3 }, x = k[2].x, y = k[2].y, wrap = true,
+                    options = { 'trns', 'sus', 'cyc' },
+                    --state = of.param('mode '..track),
+                    state = {
+                        params:get('mode '..track),
+                        function(v)
+                            params:set('mode '..track, v)
+                        end
+                    }
+                }
+            end)
+
+            return function()
+                _shape()
+                _time()
+                _ramp()
+                _mode()
+            end
+        end
+    end
+
+    Pages[3] = function()
+        local track = 3
+
+        return function()
+        end
+    end
+
+    Pages[4] = function()
+        local _scale_degrees = Tune.norns.scale_degrees()
+        local _options = Tune.norns.options()
+
+        return function()
+            _scale_degrees{ preset = params:get('scale_preset') }
+            _options{ preset = params:get('scale_preset') }
+        end
+    end
+
+    local _tab = Text.enc.option()
+    local _pages = {}; for i, Page in ipairs(Pages) do _pages[i] = Page() end
+
+    return function(props)
+        _tab{
+            x = e[4].x, y = e[4].y, n = 4, options = { 1, 2, 'jf', 'scale' }, 
+            state = { 
+                page, 
+                function(v) 
+                    page = v 
+                    nest.screen.make_dirty()
+
+                    for i,res in ipairs(reset_keys) do 
+                        if not get_playing(i) then res() end
+                    end
+                end 
+            }
+        }
+        _pages[page]()
+    end
+end
 
 function App.grid(args)
     local hl = { 4, 15 }
@@ -24,6 +248,8 @@ function App.grid(args)
         crow.output[outs.cv].shape = 'exponential' 
 
         Pages[track] = function()
+            params:add_separator('cv '..track)
+
             local slew = 0
 
             local show_slew_time = false
@@ -48,7 +274,8 @@ function App.grid(args)
             local slew_times = { 0.05, 0.07, 0.1, 0.2, 0.3, 0.4, 0.5, 1 }
 
             params:add{
-                id = 'slew time '..track, type = 'option',
+                id = 'slew time '..track, name = 'slew time',
+                type = 'option',
                 options = slew_times,
             }
 
@@ -61,10 +288,6 @@ function App.grid(args)
 
             local x, y = 1, 1
             local gate = 0
-
-            local function update_gate()
-                crow.output[outs.gate].volts = gate * 5
-            end
 
             --TODO: crow input 1 transpose track 1 (diatonic)
             local function update_pitch()
@@ -81,7 +304,8 @@ function App.grid(args)
             end
 
             params:add{
-                id = 'oct '..track, type = 'number', min = -2, max = 3,
+                id = 'oct '..track, name = 'oct',
+                type = 'number', min = -2, max = 3,
                 action = update_pitch
             }
 
@@ -133,9 +357,9 @@ function App.grid(args)
                                 gate = 1
 
                                 update_pitch()
-                                update_gate()
+                                update_gate(track, gate)
                             else
-                                gate = 0; update_gate()
+                                gate = 0; update_gate(track, gate)
                             end
                         end
                     }
@@ -144,7 +368,7 @@ function App.grid(args)
 
             local reset = function()
                 reset_keymap()
-                crow.output[outs.gate].volts = 0
+                gate = 0; update_gate(track, gate)
             end
 
             reset_keys[track] = reset
@@ -187,8 +411,11 @@ function App.grid(args)
     Pages[3] = function()
         local track = 3
 
+        params:add_separator('jf')
+
         params:add{
-            id = 'jf synth mode', type = 'binary', 
+            id = 'jf synth mode', name = 'synth mode',
+            type = 'binary', 
             behavior = 'toggle', default = 1,
             action = function(v)
                 crow.ii.jf.mode(v)
@@ -211,10 +438,12 @@ function App.grid(args)
         end
 
         params:add{
-            id = 'jf fm numerator', type = 'option', options = nums, action = update_run
+            id = 'jf fm numerator', name = 'fm numerator',
+            type = 'option', options = nums, action = update_run
         }
         params:add{
-            id = 'jf fm denominator', type = 'number', min = 1, max = 5, action = update_run
+            id = 'jf fm denominator', name = 'fm denominator',
+            type = 'number', min = 1, max = 5, action = update_run
         }
 
 
@@ -237,7 +466,8 @@ function App.grid(args)
         end
 
         params:add{
-            id = 'oct '..track, type = 'number', min = -2, max = 3,
+            id = 'oct '..track, name = 'oct',
+            type = 'number', min = -2, max = 3,
             action = update_transpose,
         }
         
@@ -286,6 +516,12 @@ function App.grid(args)
             end
         )
 
+        params:add{
+            id = 'jf level', name = 'note level',
+            type = 'control', 
+            controlspec = cs.def{ min = 0, max = 5, default = 3.5 }
+        }
+
         local _keymap, reset_keymap = to.pattern(
             mpat[track], 'keymap '..track, Grid.momentary, function()
                 return {
@@ -301,9 +537,10 @@ function App.grid(args)
                         local volts = tune.volts(
                             k.x, k.y, nil, -3, params:get('scale_preset')
                         )
+                        local lvl = params:get('jf level')
 
                         if add then 
-                            crow.ii.jf.play_note(volts, 3.5 * vel)
+                            crow.ii.jf.play_note(volts, lvl * vel)
                         elseif rem then 
                             crow.ii.jf.play_note(volts, 0)
                         end
@@ -323,38 +560,40 @@ function App.grid(args)
         
         return function()
             _mode{
-                x = 1, y = 2,
+                x = 1, y = 2, lvl = hl,
                 state = of.param('jf synth mode')
             }
-            _keymap_recorder{
-                x = { 5, 7 }, y = 1, count = 1,
-                pattern = { pat[1], pat[2], pat[3] }, 
-                state = { pattern_states[track].keymap },
-                varibright = varibright,
-                action = function(v, t, d, add, rem, l)
-                    reset()
+            if params:get('jf synth mode') > 0 then
+                _keymap_recorder{
+                    x = { 5, 7 }, y = 1, count = 1,
+                    pattern = { pat[1], pat[2], pat[3] }, 
+                    state = { pattern_states[track].keymap },
+                    varibright = varibright,
+                    action = function(v, t, d, add, rem, l)
+                        reset()
+                    end
+                }
+
+                _one{
+                    x = 12, y = { 1, 2 }, lvl = 4
+                }
+                _numerator()
+                _denominator()
+
+                if get_playing(track) then
+                    _pattern_rate()
                 end
-            }
 
-            _one{
-                x = 12, y = { 1, 2 }, lvl = 4
-            }
-            _numerator()
-            _denominator()
+                _keymap()
 
-            if get_playing(track) then
-                _pattern_rate()
+                _oct()
+                _parameter_recorder{
+                    x = { 7, 8 }, y = 8,
+                    pattern = { pat[5], pat[6] }, 
+                    state = { pattern_states[track].parameter },
+                    varibright = varibright,
+                }
             end
-
-            _keymap()
-
-            _oct()
-            _parameter_recorder{
-                x = { 7, 8 }, y = 8,
-                pattern = { pat[5], pat[6] }, 
-                state = { pattern_states[track].parameter },
-                varibright = varibright,
-            }
         end
     end
 
@@ -372,10 +611,14 @@ function App.grid(args)
 
     local _tab = Grid.number()
     local _tab_bg = Grid.fill()
+    local _tab_bg2 = Grid.fill()
 
     return function(props)
         _tab_bg{
             x = { 1, 3 }, y = 1, lvl = 4,
+        }
+        _tab_bg2{
+            x = 4, y = 1, lvl = 1,
         }
         _tab{
             x = { 0 + 1, 0 + #_pages }, y = 1, --lvl = hl,
@@ -392,42 +635,6 @@ function App.grid(args)
             }
         }
 
-        _pages[page]()
-    end
-end
-
-function App.norns(args)
-    
-    local Pages = {}
-
-    for track = 1,2 do
-        Pages[track] = function()
-
-            return function()
-            end
-        end
-    end
-
-    Pages[3] = function()
-        local track = 3
-
-        return function()
-        end
-    end
-
-    Pages[4] = function()
-        local _scale_degrees = Tune.norns.scale_degrees()
-        local _options = Tune.norns.options()
-
-        return function()
-            _scale_degrees{ preset = params:get('scale_preset') }
-            _options{ preset = params:get('scale_preset') }
-        end
-    end
-
-    local _pages = {}; for i, Page in ipairs(Pages) do _pages[i] = Page() end
-
-    return function(props)
         _pages[page]()
     end
 end

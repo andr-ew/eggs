@@ -62,10 +62,14 @@ end
 
 --set up nest v2 UI
 
-local _app = {
-    grid = Eggs.grid(),
-    norns = Eggs.norns(),
-}
+-- local _app = {
+--     grid = Eggs.grid(),
+--     norns = Eggs.norns(),
+-- }
+
+local _app = {}
+_app.norns = Eggs.norns()
+_app.grid = Eggs.grid()
 
 nest.connect_grid(_app.grid, g, 240)
 nest.connect_enc(_app.norns)
@@ -83,6 +87,8 @@ function init()
     do
         local data = tab.load(norns.state.data..'patterns.data')
         if data then
+            pattern_states = data.pattern_states
+
             for i,pats in ipairs(data.pattern) do
                 for ii, pat in ipairs(pats) do
                     for k,v in pairs(pat) do
@@ -94,8 +100,6 @@ function init()
                     end
                 end
             end
-
-            pattern_states = data.pattern_states
         end
     end
 end
