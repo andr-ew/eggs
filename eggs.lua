@@ -74,7 +74,7 @@ _app.grid = Eggs.grid()
 nest.connect_grid(_app.grid, g, 240)
 nest.connect_enc(_app.norns)
 nest.connect_key(_app.norns)
-nest.connect_screen(_app.norns, 24)
+nest.connect_screen(_app.norns, 20)
 
 --init/cleanup
 

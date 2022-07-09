@@ -58,6 +58,35 @@ function App.norns(args)
     
     local Pages = {}
 
+    local out_volts = { 0, 0, 0, 0 }
+    do
+        --output queries
+
+        local event_id = norns.crow.register_event(function(...) 
+            --print('received', ...)
+            out_volts = { ... }
+            nest.screen.make_dirty()
+        end)
+        local function query()
+            local msg ="tell('"..event_id..[[', 
+                output[1].volts,
+                output[2].volts,
+                output[3].volts,
+                output[4].volts
+            )]]
+            --print('msg', msg)
+            crow.send(msg)
+        end
+
+        local fps = 40
+        clock.run(function() 
+            while true do
+                query()
+                clock.sleep(1/fps)
+            end
+        end)
+    end
+
     for track = 1,2 do
         local off = track==2 and 2 or 0
         local outs = { cv = 1+off, gate = 2+off }
@@ -200,6 +229,20 @@ function App.norns(args)
                 _time()
                 _ramp()
                 _mode()
+
+                --draw output volts
+                if nest.screen.is_drawing() then
+                    for i = 1,4 do
+                        screen.level(
+                            ((i == outs.cv) or (i == outs.gate)) and 8 or 2
+                        )
+                        --screen.move(x[1] + w*(1/11), 15 + i*5)
+                        screen.move(x[1], 12 + i*6)
+                        screen.line_width(1)
+                        screen.line_rel(out_volts[i] * w * (1/10) * 1.5 + 1, 0)
+                        screen.stroke()
+                    end
+                end
             end
         end
     end
