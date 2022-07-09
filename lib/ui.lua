@@ -1,8 +1,8 @@
 local App = {}
 
 local page = 1
+local reset_keys = {}
             
-local level = 7
 local modes = { 'transient', 'sustain', 'cycle' }
 local shapes = {
     'linear',
@@ -68,6 +68,7 @@ function App.norns(args)
             local function update_dyn()
                 local time = params:get('time '..track)
                 local ramp = params:get('ramp '..track)
+                local l = params:get('level '..track)
                 local a, r
 
                 if ramp > 0 then
@@ -78,6 +79,7 @@ function App.norns(args)
                     a = time * (0.5 + -ramp/2)
                 end
 
+                crow.output[outs.gate].dyn.l = l
                 crow.output[outs.gate].dyn.a = a
                 crow.output[outs.gate].dyn.r = r
 
@@ -86,31 +88,33 @@ function App.norns(args)
             local function update_asl()
                 local mode = modes[params:get('mode '..track)]
                 local shape = "'"..shapes[params:get('shape '..track)].."'"
-                local retrig = false
+                local retrig = params:get('retrigger '..track) > 0
+                local lock = retrig and "" or "lock{"
+                local end_lock = retrig and "" or "}"
 
                 if mode == 'transient' then
                     local action = "{"..
-                        "to("..level..", dyn{a = 1}, "..shape.."),"..
-                            "lock{"..
+                        "to(dyn{ l = 7 }, dyn{a = 1}, "..shape.."),"..
+                            lock..
                                 "to(0, dyn{r = 1}, "..shape..")"..
-                            "}"..
+                            end_lock..
                         "}"
                     crow.output[outs.gate].action = action
                 elseif mode == 'sustain' then
                     crow.output[outs.gate].action = "{"..
-                        "held{ to("..level..", dyn{a = 1}, "..shape..") },"..
-                        "lock{"..
+                        "held{ to(dyn{ l = 7 }, dyn{a = 1}, "..shape..") },"..
+                        lock..
                             "to(0, dyn{r = 1}, "..shape..")"..
-                        "}"..
+                        end_lock..
                     "}"
                 elseif mode == 'cycle' then
                     crow.output[outs.gate].action = "{"..
-                        "lock{"..
+                        lock..
                             "loop{"..
-                                "to("..level..", dyn{a = 1}, "..shape.."),"..
+                                "to(dyn{ l = 7 }, dyn{a = 1}, "..shape.."),"..
                                 "to(0, dyn{r = 1}, "..shape.."),"..
                             "}"..
-                        "}"..
+                        end_lock..
                     "}"
                 end
 
@@ -128,6 +132,12 @@ function App.norns(args)
                 action = update_asl,
             }
             params:add{
+                id = 'retrigger '..track, name = 'retrigger',
+                type = 'binary', 
+                behavior = 'toggle', default = 0,
+                action = update_asl,
+            }
+            params:add{
                 id = 'time '..track, name = 'time', type = 'control',
                 controlspec = cs.new(0.001, 16, 'exp', 0, 0.04, "s"),
                 action = update_dyn,
@@ -135,6 +145,11 @@ function App.norns(args)
             params:add{
                 id = 'ramp '..track, name = 'ramp', type = 'control',
                 controlspec = cs.def { min = -1, max = 1, default = 0 },
+                action = update_dyn,
+            }
+            params:add{
+                id = 'level '..track, name = 'level', type = 'control',
+                controlspec = cs.def{ min = 0, max = 10, default = 7 },
                 action = update_dyn,
             }
 
@@ -147,7 +162,7 @@ function App.norns(args)
             end)
             local _shape = to.pattern(mpat[track], 'shape '..track, Text.enc.number, function() 
                 return {
-                    x = e[2].x, y = e[2].y, n = 2,
+                    x = e[2].x, y = e[2].y, n = 2, wrap = false,
                     min = 1, step = 1, inc = 1, max = #shapes,
                     label = 'shape',
                     formatter = function(v) 
@@ -192,7 +207,127 @@ function App.norns(args)
     Pages[3] = function()
         local track = 3
 
+        params:add_separator('jf')
+
+        params:add{
+            id = 'jf synth mode', name = 'synth mode',
+            type = 'binary', 
+            behavior = 'toggle', default = 1,
+            action = function(v)
+                crow.ii.jf.mode(v)
+
+                nest.screen.make_dirty()
+                nest.grid.make_dirty()
+            end
+        }
+
+        local nums = { -5, -4, -3, -2, 1, 2, 3, 4, 5 }
+        local function update_run()
+            local num = nums[params:get('jf fm numerator')] 
+            local r = num/params:get('jf fm denominator')
+            if num > 0 then r = r - 1 end
+            if num < 0 then r = r + 1 end
+            crow.ii.jf.run_mode(1)
+            crow.ii.jf.run(r * 5)
+
+            nest.grid.make_dirty()
+            nest.screen.make_dirty()
+        end
+
+        local bend = 0
+        local function update_transpose()
+            crow.ii.jf.transpose(params:get('oct '..track) + bend)
+        end
+
+        params:add{
+            id = 'oct '..track, name = 'oct',
+            type = 'number', min = -2, max = 3,
+            action = update_transpose,
+        }
+        
+        crow.input[2].mode('stream', 0.001)
+        crow.input[2].stream = function(v)
+            --convert to linear
+            bend = math.log(
+                math.max(0.00001, ((v / 5) * 5/12) + 1) * math.exp(1)
+            ) - 1
+            -- bend = math.log(
+            --     math.max(0.00001, ((v / 5) * 5/12) + 1) * 2,
+            --     2
+            -- )  - 1
+            --bend = v/5
+            update_transpose()
+        end
+
+        params:add{
+            id = 'jf level', name = 'note level',
+            type = 'control', 
+            controlspec = cs.def{ min = 0, max = 5, default = 3.5 }
+        }
+        params:add{
+            id = 'jf fm numerator', name = 'fm numerator',
+            type = 'option', options = nums, action = update_run
+        }
+        params:add{
+            id = 'jf fm denominator', name = 'fm denominator',
+            type = 'number', min = 1, max = 5, action = update_run
+        }
+        params:add{
+            id = 'jf panic!', name = 'panic!',
+            type = 'binary', behavior = 'trigger',
+            action = function()
+                reset_keys[3]()
+            end
+        }
+
+        local _numerator = to.pattern(mpat[track], 'jf fm numerator', Text.enc.number, function() 
+            return {
+                x = e[2].x, y = e[2].y, n = 2, wrap = false,
+                min = 1, step = 1, inc = 1, max = #nums,
+                --label = 'fm num',
+                label = 'numerator',
+                formatter = function(v) 
+                    return nums[v]
+                end,
+                state = of.param('jf fm numerator')
+            }
+        end)
+        local _denominator = to.pattern(
+            mpat[track], 'jf fm denominator', Text.enc.number, function() 
+                return {
+                    x = e[3].x, y = e[3].y, n = 3, wrap = false,
+                    min = 1, step = 1, inc = 1, max = 5,
+                    --label = 'fm denom',
+                    label = 'denominator',
+                    state = of.param('jf fm denominator')
+                }
+            end
+        )
+        local _level = to.pattern(mpat[track], 'jf level', Text.enc.control, function() 
+            return {
+                n = 1, x = e[1].x, y = e[1].y, label = 'note lvl',
+                state = of.param('jf level'), 
+                controlspec = of.controlspec('jf level')
+            }
+        end)
+        local _mode = Text.key.toggle()
+        local _panic = Text.key.trigger()
+
         return function()
+            _mode{
+                n = 2, x = k[2].x, y = k[2].y, label = 'synth mode',
+                state = of.param('jf synth mode'),
+            }
+            if params:get('jf synth mode') > 0 then
+                _level()
+                _numerator()
+                _denominator()
+
+                _panic{
+                    n = 3, x = k[3].x, y = k[3].y, label = 'panic!',
+                    state = of.param('jf panic!'),
+                }
+            end
         end
     end
 
@@ -232,8 +367,6 @@ function App.grid(args)
     local hl = { 4, 15 }
     
     local Pages = {}
-    
-    local reset_keys = {}
     --local playing = {}
 
     function get_playing(track)
@@ -411,41 +544,10 @@ function App.grid(args)
     Pages[3] = function()
         local track = 3
 
-        params:add_separator('jf')
+        --local _mode = Grid.toggle()
 
-        params:add{
-            id = 'jf synth mode', name = 'synth mode',
-            type = 'binary', 
-            behavior = 'toggle', default = 1,
-            action = function(v)
-                crow.ii.jf.mode(v)
-            end
-        }
-        local _mode = Grid.toggle()
-
-        local bend = 0
-        local nums = { -5, -4, -3, -2, 1, 2, 3, 4, 5 }
         -- local numerator = tab.key(nums, 1)
         -- local denominator = 1
-
-        local function update_run()
-            local num = nums[params:get('jf fm numerator')] 
-            local r = num/params:get('jf fm denominator')
-            if num > 0 then r = r - 1 end
-            if num < 0 then r = r + 1 end
-            crow.ii.jf.run_mode(1)
-            crow.ii.jf.run(r * 5)
-        end
-
-        params:add{
-            id = 'jf fm numerator', name = 'fm numerator',
-            type = 'option', options = nums, action = update_run
-        }
-        params:add{
-            id = 'jf fm denominator', name = 'fm denominator',
-            type = 'number', min = 1, max = 5, action = update_run
-        }
-
 
         local _one = Grid.fill()
         local _numerator = to.pattern(mpat[track], 'numerator', Grid.number, function()
@@ -460,32 +562,6 @@ function App.grid(args)
                 state = of.param('jf fm denominator')
             }
         end)
-
-        local function update_transpose()
-            crow.ii.jf.transpose(params:get('oct '..track) + bend)
-        end
-
-        params:add{
-            id = 'oct '..track, name = 'oct',
-            type = 'number', min = -2, max = 3,
-            action = update_transpose,
-        }
-        
-
-        crow.input[2].mode('stream', 0.001)
-        crow.input[2].stream = function(v)
-            --convert to linear
-            bend = math.log(
-                math.max(0.00001, ((v / 5) + 1)) * math.exp(1)
-            ) 
-            -- bend = math.log(
-            --     math.max(0.00001, ((v / 5) + 1)) * 2,
-            --     2
-            -- ) 
-            --bend = v/5
-            update_transpose()
-        end
-
 
         local _oct = to.pattern(mpat[track], 'oct '..track, Grid.number, function()
             return {
@@ -515,12 +591,6 @@ function App.grid(args)
                 }
             end
         )
-
-        params:add{
-            id = 'jf level', name = 'note level',
-            type = 'control', 
-            controlspec = cs.def{ min = 0, max = 5, default = 3.5 }
-        }
 
         local _keymap, reset_keymap = to.pattern(
             mpat[track], 'keymap '..track, Grid.momentary, function()
@@ -559,10 +629,10 @@ function App.grid(args)
         reset()
         
         return function()
-            _mode{
-                x = 1, y = 2, lvl = hl,
-                state = of.param('jf synth mode')
-            }
+            -- _mode{
+            --     x = 1, y = 2, lvl = hl,
+            --     state = of.param('jf synth mode')
+            -- }
             if params:get('jf synth mode') > 0 then
                 _keymap_recorder{
                     x = { 5, 7 }, y = 1, count = 1,
