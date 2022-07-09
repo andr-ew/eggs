@@ -87,6 +87,21 @@ function App.norns(args)
         end)
     end
 
+    local render_outs = function(cv, gate)
+        if nest.screen.is_drawing() then
+            for i = 1,4 do
+                screen.level(
+                    ((i == cv) or (i == gate)) and 8 or 2
+                )
+                --screen.move(x[1] + w*(1/11), 15 + i*5)
+                screen.move(x[1], 12 + i*6)
+                screen.line_width(1)
+                screen.line_rel(out_volts[i] * w * (1/10) * 1 + 1, 0)
+                screen.stroke()
+            end
+        end
+    end
+
     for track = 1,2 do
         local off = track==2 and 2 or 0
         local outs = { cv = 1+off, gate = 2+off }
@@ -231,18 +246,7 @@ function App.norns(args)
                 _mode()
 
                 --draw output volts
-                if nest.screen.is_drawing() then
-                    for i = 1,4 do
-                        screen.level(
-                            ((i == outs.cv) or (i == outs.gate)) and 8 or 2
-                        )
-                        --screen.move(x[1] + w*(1/11), 15 + i*5)
-                        screen.move(x[1], 12 + i*6)
-                        screen.line_width(1)
-                        screen.line_rel(out_volts[i] * w * (1/10) * 1.5 + 1, 0)
-                        screen.stroke()
-                    end
-                end
+                render_outs(outs.cv, outs.gate)
             end
         end
     end
@@ -371,6 +375,8 @@ function App.norns(args)
                     state = of.param('jf panic!'),
                 }
             end
+
+            render_outs()
         end
     end
 
