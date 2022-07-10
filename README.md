@@ -26,7 +26,7 @@ use the **page** component on the top left of the grid to switch pages. there ar
 - **1:** crow outputs 1 + 2 (cv + env)
 - **2:** crow outputs 3 + 4 (cv + env)
 - **jf:** just friends (synth mode, polyphonic)
-- **scale:** scale & tuninc options for all tracks
+- **scale:** scale & tuning options for all tracks
 
 
 ### cv page (1 & 2)
