@@ -9,7 +9,7 @@ three track grid keyboard with pattern recording, slew, & built-in ASR envelopes
 **required**
 
 - norns (220321 or later)
-- grid (128, 64, 256, or midigrid)
+- grid (128, 64, or midigrid)
 - crow
 
 **also supported**
