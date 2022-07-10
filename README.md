@@ -1,4 +1,4 @@
-# eggs
+# eggs (beta)
 
 cv & ii gesture looper for norns, grid, crow, jf.
 
