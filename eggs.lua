@@ -1,4 +1,9 @@
--- eggs before brds
+-- eggs
+-- 
+-- cv & ii gesture looper
+-- for grid, crow, jf
+--
+-- version 1.0-beta @andrew
 
 --global variables
 
