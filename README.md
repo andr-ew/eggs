@@ -22,7 +22,14 @@ in the maiden REPL, type `;install https://github.com/andr-ew/eggs`
 
 ## documentation
 
-### cv page (1 + 2)
+use the **page** component on the top left of the grid to switch pages. there are four pages:
+- **1:** crow outputs 1 + 2 (cv + env)
+- **2:** crow outputs 3 + 4 (cv + env)
+- **jf:** just friends (synth mode, polyphonic)
+- **scale:** scale & tuninc options for all tracks
+
+
+### cv page (1 & 2)
 
 ![documentation image](lib/doc/eggs-01.png)
 
