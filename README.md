@@ -14,7 +14,7 @@ three track grid keyboard with pattern recording, slew, & built-in ASR envelopes
 
 **also supported**
 
-- just friends
+- [just friends](https://www.whimsicalraps.com/products/just-friends?variant=5586981781533)
 
 ## install
 
