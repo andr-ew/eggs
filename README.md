@@ -40,3 +40,8 @@ use the **page** component on the top left of the grid to switch pages. there ar
 ### scale page
 
 ![documentation image](lib/doc/eggs-03.png)
+
+### inputs
+
+crow
+- input 2: linear FM for just friends (control-rate)
