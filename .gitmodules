@@ -10,3 +10,6 @@
 [submodule "lib/yolk"]
 	path = lib/yolk
 	url = https://github.com/andr-ew/yolk
+[submodule "lib/produce"]
+	path = lib/produce
+	url = https://github.com/andr-ew/produce
