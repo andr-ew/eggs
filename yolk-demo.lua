@@ -17,16 +17,19 @@ scale = { 1/1, 9/8, 81/64, 3/2, 27/16 }
 
 g = grid.connect()
 
-pattern = pattern_time.new() 
-mpat = multipattern.new(pattern)
+pattern = { 
+    pattern_time.new(),
+    pattern_time.new() 
+}
+-- mpat = multipattern.new(pattern)
 
-local App = {}
+local Pages = {}
 
-function App.grid()
-    local size = 128-16
+Pages[1] = function()
+    local size = 128-16-16
     local wrap = 16
 
-    local function note_on(idx)
+    local function action_on(idx)
         local x, y = (idx-1)%wrap + 1, (idx-1)//wrap + 1
 
         local oct = y + ((x - 1) // #scale)
@@ -36,12 +39,12 @@ function App.grid()
 
         engine.start(idx, hz)
     end
-    local function note_off(idx) engine.stop(idx) end
+    local function action_off(idx) engine.stop(idx) end
 
-    local state, handlers = yolk.poly{ 
-        note_on = note_on, 
-        note_off = note_off,
-        multipattern = mpat,
+    local state, handlers = yolk.poly{
+        action_on = action_on,
+        action_off = action_off,
+        pattern = pattern[1],
         size = size,
     }
 
@@ -50,8 +53,8 @@ function App.grid()
 
     return function()
         _patrec{
-            x = 1, y = 1,
-            pattern = pattern,
+            x = 1, y = 2,
+            pattern = pattern[1],
             events = handlers,
         }
 
@@ -64,12 +67,88 @@ function App.grid()
     end
 end
 
+Pages[2] = function()
+    local size = 128-16-16
+    local wrap = 16
+
+    local function action(idx, gate)
+        local x, y = (idx-1)%wrap + 1, (idx-1)//wrap + 1
+
+        local oct = y + ((x - 1) // #scale)
+        local deg = ((x - 1) % #scale) + 1
+        local ratio = scale[deg]
+        local hz = 110 * 2^(oct - 3) * ratio
+
+        if gate > 0 then
+            engine.start(0, hz)
+        else
+            engine.stop(0)
+        end
+    end
+
+    local states, handlers, interrupt = yolk.mono{
+        action = action,
+        pattern = pattern[2],
+        size = size,
+    }
+    
+    local _patrec = Produce.grid.pattern_recorder()
+    local _momentaries = Grid.momentaries()
+    local _integer = Grid.integer()
+
+    return function()
+        _patrec{
+            x = 1, y = 2,
+            pattern = pattern[2],
+            events = handlers,
+        }
+
+        if crops.mode == 'input' then
+            _momentaries{
+                x = 1, y = 8, size = size, wrap = wrap,
+                flow = 'right', flow_wrap = 'up',
+                state = states.momentaries,
+            }
+        elseif crops.mode == 'redraw' then
+            if states.gate[1] > 0 then
+                _integer{
+                    x = 1, y = 8, size = size, wrap = wrap,
+                    flow = 'right', flow_wrap = 'up',
+                    state = states.integer,
+                }                
+            end
+        end
+    end
+end
+
+local App = {}
+
+function App.grid()
+    local _pages = { Pages[1](), Pages[2]() }
+    
+    local tab = 1
+    local _tab = Grid.integer()
+
+    return function()
+        _tab{
+            x = 1, y = 1, size = 2, levels = { 4, 15 },
+            state = { 
+                tab, 
+                function(v) tab = v; crops.dirty.grid = true end
+            }
+        }
+
+        _pages[tab]()
+    end
+end
+
 _app = {
     grid = App.grid(), 
 }
 
 function init()
     polysub:params()
+    params:set('hzlag', 0)
 end
 
 crops.connect_grid(_app.grid, g)
