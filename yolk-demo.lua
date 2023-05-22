@@ -10,6 +10,10 @@ Produce = include 'lib/produce/produce'
 multipattern = include 'lib/multipattern/multipattern'
 yolk = include 'lib/yolk-lib/yolk-lib'
 
+tune = include 'lib/tune/tune'
+local tunings, scale_groups = include 'lib/tune/scales'
+tune.setup{ tunings = tunings, scale_groups = scale_groups, presets = 8 }
+
 polysub = require 'engine/polysub'
 engine.name = 'PolySub'
 
@@ -23,6 +27,8 @@ pattern = {
 }
 -- mpat = multipattern.new(pattern)
 
+--TODO: block input during playback
+
 local Pages = {}
 
 Pages[1] = function()
@@ -32,10 +38,7 @@ Pages[1] = function()
     local function action_on(idx)
         local x, y = (idx-1)%wrap + 1, (idx-1)//wrap + 1
 
-        local oct = y + ((x - 1) // #scale)
-        local deg = ((x - 1) % #scale) + 1
-        local ratio = scale[deg]
-        local hz = 110 * 2^(oct - 3) * ratio
+        local hz = tune.hz(x, y) * 440
 
         engine.start(idx, hz)
     end
@@ -147,6 +150,8 @@ _app = {
 }
 
 function init()
+    tune.params()
+    params:add_separator('')
     polysub:params()
     params:set('hzlag', 0)
 end

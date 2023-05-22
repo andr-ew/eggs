@@ -13,3 +13,6 @@
 [submodule "lib/yolk-lib"]
 	path = lib/yolk-lib
 	url = https://github.com/andr-ew/yolk-lib
+[submodule "lib/tune"]
+	path = lib/tune
+	url = https://github.com/andr-ew/tune
