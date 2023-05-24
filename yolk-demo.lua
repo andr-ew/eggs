@@ -12,7 +12,15 @@ yolk = include 'lib/yolk-lib/yolk-lib'
 
 tune = include 'lib/tune/tune'
 local tunings, scale_groups = include 'lib/tune/scales'
-tune.setup{ tunings = tunings, scale_groups = scale_groups, presets = 8 }
+Tune = include 'lib/tune/ui'
+
+tune.setup{ 
+    tunings = tunings, scale_groups = scale_groups, presets = 8,
+    action = function() 
+        crops.dirty.grid = true 
+        crops.dirty.screen = true
+    end
+}
 
 polysub = require 'engine/polysub'
 engine.name = 'PolySub'
@@ -53,6 +61,7 @@ Pages[1] = function()
 
     local _patrec = Produce.grid.pattern_recorder()
     local _momentaries = Grid.momentaries()
+    local _frets = Tune.grid.fretboard()
 
     return function()
         _patrec{
@@ -61,6 +70,11 @@ Pages[1] = function()
             events = handlers,
         }
 
+        _frets{
+            x = 1, y = 8, size = size, wrap = wrap,
+            flow = 'right', flow_wrap = 'up',
+            levels = { 0, 4 },
+        }
         _momentaries{
             x = 1, y = 8, size = size, wrap = wrap,
             flow = 'right', flow_wrap = 'up',
@@ -124,17 +138,29 @@ Pages[2] = function()
     end
 end
 
+Pages[3] = function()
+    local _tonic = Tune.grid.tonic()
+
+    return function()
+        _tonic{
+            left = 1, top = 7, levels = { 4, 15 },
+            state = Tune.of_preset_param('tonic'),
+        }
+    end
+end
+
 local App = {}
 
 function App.grid()
-    local _pages = { Pages[1](), Pages[2]() }
+    local _pages = {}
+    for i,Page in ipairs(Pages) do _pages[i] = Page() end
     
     local tab = 1
     local _tab = Grid.integer()
 
     return function()
         _tab{
-            x = 1, y = 1, size = 2, levels = { 4, 15 },
+            x = 1, y = 1, size = #_pages, levels = { 4, 15 },
             state = { 
                 tab, 
                 function(v) tab = v; crops.dirty.grid = true end
@@ -154,9 +180,10 @@ function init()
     params:add_separator('')
     polysub:params()
     params:set('hzlag', 0)
+
+    crops.connect_grid(_app.grid, g)
+    -- crops.connect_enc(_app.norns)
+    -- crops.connect_key(_app.norns)
+    -- crops.connect_screen(_app.norns)
 end
 
-crops.connect_grid(_app.grid, g)
--- crops.connect_enc(_app.norns)
--- crops.connect_key(_app.norns)
--- crops.connect_screen(_app.norns)
