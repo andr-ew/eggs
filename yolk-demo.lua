@@ -140,12 +140,27 @@ end
 
 Pages[3] = function()
     local _tonic = Tune.grid.tonic()
+    
+    local _degs_bg = Tune.grid.scale_degrees_background()
+    local _degs = {}
+    for i = 1, 12 do 
+        _degs[i] = Tune.grid.scale_degree()
+    end
 
     return function()
         _tonic{
             left = 1, top = 7, levels = { 4, 15 },
             state = Tune.of_preset_param('tonic'),
         }
+        _degs_bg{
+            left = 1, top = 4, level = 4
+        }
+        for i,_deg in ipairs(_degs) do
+            _deg{
+                left = 1, top = 4, levels = { 8, 15 },
+                degree = i, state = Tune.of_preset_param('enable_'..i)
+            }
+        end
     end
 end
 
