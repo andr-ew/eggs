@@ -186,19 +186,40 @@ function App.grid()
     end
 end
 
-_app = {
-    grid = App.grid(), 
-}
+function App.norns()
+    local x, y
+    do
+        local top, bottom = 10, 64-6
+        local left, right = 2, 128-2
+        local mul = { x = (right - left) / 2, y = (bottom - top) / 2 }
+        x = { left, left + mul.x*5/4, [1.5] = 24  }
+        y = { top, bottom - mul.y*1/2, [1.5] = 20 }
+    end
 
-function init()
-    tune.params()
-    params:add_separator('')
-    polysub:params()
-    params:set('hzlag', 0)
+    local _degs = Tune.screen.scale_degrees()    
 
-    crops.connect_grid(_app.grid, g)
-    -- crops.connect_enc(_app.norns)
-    -- crops.connect_key(_app.norns)
-    -- crops.connect_screen(_app.norns)
+    return function()
+        _degs{
+            x = x[1], y = y[1.5]
+        }
+    end
 end
 
+_app = {
+    grid = App.grid(), 
+    norns = App.norns()
+}
+
+tune.params()
+params:add_separator('')
+polysub:params()
+
+crops.connect_grid(_app.grid, g)
+crops.connect_enc(_app.norns)
+crops.connect_key(_app.norns)
+crops.connect_screen(_app.norns)
+
+function init()
+    params:set('hzlag', 0)
+    params:bang()
+end
