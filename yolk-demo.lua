@@ -37,6 +37,12 @@ pattern = {
 
 --TODO: block input during playback
 
+params:add{
+    type = 'number', id = 'oct 1',
+    min = -2, max = 2, default = 0,
+    action = function() crops.dirty.grid = true end
+}
+
 local Pages = {}
 
 Pages[1] = function()
@@ -46,7 +52,7 @@ Pages[1] = function()
     local function action_on(idx)
         local x, y = (idx-1)%wrap + 1, (idx-1)//wrap + 1
 
-        local hz = tune.hz(x, y) * 440
+        local hz = tune.hz(x, y, nil, params:get('oct 1')) * 55
 
         engine.start(idx, hz)
     end
@@ -60,6 +66,10 @@ Pages[1] = function()
     }
 
     local _patrec = Produce.grid.pattern_recorder()
+
+    local _oct = Grid.integer()
+    local _oct_mark = Grid.fill()
+
     local _momentaries = Grid.momentaries()
     local _frets = Tune.grid.fretboard()
 
@@ -70,10 +80,18 @@ Pages[1] = function()
             events = handlers,
         }
 
+        _oct_mark{ x = 6, y = 1, level = 4 }
+        _oct{
+            x = 4, y = 1, size = 5, levels = { 0, 15 },
+            min = params:lookup_param('oct 1').min,
+            state = crops.of_param('oct 1')
+        }
+
         _frets{
             x = 1, y = 8, size = size, wrap = wrap,
             flow = 'right', flow_wrap = 'up',
             levels = { 0, 4 },
+            toct = params:get('oct 1')
         }
         _momentaries{
             x = 1, y = 8, size = size, wrap = wrap,
@@ -214,7 +232,7 @@ tune.params()
 params:add_separator('')
 polysub:params()
 
-crops.connect_grid(_app.grid, g)
+crops.connect_grid(_app.grid, g, 240)
 crops.connect_enc(_app.norns)
 crops.connect_key(_app.norns)
 crops.connect_screen(_app.norns)
