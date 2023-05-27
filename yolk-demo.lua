@@ -43,6 +43,10 @@ params:add{
     action = function() crops.dirty.grid = true end
 }
 
+tune.params()
+params:add_separator('')
+polysub:params()
+
 local Pages = {}
 
 Pages[1] = function()
@@ -207,19 +211,72 @@ end
 function App.norns()
     local x, y
     do
-        local top, bottom = 10, 64-6
+        local top, bottom = 8, 64-2
         local left, right = 2, 128-2
         local mul = { x = (right - left) / 2, y = (bottom - top) / 2 }
         x = { left, left + mul.x*5/4, [1.5] = 24  }
-        y = { top, bottom - mul.y*1/2, [1.5] = 20 }
+        y = { top, bottom - 22, bottom, [1.5] = 20, }
     end
 
     local _degs = Tune.screen.scale_degrees()    
+    
+    local _scale = { enc = Enc.integer(), screen = Screen.list() }
+    local _tuning = { enc = Enc.integer(), screen = Screen.list() }
+    local _rows = { enc = Enc.integer(), screen = Screen.list() }
+    local _frets = { key = Key.integer(), screen = Screen.list() }
+
+    local fret_id = tune.get_preset_param_id('fret_marks')
+    local fret_opts = params:lookup_param(fret_id).options
+    local frets_text = { 'frets' }
+    for _,v in ipairs(fret_opts) do table.insert(frets_text, v) end
 
     return function()
         _degs{
             x = x[1], y = y[1.5]
         }
+        do
+            local id = tune.get_scale_param_id()
+            _scale.enc{
+                n = 1, max = #params:lookup_param(id).options,
+                state = crops.of_param(id)
+            }
+            _scale.screen{
+                x = x[1], y = y[1],
+                text = { scale = params:string(id) }
+            }
+        end
+        do
+            local id = tune.get_preset_param_id('tuning')
+            _tuning.enc{
+                n = 2, max = #params:lookup_param(id).options,
+                state = crops.of_param(id)
+            }
+            _tuning.screen{
+                x = x[1], y = y[2], flow = 'down',
+                text = { tuning = params:string(id) }
+            }
+        end
+        do
+            local id = tune.get_preset_param_id('row_tuning')
+            _rows.enc{
+                n = 3, max = params:lookup_param(id).max,
+                state = crops.of_param(id)
+            }
+            _rows.screen{
+                x = x[2], y = y[2], flow = 'down',
+                text = { rows = params:string(id) }
+            }
+        end
+        do
+            _frets.key{
+                n_prev = 2, n_next = 3, max = #fret_opts,
+                state = crops.of_param(fret_id)
+            }
+            _frets.screen{
+                x = x[1], y = y[3],
+                text = frets_text, focus = params:get(fret_id) + 1,
+            }
+        end
     end
 end
 
@@ -227,10 +284,6 @@ _app = {
     grid = App.grid(), 
     norns = App.norns()
 }
-
-tune.params()
-params:add_separator('')
-polysub:params()
 
 crops.connect_grid(_app.grid, g, 240)
 crops.connect_enc(_app.norns)
