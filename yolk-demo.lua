@@ -71,8 +71,7 @@ Pages[1] = function()
 
     local _patrec = Produce.grid.pattern_recorder()
 
-    local _oct = Grid.integer()
-    local _oct_mark = Grid.fill()
+    local _oct = Produce.grid.integer_trigger()
 
     local _momentaries = Grid.momentaries()
     local _frets = Tune.grid.fretboard()
@@ -84,10 +83,12 @@ Pages[1] = function()
             events = handlers,
         }
 
-        _oct_mark{ x = 6, y = 1, level = 4 }
         _oct{
-            x = 4, y = 1, size = 5, levels = { 0, 15 },
+            x_next = 8, y_next = 1,
+            x_prev = 8, y_prev = 2,
+            levels = { 4, 15 }, wrap = false,
             min = params:lookup_param('oct 1').min,
+            max = params:lookup_param('oct 1').max,
             state = crops.of_param('oct 1')
         }
 
