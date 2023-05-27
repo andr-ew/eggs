@@ -37,11 +37,24 @@ pattern = {
 
 --TODO: block input during playback
 
-params:add{
-    type = 'number', id = 'oct 1',
-    min = -2, max = 2, default = 0,
-    action = function() crops.dirty.grid = true end
-}
+for i = 1, 1 do
+    params:add_separator(i)
+    params:add{
+        type = 'number', id = 'oct '..i, name = 'oct',
+        min = -5, max = 5, default = 0,
+        action = function() crops.dirty.grid = true end
+    }
+    params:add{
+        type = 'number', id = 'column '..i, name = 'column',
+        min = -16, max = 16, default = 0,
+        action = function() crops.dirty.grid = true end
+    }
+    params:add{
+        type = 'number', id = 'row '..i, name = 'row',
+        min = -16, max = 16, default = 0,
+        action = function() crops.dirty.grid = true end
+    }
+end
 
 tune.params()
 params:add_separator('')
@@ -54,9 +67,10 @@ Pages[1] = function()
     local wrap = 16
 
     local function action_on(idx)
-        local x, y = (idx-1)%wrap + 1, (idx-1)//wrap + 1
+        local column = (idx-1)%wrap + 1 + params:get('column 1')
+        local row = (idx-1)//wrap + 1 + params:get('row 1')
 
-        local hz = tune.hz(x, y, nil, params:get('oct 1')) * 55
+        local hz = tune.hz(column, row, nil, params:get('oct 1')) * 55
 
         engine.start(idx, hz)
     end
@@ -71,7 +85,8 @@ Pages[1] = function()
 
     local _patrec = Produce.grid.pattern_recorder()
 
-    local _oct = Produce.grid.integer_trigger()
+    local _column = Produce.grid.integer_trigger()
+    local _row = Produce.grid.integer_trigger()
 
     local _momentaries = Grid.momentaries()
     local _frets = Tune.grid.fretboard()
@@ -83,20 +98,30 @@ Pages[1] = function()
             events = handlers,
         }
 
-        _oct{
+        _column{
+            x_next = 7, y_next = 1,
+            x_prev = 6, y_prev = 1,
+            levels = { 4, 15 }, wrap = false,
+            min = params:lookup_param('column 1').min,
+            max = params:lookup_param('column 1').max,
+            state = crops.of_param('column 1')
+        }
+        _row{
             x_next = 8, y_next = 1,
             x_prev = 8, y_prev = 2,
             levels = { 4, 15 }, wrap = false,
-            min = params:lookup_param('oct 1').min,
-            max = params:lookup_param('oct 1').max,
-            state = crops.of_param('oct 1')
+            min = params:lookup_param('row 1').min,
+            max = params:lookup_param('row 1').max,
+            state = crops.of_param('row 1')
         }
 
         _frets{
             x = 1, y = 8, size = size, wrap = wrap,
             flow = 'right', flow_wrap = 'up',
             levels = { 0, 4 },
-            toct = params:get('oct 1')
+            toct = params:get('oct 1'),
+            column_offset = params:get('column 1'),
+            row_offset = params:get('row 1'),
         }
         _momentaries{
             x = 1, y = 8, size = size, wrap = wrap,
