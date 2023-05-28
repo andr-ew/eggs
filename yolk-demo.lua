@@ -1,4 +1,5 @@
 pattern_time = include 'lib/pattern_time/pattern_time'
+mute_group = include 'lib/pattern_time/mute_group'
 
 include 'lib/crops/core'
 Grid = include 'lib/crops/components/grid'
@@ -29,11 +30,23 @@ scale = { 1/1, 9/8, 81/64, 3/2, 27/16 }
 
 g = grid.connect()
 
-pattern = { 
-    pattern_time.new(),
-    pattern_time.new() 
-}
--- mpat = multipattern.new(pattern)
+local pat_count = 9
+
+pattern_groups = {}
+mpats = {}
+mute_groups = {}
+
+for i = 1,2 do
+    pattern_groups[i] = {}
+    mpats[i] = {}
+    for ii = 1,pat_count do
+        pattern_groups[i][ii] = pattern_time.new()
+        mpats[i][ii] = multipattern.new(pattern_groups[i][ii])
+    end
+
+    mute_groups[i] = mute_group.new(pattern_groups[i])
+end
+
 
 --TODO: block input during playback
 
@@ -79,12 +92,16 @@ Pages[1] = function()
     local state, handlers = yolk.poly{
         action_on = action_on,
         action_off = action_off,
-        pattern = pattern[1],
+        multipattern = mpats[1],
+        id = 'poly 1',
         size = size,
     }
-    pattern[1]:set_all_hooks(handlers)
+    mute_groups[1]:set_all_hooks(handlers)
 
-    local _patrec = Produce.grid.pattern_recorder()
+    local _patrecs = {}
+    for i = 1, #pattern_groups[1] do
+        _patrecs[i] = Produce.grid.pattern_recorder()
+    end
 
     local _column = Produce.grid.integer_trigger()
     local _row = Produce.grid.integer_trigger()
@@ -93,10 +110,12 @@ Pages[1] = function()
     local _frets = Tune.grid.fretboard()
 
     return function()
-        _patrec{
-            x = 1, y = 2,
-            pattern = pattern[1],
-        }
+        for i,_patrec in ipairs(_patrecs) do
+            _patrec{
+                x = 4 + i - 1, y = 1,
+                pattern = pattern_groups[1][i],
+            }
+        end
 
         _column{
             x_next = 14, y_next = 1,
@@ -151,22 +170,29 @@ Pages[2] = function()
         end
     end
 
-    local states, handlers, interrupt = yolk.mono{
+    local states, handlers = yolk.mono{
         action = action,
-        pattern = pattern[2],
+        multipattern = mpats[2],
+        id = 'mono 1',
         size = size,
     }
+    mute_groups[2]:set_all_hooks(handlers)
     
-    local _patrec = Produce.grid.pattern_recorder()
+    local _patrecs = {}
+    for i = 1, #pattern_groups[2] do
+        _patrecs[i] = Produce.grid.pattern_recorder()
+    end
+
     local _momentaries = Grid.momentaries()
     local _integer = Grid.integer()
 
     return function()
-        _patrec{
-            x = 1, y = 2,
-            pattern = pattern[2],
-            events = handlers,
-        }
+        for i,_patrec in ipairs(_patrecs) do
+            _patrec{
+                x = 4 + i - 1, y = 1,
+                pattern = pattern_groups[2][i],
+            }
+        end
 
         if crops.mode == 'input' then
             _momentaries{
