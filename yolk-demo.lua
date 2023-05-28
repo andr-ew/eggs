@@ -99,16 +99,16 @@ Pages[1] = function()
         }
 
         _column{
-            x_next = 7, y_next = 1,
-            x_prev = 6, y_prev = 1,
+            x_next = 14, y_next = 1,
+            x_prev = 13, y_prev = 1,
             levels = { 4, 15 }, wrap = false,
             min = params:lookup_param('column 1').min,
             max = params:lookup_param('column 1').max,
             state = crops.of_param('column 1')
         }
         _row{
-            x_next = 8, y_next = 1,
-            x_prev = 8, y_prev = 2,
+            x_next = 16, y_next = 1,
+            x_prev = 16, y_prev = 2,
             levels = { 4, 15 }, wrap = false,
             min = params:lookup_param('row 1').min,
             max = params:lookup_param('row 1').max,
