@@ -82,6 +82,7 @@ Pages[1] = function()
         pattern = pattern[1],
         size = size,
     }
+    pattern[1]:set_all_hooks(handlers)
 
     local _patrec = Produce.grid.pattern_recorder()
 
@@ -95,7 +96,6 @@ Pages[1] = function()
         _patrec{
             x = 1, y = 2,
             pattern = pattern[1],
-            events = handlers,
         }
 
         _column{
