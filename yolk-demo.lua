@@ -50,7 +50,7 @@ end
 
 --TODO: block input during playback
 
-for i = 1, 1 do
+for i = 1, 2 do
     params:add_separator(i)
     params:add{
         type = 'number', id = 'oct '..i, name = 'oct',
@@ -156,12 +156,10 @@ Pages[2] = function()
     local wrap = 16
 
     local function action(idx, gate)
-        local x, y = (idx-1)%wrap + 1, (idx-1)//wrap + 1
+        local column = (idx-1)%wrap + 1 + params:get('column 2')
+        local row = (idx-1)//wrap + 1 + params:get('row 2')
 
-        local oct = y + ((x - 1) // #scale)
-        local deg = ((x - 1) % #scale) + 1
-        local ratio = scale[deg]
-        local hz = 110 * 2^(oct - 3) * ratio
+        local hz = tune.hz(column, row, nil, params:get('oct 2')) * 55
 
         if gate > 0 then
             engine.start(0, hz)
@@ -182,9 +180,13 @@ Pages[2] = function()
     for i = 1, #pattern_groups[2] do
         _patrecs[i] = Produce.grid.pattern_recorder()
     end
+    
+    local _column = Produce.grid.integer_trigger()
+    local _row = Produce.grid.integer_trigger()
 
     local _momentaries = Grid.momentaries()
     local _integer = Grid.integer()
+    local _frets = Tune.grid.fretboard()
 
     return function()
         for i,_patrec in ipairs(_patrecs) do
@@ -194,6 +196,31 @@ Pages[2] = function()
             }
         end
 
+        _column{
+            x_next = 14, y_next = 1,
+            x_prev = 13, y_prev = 1,
+            levels = { 4, 15 }, wrap = false,
+            min = params:lookup_param('column 2').min,
+            max = params:lookup_param('column 2').max,
+            state = crops.of_param('column 2')
+        }
+        _row{
+            x_next = 16, y_next = 1,
+            x_prev = 16, y_prev = 2,
+            levels = { 4, 15 }, wrap = false,
+            min = params:lookup_param('row 2').min,
+            max = params:lookup_param('row 2').max,
+            state = crops.of_param('row 2')
+        }
+
+        _frets{
+            x = 1, y = 8, size = size, wrap = wrap,
+            flow = 'right', flow_wrap = 'up',
+            levels = { 0, 4 },
+            toct = params:get('oct 2'),
+            column_offset = params:get('column 2'),
+            row_offset = params:get('row 2'),
+        }
         if crops.mode == 'input' then
             _momentaries{
                 x = 1, y = 8, size = size, wrap = wrap,
