@@ -6,7 +6,9 @@ Grid = include 'lib/crops/components/grid'
 Enc = include 'lib/crops/components/enc'
 Key = include 'lib/crops/components/key'
 Screen = include 'lib/crops/components/screen'
-Produce = include 'lib/produce/produce'
+Produce = {}
+Produce.grid = include 'lib/produce/grid'
+Produce.screen = include 'lib/produce/screen'
 
 -- multipattern = include 'lib/multipattern/multipattern'
 yolk = include 'lib/yolk-lib/yolk-lib'
