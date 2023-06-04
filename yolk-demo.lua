@@ -11,7 +11,7 @@ Produce.grid = include 'lib/produce/grid'
 Produce.screen = include 'lib/produce/screen'
 
 -- multipattern = include 'lib/multipattern/multipattern'
-yolk = include 'lib/yolk-lib/yolk-lib'
+-- yolk = include 'lib/yolk-lib/yolk-lib'
 
 tune = include 'lib/tune/tune'
 local tunings, scale_groups = include 'lib/tune/scales'
@@ -91,16 +91,6 @@ Pages[1] = function()
     end
     local function action_off(idx) engine.stop(idx) end
 
-    local state, handlers = yolk.poly{
-        action_on = action_on,
-        action_off = action_off,
-        -- multipattern = mpats[1],
-        pattern = mute_groups[1],
-        id = 'poly 1',
-        size = size,
-    }
-    mute_groups[1]:set_all_hooks(handlers)
-
     local _patrecs = {}
     for i = 1, #pattern_groups[1] do
         _patrecs[i] = Produce.grid.pattern_recorder()
@@ -109,8 +99,13 @@ Pages[1] = function()
     local _column = Produce.grid.integer_trigger()
     local _row = Produce.grid.integer_trigger()
 
-    local _momentaries = Grid.momentaries()
     local _frets = Tune.grid.fretboard()
+    local _keymap = Produce.grid.keymap_poly{
+        action_on = action_on,
+        action_off = action_off,
+        pattern = mute_groups[1],
+        size = size,
+    }
 
     return function()
         for i,_patrec in ipairs(_patrecs) do
@@ -145,11 +140,10 @@ Pages[1] = function()
             column_offset = params:get('column 1'),
             row_offset = params:get('row 1'),
         }
-        _momentaries{
-            x = 1, y = 8, size = size, wrap = wrap,
+        _keymap{
+            x = 1, y = 8, wrap = wrap,
             flow = 'right', flow_wrap = 'up',
             levels = { 0, 15 },
-            state = state,
         }
     end
 end
@@ -170,15 +164,6 @@ Pages[2] = function()
             engine.stop(0)
         end
     end
-
-    local states, handlers = yolk.mono{
-        action = action,
-        -- multipattern = mpats[2],
-        pattern = mute_groups[2],
-        id = 'mono 1',
-        size = size,
-    }
-    mute_groups[2]:set_all_hooks(handlers)
     
     local _patrecs = {}
     for i = 1, #pattern_groups[2] do
@@ -188,9 +173,13 @@ Pages[2] = function()
     local _column = Produce.grid.integer_trigger()
     local _row = Produce.grid.integer_trigger()
 
-    local _momentaries = Grid.momentaries()
-    local _integer = Grid.integer()
+
     local _frets = Tune.grid.fretboard()
+    local _keymap = Produce.grid.keymap_mono{
+        action = action,
+        pattern = mute_groups[2],
+        size = size,
+    }
 
     return function()
         for i,_patrec in ipairs(_patrecs) do
@@ -225,21 +214,10 @@ Pages[2] = function()
             column_offset = params:get('column 2'),
             row_offset = params:get('row 2'),
         }
-        if crops.mode == 'input' then
-            _momentaries{
-                x = 1, y = 8, size = size, wrap = wrap,
-                flow = 'right', flow_wrap = 'up',
-                state = states.momentaries,
-            }
-        elseif crops.mode == 'redraw' then
-            if states.gate[1] > 0 then
-                _integer{
-                    x = 1, y = 8, size = size, wrap = wrap,
-                    flow = 'right', flow_wrap = 'up',
-                    state = states.integer,
-                }                
-            end
-        end
+        _keymap{
+            x = 1, y = 8, size = size, wrap = wrap,
+            flow = 'right', flow_wrap = 'up',
+        }
     end
 end
 
