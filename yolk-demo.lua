@@ -8,7 +8,7 @@ Key = include 'lib/crops/components/key'
 Screen = include 'lib/crops/components/screen'
 Produce = include 'lib/produce/produce'
 
-multipattern = include 'lib/multipattern/multipattern'
+-- multipattern = include 'lib/multipattern/multipattern'
 yolk = include 'lib/yolk-lib/yolk-lib'
 
 tune = include 'lib/tune/tune'
@@ -33,15 +33,15 @@ g = grid.connect()
 local pat_count = 9
 
 pattern_groups = {}
-mpats = {}
+-- mpats = {}
 mute_groups = {}
 
 for i = 1,2 do
     pattern_groups[i] = {}
-    mpats[i] = {}
+    -- mpats[i] = {}
     for ii = 1,pat_count do
         pattern_groups[i][ii] = pattern_time.new()
-        mpats[i][ii] = multipattern.new(pattern_groups[i][ii])
+        -- mpats[i][ii] = multipattern.new(pattern_groups[i][ii])
     end
 
     mute_groups[i] = mute_group.new(pattern_groups[i])
@@ -92,7 +92,8 @@ Pages[1] = function()
     local state, handlers = yolk.poly{
         action_on = action_on,
         action_off = action_off,
-        multipattern = mpats[1],
+        -- multipattern = mpats[1],
+        pattern = mute_groups[1],
         id = 'poly 1',
         size = size,
     }
@@ -170,7 +171,8 @@ Pages[2] = function()
 
     local states, handlers = yolk.mono{
         action = action,
-        multipattern = mpats[2],
+        -- multipattern = mpats[2],
+        pattern = mute_groups[2],
         id = 'mono 1',
         size = size,
     }
