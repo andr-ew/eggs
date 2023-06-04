@@ -10,9 +10,6 @@ Produce = {}
 Produce.grid = include 'lib/produce/grid'
 Produce.screen = include 'lib/produce/screen'
 
--- multipattern = include 'lib/multipattern/multipattern'
--- yolk = include 'lib/yolk-lib/yolk-lib'
-
 tune = include 'lib/tune/tune'
 local tunings, scale_groups = include 'lib/tune/scales'
 Tune = include 'lib/tune/ui'
