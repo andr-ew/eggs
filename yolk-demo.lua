@@ -75,6 +75,47 @@ local Pages = {
     tuning = {},
 }
 
+local function Rate_reverse()
+    local _reverse = Grid.toggle()
+    local _rate_mark = Grid.fill()
+    local _rate = Grid.integer()
+
+    return function(props)
+        local pattern = props.mute_group:get_playing_pattern()
+
+        if pattern then
+            _reverse{
+                x = 1, y = 2, levels = { 4, 15 },
+                state = {
+                    pattern.reverse and 1 or 0,
+                    function(v)
+                        pattern:set_reverse(v == 1)
+
+                        crops.dirty.grid = true
+                    end
+                }
+            }
+            _rate_mark{
+                x = 7, y = 2, level = 4,
+            }
+            do
+                local tf = pattern.time_factor
+                _rate{
+                    x = 2, y = 2, size = 11, min = -5,
+                    state = {
+                        (tf < 1) and ((1/tf) - 1) or ((-tf) + 1),
+                        function(v)
+                            pattern.time_factor = (v >= 0) and (1/(v + 1)) or (-(v - 1))
+
+                            crops.dirty.grid = true
+                        end
+                    }
+                }
+            end
+        end
+    end
+end
+
 Pages[1].grid = function()
     local size = 128-16-16
     local wrap = 16
@@ -94,6 +135,8 @@ Pages[1].grid = function()
         _patrecs[i] = Produce.grid.pattern_recorder()
     end
 
+    local _rate_rev = Rate_reverse()
+
     local _column = Produce.grid.integer_trigger()
     local _row = Produce.grid.integer_trigger()
 
@@ -112,6 +155,10 @@ Pages[1].grid = function()
                 pattern = pattern_groups[1][i],
             }
         end
+
+        _rate_rev{
+            mute_group = mute_groups[1],
+        }
 
         _column{
             x_next = 14, y_next = 1,
@@ -168,6 +215,8 @@ Pages[2].grid = function()
         _patrecs[i] = Produce.grid.pattern_recorder()
     end
     
+    local _rate_rev = Rate_reverse()
+    
     local _column = Produce.grid.integer_trigger()
     local _row = Produce.grid.integer_trigger()
 
@@ -186,6 +235,10 @@ Pages[2].grid = function()
                 pattern = pattern_groups[2][i],
             }
         end
+        
+        _rate_rev{
+            mute_group = mute_groups[2],
+        }
 
         _column{
             x_next = 14, y_next = 1,
