@@ -25,27 +25,23 @@ tune.setup{
 polysub = require 'engine/polysub'
 engine.name = 'PolySub'
 
-scale = { 1/1, 9/8, 81/64, 3/2, 27/16 }
-
 g = grid.connect()
 
 local pat_count = 9
 
 pattern_groups = {}
--- mpats = {}
 mute_groups = {}
 
 for i = 1,2 do
     pattern_groups[i] = {}
-    -- mpats[i] = {}
     for ii = 1,pat_count do
         pattern_groups[i][ii] = pattern_time.new()
-        -- mpats[i][ii] = multipattern.new(pattern_groups[i][ii])
     end
 
     mute_groups[i] = mute_group.new(pattern_groups[i])
 end
 
+k1 = false
 
 --TODO: block input during playback
 
@@ -72,9 +68,14 @@ tune.params()
 params:add_separator('')
 polysub:params()
 
-local Pages = {}
+local Pages = {
+    [1] = {}, --poly
+    [2] = {}, --mono
+    [3] = {}, --sequeggiator
+    tuning = {},
+}
 
-Pages[1] = function()
+Pages[1].grid = function()
     local size = 128-16-16
     local wrap = 16
 
@@ -145,7 +146,7 @@ Pages[1] = function()
     end
 end
 
-Pages[2] = function()
+Pages[2].grid = function()
     local size = 128-16-16
     local wrap = 16
 
@@ -218,7 +219,12 @@ Pages[2] = function()
     end
 end
 
-Pages[3] = function()
+Pages[3].grid = function()
+    return function()
+    end
+end
+
+Pages.tuning.grid = function()
     local _tonic = Tune.grid.tonic()
     
     local _degs_bg = Tune.grid.scale_degrees_background()
@@ -248,34 +254,41 @@ local App = {}
 
 function App.grid()
     local _pages = {}
-    for i,Page in ipairs(Pages) do _pages[i] = Page() end
+    for i,Page in ipairs(Pages) do _pages[i] = Page.grid() end
+
+    local _tuning = Pages.tuning.grid()
     
     local tab = 1
     local _tab = Grid.integer()
 
     return function()
-        _tab{
-            x = 1, y = 1, size = #_pages, levels = { 4, 15 },
-            state = { 
-                tab, 
-                function(v) tab = v; crops.dirty.grid = true end
+        if not k1 then
+            _tab{
+                x = 1, y = 1, size = #_pages, levels = { 4, 15 },
+                state = { 
+                    tab, 
+                    function(v) tab = v; crops.dirty.grid = true end
+                }
             }
-        }
 
-        _pages[tab]()
+            _pages[tab]()
+        else
+            _tuning()
+        end
     end
 end
+    
+local x, y
+do
+    local top, bottom = 8, 64-2
+    local left, right = 2, 128-2
+    local mul = { x = (right - left) / 2, y = (bottom - top) / 2 }
+    x = { left, left + mul.x*5/4, [1.5] = 24  }
+    y = { top, bottom - 22, bottom, [1.5] = 20, }
+end
 
-function App.norns()
-    local x, y
-    do
-        local top, bottom = 8, 64-2
-        local left, right = 2, 128-2
-        local mul = { x = (right - left) / 2, y = (bottom - top) / 2 }
-        x = { left, left + mul.x*5/4, [1.5] = 24  }
-        y = { top, bottom - 22, bottom, [1.5] = 20, }
-    end
 
+function Pages.tuning.norns()
     local _degs = Tune.screen.scale_degrees()    
     
     local _scale = { enc = Enc.integer(), screen = Screen.list() }
@@ -335,6 +348,32 @@ function App.norns()
                 text = frets_text, focus = params:get(fret_id) + 1,
             }
         end
+    end
+end
+
+function App.norns()
+    local _text = Screen.text()
+    local _tuning = Pages.tuning.norns()
+
+    local _k1 = Key.momentary()
+
+    return function()
+        _k1{
+            n = 1,
+            state = {
+                k1 and 1 or 0,
+                function(v) 
+                    k1 = (v==1) 
+
+                    crops.dirty.grid = true
+                    crops.dirty.screen = true
+                end
+            }
+        }
+
+        if not k1 then 
+            _text{ x = x[1], y = y[1], text = 'yolk-demo' }
+        else _tuning() end
     end
 end
 
