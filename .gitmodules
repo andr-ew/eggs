@@ -1,12 +1,12 @@
 [submodule "lib/crops"]
 	path = lib/crops
 	url = https://github.com/andr-ew/crops
-[submodule "lib/pattern_time"]
-	path = lib/pattern_time
-	url = https://github.com/andr-ew/pattern_time
 [submodule "lib/produce"]
 	path = lib/produce
 	url = https://github.com/andr-ew/produce
 [submodule "lib/tune"]
 	path = lib/tune
 	url = https://github.com/andr-ew/tune
+[submodule "lib/pattern_time_extended"]
+	path = lib/pattern_time_extended
+	url = https://github.com/andr-ew/pattern_time_extended

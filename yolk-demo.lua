@@ -1,5 +1,5 @@
-pattern_time = include 'lib/pattern_time/pattern_time'
-mute_group = include 'lib/pattern_time/mute_group'
+pattern_time = include 'lib/pattern_time_extended/pattern_time_extended'
+mute_group = include 'lib/pattern_time_extended/mute_group'
 
 include 'lib/crops/core'
 Grid = include 'lib/crops/components/grid'
