@@ -320,7 +320,15 @@ function App.grid()
                 x = 1, y = 1, size = #_pages, levels = { 4, 15 },
                 state = { 
                     tab, 
-                    function(v) tab = v; crops.dirty.grid = true end
+                    function(v) 
+                        tab = v
+
+                        for _,mute_group in ipairs(mute_groups) do
+                            mute_group:stop()
+                        end
+
+                        crops.dirty.grid = true 
+                    end
                 }
             }
 
