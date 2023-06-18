@@ -14,6 +14,8 @@ tune = include 'lib/tune/tune'
 local tunings, scale_groups = include 'lib/tune/scales'
 Tune = include 'lib/tune/ui'
 
+Arqueggiator = include 'lib/arqueggiator/ui'
+
 tune.setup{ 
     tunings = tunings, scale_groups = scale_groups, presets = 8,
     action = function() 
@@ -45,20 +47,20 @@ k1 = false
 
 --TODO: block input during playback
 
-for i = 1, 2 do
-    params:add_separator(i)
+do
+    params:add_separator('transpose')
     params:add{
-        type = 'number', id = 'oct '..i, name = 'oct',
+        type = 'number', id = 'oct', name = 'oct',
         min = -5, max = 5, default = 0,
         action = function() crops.dirty.grid = true end
     }
     params:add{
-        type = 'number', id = 'column '..i, name = 'column',
+        type = 'number', id = 'column', name = 'column',
         min = -16, max = 16, default = 0,
         action = function() crops.dirty.grid = true end
     }
     params:add{
-        type = 'number', id = 'row '..i, name = 'row',
+        type = 'number', id = 'row', name = 'row',
         min = -16, max = 16, default = 0,
         action = function() crops.dirty.grid = true end
     }
@@ -121,10 +123,10 @@ Pages[1].grid = function()
     local wrap = 16
 
     local function action_on(idx)
-        local column = (idx-1)%wrap + 1 + params:get('column 1')
-        local row = (idx-1)//wrap + 1 + params:get('row 1')
+        local column = (idx-1)%wrap + 1 + params:get('column')
+        local row = (idx-1)//wrap + 1 + params:get('row')
 
-        local hz = tune.hz(column, row, nil, params:get('oct 1')) * 55
+        local hz = tune.hz(column, row, nil, params:get('oct')) * 55
 
         engine.start(idx, hz)
     end
@@ -136,9 +138,6 @@ Pages[1].grid = function()
     end
 
     local _rate_rev = Rate_reverse()
-
-    local _column = Produce.grid.integer_trigger()
-    local _row = Produce.grid.integer_trigger()
 
     local _frets = Tune.grid.fretboard()
     local _keymap = Produce.grid.keymap_poly{
@@ -160,30 +159,13 @@ Pages[1].grid = function()
             mute_group = mute_groups[1],
         }
 
-        _column{
-            x_next = 14, y_next = 1,
-            x_prev = 13, y_prev = 1,
-            levels = { 4, 15 }, wrap = false,
-            min = params:lookup_param('column 1').min,
-            max = params:lookup_param('column 1').max,
-            state = crops.of_param('column 1')
-        }
-        _row{
-            x_next = 16, y_next = 1,
-            x_prev = 16, y_prev = 2,
-            levels = { 4, 15 }, wrap = false,
-            min = params:lookup_param('row 1').min,
-            max = params:lookup_param('row 1').max,
-            state = crops.of_param('row 1')
-        }
-
         _frets{
             x = 1, y = 8, size = size, wrap = wrap,
             flow = 'right', flow_wrap = 'up',
             levels = { 0, 4 },
-            toct = params:get('oct 1'),
-            column_offset = params:get('column 1'),
-            row_offset = params:get('row 1'),
+            toct = params:get('oct'),
+            column_offset = params:get('column'),
+            row_offset = params:get('row'),
         }
         _keymap{
             x = 1, y = 8, wrap = wrap,
@@ -198,10 +180,10 @@ Pages[2].grid = function()
     local wrap = 16
 
     local function action(idx, gate)
-        local column = (idx-1)%wrap + 1 + params:get('column 2')
-        local row = (idx-1)//wrap + 1 + params:get('row 2')
+        local column = (idx-1)%wrap + 1 + params:get('column')
+        local row = (idx-1)//wrap + 1 + params:get('row')
 
-        local hz = tune.hz(column, row, nil, params:get('oct 2')) * 55
+        local hz = tune.hz(column, row, nil, params:get('oct')) * 55
 
         if gate > 0 then
             engine.start(0, hz)
@@ -217,10 +199,6 @@ Pages[2].grid = function()
     
     local _rate_rev = Rate_reverse()
     
-    local _column = Produce.grid.integer_trigger()
-    local _row = Produce.grid.integer_trigger()
-
-
     local _frets = Tune.grid.fretboard()
     local _keymap = Produce.grid.keymap_mono{
         action = action,
@@ -240,30 +218,13 @@ Pages[2].grid = function()
             mute_group = mute_groups[2],
         }
 
-        _column{
-            x_next = 14, y_next = 1,
-            x_prev = 13, y_prev = 1,
-            levels = { 4, 15 }, wrap = false,
-            min = params:lookup_param('column 2').min,
-            max = params:lookup_param('column 2').max,
-            state = crops.of_param('column 2')
-        }
-        _row{
-            x_next = 16, y_next = 1,
-            x_prev = 16, y_prev = 2,
-            levels = { 4, 15 }, wrap = false,
-            min = params:lookup_param('row 2').min,
-            max = params:lookup_param('row 2').max,
-            state = crops.of_param('row 2')
-        }
-
         _frets{
             x = 1, y = 8, size = size, wrap = wrap,
             flow = 'right', flow_wrap = 'up',
             levels = { 0, 4 },
-            toct = params:get('oct 2'),
-            column_offset = params:get('column 2'),
-            row_offset = params:get('row 2'),
+            toct = params:get('oct'),
+            column_offset = params:get('column'),
+            row_offset = params:get('row'),
         }
         _keymap{
             x = 1, y = 8, size = size, wrap = wrap,
@@ -273,7 +234,25 @@ Pages[2].grid = function()
 end
 
 Pages[3].grid = function()
+    local size = 128-16-16
+    local wrap = 16
+
+    local _frets = Tune.grid.fretboard()
+    local _keymap = Arqueggiator.grid.keymap()
+
     return function()
+        _frets{
+            x = 1, y = 8, size = size, wrap = wrap,
+            flow = 'right', flow_wrap = 'up',
+            levels = { 0, 4 },
+            toct = params:get('oct'),
+            column_offset = params:get('column'),
+            row_offset = params:get('row'),
+        }
+        _keymap{
+            x = 1, y = 8, size = size, wrap = wrap,
+            flow = 'right', flow_wrap = 'up',
+        }
     end
 end
 
@@ -306,14 +285,17 @@ end
 local App = {}
 
 function App.grid()
+    local tab = 1
+    local _tab = Grid.integer()
+    
+    local _column = Produce.grid.integer_trigger()
+    local _row = Produce.grid.integer_trigger()
+
     local _pages = {}
     for i,Page in ipairs(Pages) do _pages[i] = Page.grid() end
 
     local _tuning = Pages.tuning.grid()
     
-    local tab = 1
-    local _tab = Grid.integer()
-
     return function()
         if not k1 then
             _tab{
@@ -330,6 +312,23 @@ function App.grid()
                         crops.dirty.grid = true 
                     end
                 }
+            }
+        
+            _column{
+                x_next = 14, y_next = 1,
+                x_prev = 13, y_prev = 1,
+                levels = { 4, 15 }, wrap = false,
+                min = params:lookup_param('column').min,
+                max = params:lookup_param('column').max,
+                state = crops.of_param('column')
+            }
+            _row{
+                x_next = 16, y_next = 1,
+                x_prev = 16, y_prev = 2,
+                levels = { 4, 15 }, wrap = false,
+                min = params:lookup_param('row').min,
+                max = params:lookup_param('row').max,
+                state = crops.of_param('row')
             }
 
             _pages[tab]()
