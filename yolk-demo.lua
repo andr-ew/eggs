@@ -1,5 +1,6 @@
 pattern_time = include 'lib/pattern_time_extended/pattern_time_extended'
 mute_group = include 'lib/pattern_time_extended/mute_group'
+Pattern_time = include 'lib/pattern_time_extended/ui'
 
 include 'lib/crops/core'
 Grid = include 'lib/crops/components/grid'
@@ -140,7 +141,7 @@ Pages[1].grid = function()
     local _rate_rev = Rate_reverse()
 
     local _frets = Tune.grid.fretboard()
-    local _keymap = Produce.grid.keymap_poly{
+    local _keymap = Pattern_time.grid.keymap_poly{
         action_on = action_on,
         action_off = action_off,
         pattern = mute_groups[1],
@@ -200,7 +201,7 @@ Pages[2].grid = function()
     local _rate_rev = Rate_reverse()
     
     local _frets = Tune.grid.fretboard()
-    local _keymap = Produce.grid.keymap_mono{
+    local _keymap = Pattern_time.grid.keymap_mono{
         action = action,
         pattern = mute_groups[2],
         size = size,
