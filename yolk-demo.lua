@@ -71,6 +71,34 @@ tune.params()
 params:add_separator('')
 polysub:params()
 
+--add pset params
+do
+    params:add_separator('pset')
+
+    params:add{
+        id = 'reset all params', type = 'binary', behavior = 'trigger',
+        action = function()
+            for _,p in ipairs(params.params) do if p.save then
+                params:set(p.id, p.default or (p.controlspec and p.controlspec.default) or 0, true)
+            end end
+    
+            params:bang()
+        end
+    }
+    params:add{
+        id = 'overwrite default pset', type = 'binary', behavior = 'trigger',
+        action = function()
+            params:write()
+        end
+    }
+    params:add{
+        id = 'autosave pset', type = 'option', options = { 'yes', 'no' },
+        action = function()
+            params:write()
+        end
+    }
+end
+
 local Pages = {
     [1] = {}, --poly
     [2] = {}, --mono
@@ -241,11 +269,34 @@ Pages[3].grid = function()
     local _frets = Tune.grid.fretboard()
     local _keymap = Arqueggiator.grid.keymap()
 
+    -- local 
+    step = 1
+    -- local 
+    arq = {}
+    local function set_arq(new)
+        arq = new
+
+        crops.dirty.grid = true;
+    end
+
+    clock.run(function()
+        while true do
+            if #arq > 0 then
+                step = step % #arq + 1
+                crops.dirty.grid = true
+            else
+                step = 1
+            end
+
+            clock.sync(2/3)
+        end
+    end)
+
     return function()
         _frets{
             x = 1, y = 8, size = size, wrap = wrap,
             flow = 'right', flow_wrap = 'up',
-            levels = { 0, 4 },
+            levels = { 0, 1 },
             toct = params:get('oct'),
             column_offset = params:get('column'),
             row_offset = params:get('row'),
@@ -253,6 +304,8 @@ Pages[3].grid = function()
         _keymap{
             x = 1, y = 8, size = size, wrap = wrap,
             flow = 'right', flow_wrap = 'up',
+            step = step, levels = { 4, 8, 15 },
+            state = crops.of_variable(arq, set_arq)
         }
     end
 end
@@ -449,6 +502,11 @@ crops.connect_key(_app.norns)
 crops.connect_screen(_app.norns)
 
 function init()
+    params:read()
     params:set('hzlag', 0)
     params:bang()
+end
+
+function cleanup()
+    if params:string('autosave pset') == 'yes' then params:write() end
 end
