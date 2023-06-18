@@ -46,8 +46,6 @@ end
 
 k1 = false
 
---TODO: block input during playback
-
 do
     params:add_separator('transpose')
     params:add{
@@ -147,20 +145,34 @@ local function Rate_reverse()
     end
 end
 
-Pages[1].grid = function()
-    local size = 128-16-16
-    local wrap = 16
+local size = 128-16-16
+local wrap = 16
 
-    local function action_on(idx)
-        local column = (idx-1)%wrap + 1 + params:get('column')
-        local row = (idx-1)//wrap + 1 + params:get('row')
+local function note_on_poly(idx)
+    local column = (idx-1)%wrap + 1 + params:get('column')
+    local row = (idx-1)//wrap + 1 + params:get('row')
 
-        local hz = tune.hz(column, row, nil, params:get('oct')) * 55
+    local hz = tune.hz(column, row, nil, params:get('oct')) * 55
 
-        engine.start(idx, hz)
+    engine.start(idx, hz)
+end
+local function note_off_poly(idx) engine.stop(idx) end
+    
+local function note_mono(idx, gate)
+    local column = (idx-1)%wrap + 1 + params:get('column')
+    local row = (idx-1)//wrap + 1 + params:get('row')
+
+    local hz = tune.hz(column, row, nil, params:get('oct')) * 55
+
+    if gate > 0 then
+        engine.start(0, hz)
+    else
+        engine.stop(0)
     end
-    local function action_off(idx) engine.stop(idx) end
+end
+    
 
+Pages[1].grid = function()
     local _patrecs = {}
     for i = 1, #pattern_groups[1] do
         _patrecs[i] = Produce.grid.pattern_recorder()
@@ -170,8 +182,8 @@ Pages[1].grid = function()
 
     local _frets = Tune.grid.fretboard()
     local _keymap = Pattern_time.grid.keymap_poly{
-        action_on = action_on,
-        action_off = action_off,
+        action_on = note_on_poly,
+        action_off = note_off_poly,
         pattern = mute_groups[1],
         size = size,
     }
@@ -205,22 +217,6 @@ Pages[1].grid = function()
 end
 
 Pages[2].grid = function()
-    local size = 128-16-16
-    local wrap = 16
-
-    local function action(idx, gate)
-        local column = (idx-1)%wrap + 1 + params:get('column')
-        local row = (idx-1)//wrap + 1 + params:get('row')
-
-        local hz = tune.hz(column, row, nil, params:get('oct')) * 55
-
-        if gate > 0 then
-            engine.start(0, hz)
-        else
-            engine.stop(0)
-        end
-    end
-    
     local _patrecs = {}
     for i = 1, #pattern_groups[2] do
         _patrecs[i] = Produce.grid.pattern_recorder()
@@ -230,7 +226,7 @@ Pages[2].grid = function()
     
     local _frets = Tune.grid.fretboard()
     local _keymap = Pattern_time.grid.keymap_mono{
-        action = action,
+        action = note_mono,
         pattern = mute_groups[2],
         size = size,
     }
@@ -263,14 +259,12 @@ Pages[2].grid = function()
 end
 
 Pages[3].grid = function()
-    local size = 128-16-16
-    local wrap = 16
-
     local _frets = Tune.grid.fretboard()
     local _keymap = Arqueggiator.grid.keymap()
 
     -- local 
     step = 1
+    gate = 0
     -- local 
     arq = {}
     local function set_arq(new)
@@ -281,14 +275,26 @@ Pages[3].grid = function()
 
     clock.run(function()
         while true do
-            if #arq > 0 then
-                step = step % #arq + 1
+            local idx = arq[step]
+
+            if #arq > 0 and idx then
+                note_on_poly(idx) 
+                gate = 1
                 crops.dirty.grid = true
+
+                clock.sync(1/4)
+
+                note_off_poly(idx) 
+                gate = 0
+                crops.dirty.grid = true
+                
+                step = step % #arq + 1
             else
                 step = 1
+                clock.sync(1/4)
             end
 
-            clock.sync(2/3)
+            clock.sync(1/4)
         end
     end)
 
@@ -304,7 +310,7 @@ Pages[3].grid = function()
         _keymap{
             x = 1, y = 8, size = size, wrap = wrap,
             flow = 'right', flow_wrap = 'up',
-            step = step, levels = { 4, 8, 15 },
+            step = step, levels = { 4, 8, 15 }, gate = gate,
             state = crops.of_variable(arq, set_arq)
         }
     end
