@@ -275,6 +275,7 @@ Pages[3].grid = function()
     local _frets = Tune.grid.fretboard()
     local _keymap = Arqueggiator.grid.keymap()
 
+    --TODO: mulipattern alongside div & reverse (?)
     local function process_arq(new)
         arq.sequence = new
 
@@ -316,6 +317,10 @@ Pages[3].grid = function()
     for i = 1, snapshot_count do
         _snapshots[i] = Produce.grid.multitrigger()
     end
+    
+    local _reverse = Grid.toggle()
+    local _rate_mark = Grid.fill()
+    local _rate = Grid.integer()
 
     return function()
         for i,_patrec in ipairs(_patrecs) do
@@ -333,6 +338,20 @@ Pages[3].grid = function()
                 action_tap = function() recall(i) end,
                 action_double_tap = function() snapshot(i) end,
                 action_hold = function() clear_snapshot(i) end,
+            }
+        end
+        
+        if #arq.sequence > 0 then
+            _reverse{
+                x = 1, y = 2, levels = { 4, 15 },
+                state = crops.of_param(arq:pfix('reverse'))
+            }
+            _rate_mark{
+                x = 5, y = 2, level = 4,
+            }
+            _rate{
+                x = 2, y = 2, size = 11,
+                state = crops.of_param(arq:pfix('division'))
             }
         end
 
