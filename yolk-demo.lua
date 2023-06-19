@@ -47,6 +47,32 @@ end
 
 k1 = false
 
+local size = 128-16-16
+local wrap = 16
+
+local function note_on_poly(idx)
+    local column = (idx-1)%wrap + 1 + params:get('column')
+    local row = (idx-1)//wrap + 1 + params:get('row')
+
+    local hz = tune.hz(column, row, nil, params:get('oct')) * 55
+
+    engine.start(idx, hz)
+end
+local function note_off_poly(idx) engine.stop(idx) end
+    
+local function note_mono(idx, gate)
+    local column = (idx-1)%wrap + 1 + params:get('column')
+    local row = (idx-1)//wrap + 1 + params:get('row')
+
+    local hz = tune.hz(column, row, nil, params:get('oct')) * 55
+
+    if gate > 0 then
+        engine.start(0, hz)
+    else
+        engine.stop(0)
+    end
+end
+    
 do
     params:add_separator('transpose')
     params:add{
@@ -65,6 +91,17 @@ do
         action = function() crops.dirty.grid = true end
     }
 end
+    
+arq = arqueggiator.new()
+
+params:add_separator('arqueggiator')
+arq:params()
+arq:start()
+
+arq.action_on = note_on_poly
+arq.action_off = note_off_poly
+
+function clear_arqs() arq.sequence = {} end
 
 tune.params()
 params:add_separator('')
@@ -145,33 +182,6 @@ local function Rate_reverse()
         end
     end
 end
-
-local size = 128-16-16
-local wrap = 16
-
-local function note_on_poly(idx)
-    local column = (idx-1)%wrap + 1 + params:get('column')
-    local row = (idx-1)//wrap + 1 + params:get('row')
-
-    local hz = tune.hz(column, row, nil, params:get('oct')) * 55
-
-    engine.start(idx, hz)
-end
-local function note_off_poly(idx) engine.stop(idx) end
-    
-local function note_mono(idx, gate)
-    local column = (idx-1)%wrap + 1 + params:get('column')
-    local row = (idx-1)//wrap + 1 + params:get('row')
-
-    local hz = tune.hz(column, row, nil, params:get('oct')) * 55
-
-    if gate > 0 then
-        engine.start(0, hz)
-    else
-        engine.stop(0)
-    end
-end
-    
 
 Pages[1].grid = function()
     local _patrecs = {}
@@ -259,26 +269,15 @@ Pages[2].grid = function()
     end
 end
 
-function clear_arqs() end
 
 Pages[3].grid = function()
     local _frets = Tune.grid.fretboard()
     local _keymap = Arqueggiator.grid.keymap()
 
-    arq = arqueggiator.new()
-    arq.action_on = note_on_poly
-    arq.action_off = note_off_poly
-
-    arq:start()
-
     local function set_arq(new)
         arq.sequence = new
 
         crops.dirty.grid = true;
-    end
-
-    clear_arqs = function()
-        set_arq({})
     end
 
     return function()
