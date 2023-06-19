@@ -258,19 +258,23 @@ Pages[2].grid = function()
     end
 end
 
+function clear_arqs() end
+
 Pages[3].grid = function()
     local _frets = Tune.grid.fretboard()
     local _keymap = Arqueggiator.grid.keymap()
 
-    -- local 
-    step = 1
-    gate = 0
-    -- local 
-    arq = {}
+    local step = 1
+    local gate = 0
+    local arq = {}
     local function set_arq(new)
         arq = new
 
         crops.dirty.grid = true;
+    end
+
+    clear_arqs = function()
+        set_arq({})
     end
 
     clock.run(function()
@@ -278,17 +282,17 @@ Pages[3].grid = function()
             local idx = arq[step]
 
             if #arq > 0 and idx then
-                note_on_poly(idx) 
+                if idx > 0 then note_on_poly(idx) end
                 gate = 1
                 crops.dirty.grid = true
 
                 clock.sync(1/4)
 
-                note_off_poly(idx) 
+                if idx > 0 then note_off_poly(idx) end
                 gate = 0
                 crops.dirty.grid = true
                 
-                step = step % #arq + 1
+                 if #arq > 0 then step = step % #arq + 1 end
             else
                 step = 1
                 clock.sync(1/4)
@@ -368,6 +372,7 @@ function App.grid()
                         for _,mute_group in ipairs(mute_groups) do
                             mute_group:stop()
                         end
+                        clear_arqs()
 
                         crops.dirty.grid = true 
                     end
