@@ -15,6 +15,7 @@ tune = include 'lib/tune/tune'
 local tunings, scale_groups = include 'lib/tune/scales'
 Tune = include 'lib/tune/ui'
 
+arqueggiator = include 'lib/arqueggiator/arqueggiator'
 Arqueggiator = include 'lib/arqueggiator/ui'
 
 tune.setup{ 
@@ -264,11 +265,14 @@ Pages[3].grid = function()
     local _frets = Tune.grid.fretboard()
     local _keymap = Arqueggiator.grid.keymap()
 
-    local step = 1
-    local gate = 0
-    local arq = {}
+    arq = arqueggiator.new()
+    arq.action_on = note_on_poly
+    arq.action_off = note_off_poly
+
+    arq:start()
+
     local function set_arq(new)
-        arq = new
+        arq.sequence = new
 
         crops.dirty.grid = true;
     end
@@ -276,31 +280,6 @@ Pages[3].grid = function()
     clear_arqs = function()
         set_arq({})
     end
-
-    clock.run(function()
-        while true do
-            local idx = arq[step]
-
-            if #arq > 0 and idx then
-                if idx > 0 then note_on_poly(idx) end
-                gate = 1
-                crops.dirty.grid = true
-
-                clock.sync(1/4)
-
-                if idx > 0 then note_off_poly(idx) end
-                gate = 0
-                crops.dirty.grid = true
-                
-                 if #arq > 0 then step = step % #arq + 1 end
-            else
-                step = 1
-                clock.sync(1/4)
-            end
-
-            clock.sync(1/4)
-        end
-    end)
 
     return function()
         _frets{
@@ -313,9 +292,9 @@ Pages[3].grid = function()
         }
         _keymap{
             x = 1, y = 8, size = size, wrap = wrap,
-            flow = 'right', flow_wrap = 'up',
-            step = step, levels = { 4, 8, 15 }, gate = gate,
-            state = crops.of_variable(arq, set_arq)
+            flow = 'right', flow_wrap = 'up', levels = { 4, 8, 15 }, 
+            step = arq.step, gate = arq.gate,
+            state = crops.of_variable(arq.sequence, set_arq)
         }
     end
 end
