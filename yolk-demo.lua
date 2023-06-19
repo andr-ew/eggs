@@ -564,6 +564,11 @@ crops.connect_enc(_app.norns)
 crops.connect_key(_app.norns)
 crops.connect_screen(_app.norns)
 
+--TODO: save & load
+--  patterns
+--  arq sequence
+--  arq snapshots
+
 function init()
     params:read()
     params:set('hzlag', 0)
