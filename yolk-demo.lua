@@ -36,7 +36,7 @@ local pat_count = 9
 pattern_groups = {}
 mute_groups = {}
 
-for i = 1,2 do
+for i = 1,3 do
     pattern_groups[i] = {}
     for ii = 1,pat_count do
         pattern_groups[i][ii] = pattern_time.new()
@@ -100,8 +100,6 @@ arq:start()
 
 arq.action_on = note_on_poly
 arq.action_off = note_off_poly
-
-function clear_arqs() arq.sequence = {} end
 
 tune.params()
 params:add_separator('')
@@ -269,18 +267,75 @@ Pages[2].grid = function()
     end
 end
 
+local snapshot_count = 6
+
+local function clear_arqs() end
 
 Pages[3].grid = function()
     local _frets = Tune.grid.fretboard()
     local _keymap = Arqueggiator.grid.keymap()
 
-    local function set_arq(new)
+    local function process_arq(new)
         arq.sequence = new
 
         crops.dirty.grid = true;
     end
+    mute_groups[3].process = process_arq
+
+    local function set_arq(new)
+        process_arq(new)
+        mute_groups[3]:watch(new)
+    end
+
+    clear_arqs = function()
+        set_arq({})
+    end
+    
+    local _patrecs = {}
+    for i = 1, (#pattern_groups[3] - snapshot_count) do
+        _patrecs[i] = Produce.grid.pattern_recorder()
+    end
+
+    local snapshots = {}
+
+    local function snapshot(i)
+        if #(snapshots[i] or {}) == 0 then 
+            snapshots[i] = arq.sequence
+        end
+    end
+    local function clear_snapshot(i)
+        snapshots[i] = {}
+    end
+    local function recall(i)
+        if #(snapshots[i] or {}) > 0 then 
+            set_arq(snapshots[i])
+        end
+    end
+
+    local _snapshots = {}
+    for i = 1, snapshot_count do
+        _snapshots[i] = Produce.grid.multitrigger()
+    end
 
     return function()
+        for i,_patrec in ipairs(_patrecs) do
+            _patrec{
+                x = 4 + i - 1, y = 1,
+                pattern = pattern_groups[3][i],
+            }
+        end
+
+        for i,_snapshot in ipairs(_snapshots) do
+            local filled = (snapshots[i] and #snapshots[i] > 0)
+            _snapshot{
+                x = 12 - snapshot_count + i, y = 1,
+                levels = { filled and 4 or 0, filled and 15 or 8 },
+                action_tap = function() recall(i) end,
+                action_double_tap = function() snapshot(i) end,
+                action_hold = function() clear_snapshot(i) end,
+            }
+        end
+
         _frets{
             x = 1, y = 8, size = size, wrap = wrap,
             flow = 'right', flow_wrap = 'up',
