@@ -108,6 +108,9 @@ polysub:params()
 local snapshot_count = 6
 snapshots = {}
 
+POLY, MONO, ARQ = 1, 2, 3
+mode = POLY
+
 --add pset params
 do
     params:add_separator('pset')
@@ -400,8 +403,7 @@ end
 local App = {}
 
 function App.grid()
-    local tab = 1
-    local _tab = Grid.integer()
+    local _mode = Grid.integer()
     
     local _column = Produce.grid.integer_trigger()
     local _row = Produce.grid.integer_trigger()
@@ -413,12 +415,12 @@ function App.grid()
     
     return function()
         if not k1 then
-            _tab{
+            _mode{
                 x = 1, y = 1, size = #_pages, levels = { 4, 15 },
                 state = { 
-                    tab, 
+                    mode, 
                     function(v) 
-                        tab = v
+                        mode = v
 
                         for _,mute_group in ipairs(mute_groups) do
                             mute_group:stop()
@@ -447,7 +449,7 @@ function App.grid()
                 state = crops.of_param('row')
             }
 
-            _pages[tab]()
+            _pages[mode]()
         else
             _tuning()
         end
@@ -558,11 +560,6 @@ _app = {
     norns = App.norns()
 }
 
-crops.connect_grid(_app.grid, g, 240)
-crops.connect_enc(_app.norns)
-crops.connect_key(_app.norns)
-crops.connect_screen(_app.norns)
-
 local function action_read(file, name, slot)
     print('pset action read', file, name, slot)
 
@@ -572,12 +569,13 @@ local function action_read(file, name, slot)
 
     if err then print('ERROR pset action read: '..err) end
     if data then
-        -- arq.sequence = data.sequence
-        snapshots = data.snapshots
+        arq.sequence = data.sequence or {}
+        snapshots = data.snapshots or {}
+        mode = data.mode or POLY
         
         for i,_ in ipairs(data.pattern_groups) do
             for ii,_ in ipairs(data.pattern_groups[i]) do
-                pattern_groups[i][ii]:import(data.pattern_groups[i][ii])
+                pattern_groups[i][ii]:import(data.pattern_groups[i][ii], true)
             end
         end
     else
@@ -593,9 +591,10 @@ local function action_write(file, name, slot)
     local fname = norns.state.data..name..'.data'
 
     local data = {
-        -- sequence = arq.sequence,
+        sequence = arq.sequence,
         snapshots = snapshots,
         pattern_groups = {},
+        mode = mode,
     }
 
     for i,pattern_group in ipairs(pattern_groups) do
@@ -619,10 +618,16 @@ params.action_read = action_read
 params.action_write = action_write
 params.action_delete = action_delete
 
+crops.connect_enc(_app.norns)
+crops.connect_key(_app.norns)
+crops.connect_screen(_app.norns)
+
 function init()
     params:read()
     params:set('hzlag', 0)
     params:bang()
+
+    crops.connect_grid(_app.grid, g, 240)
 end
 
 function cleanup()
