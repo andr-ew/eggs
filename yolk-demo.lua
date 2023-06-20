@@ -105,6 +105,9 @@ tune.params()
 params:add_separator('')
 polysub:params()
 
+local snapshot_count = 6
+snapshots = {}
+
 --add pset params
 do
     params:add_separator('pset')
@@ -267,8 +270,6 @@ Pages[2].grid = function()
     end
 end
 
-local snapshot_count = 6
-
 local function clear_arqs() end
 
 Pages[3].grid = function()
@@ -297,17 +298,15 @@ Pages[3].grid = function()
         _patrecs[i] = Produce.grid.pattern_recorder()
     end
 
-    local snapshots = {}
-
-    local function snapshot(i)
+    function snapshot(i)
         if #(snapshots[i] or {}) == 0 then 
             snapshots[i] = arq.sequence
         end
     end
-    local function clear_snapshot(i)
+    function clear_snapshot(i)
         snapshots[i] = {}
     end
-    local function recall(i)
+    function recall(i)
         if #(snapshots[i] or {}) > 0 then 
             set_arq(snapshots[i])
         end
@@ -564,10 +563,61 @@ crops.connect_enc(_app.norns)
 crops.connect_key(_app.norns)
 crops.connect_screen(_app.norns)
 
---TODO: save & load
---  patterns
---  arq sequence
---  arq snapshots
+local function action_read(file, name, slot)
+    print('pset action read', file, name, slot)
+
+    local name = 'pset-'..string.format("%02d", slot)
+    local fname = norns.state.data..name..'.data'
+    local data, err = tab.load(fname)
+
+    if err then print('ERROR pset action read: '..err) end
+    if data then
+        -- arq.sequence = data.sequence
+        snapshots = data.snapshots
+        
+        for i,_ in ipairs(data.pattern_groups) do
+            for ii,_ in ipairs(data.pattern_groups[i]) do
+                pattern_groups[i][ii]:import(data.pattern_groups[i][ii])
+            end
+        end
+    else
+        print('pset action read: no data file found at '..fname)
+    end
+
+    params:bang()
+end
+local function action_write(file, name, slot)
+    print('pset action write', file, name, slot)
+
+    local name = 'pset-'..string.format("%02d", slot)
+    local fname = norns.state.data..name..'.data'
+
+    local data = {
+        -- sequence = arq.sequence,
+        snapshots = snapshots,
+        pattern_groups = {},
+    }
+
+    for i,pattern_group in ipairs(pattern_groups) do
+        data.pattern_groups[i] = {}
+        for ii, pattern in ipairs(pattern_groups[i]) do
+            data.pattern_groups[i][ii] = pattern:export()
+        end
+    end
+
+    local err = tab.save(data, fname)
+
+    if err then print('ERROR pset action write: '..err) end
+end
+local function action_delete(file, name, slot)
+    print('pset action delete', file, name, slot)
+
+    --TODO: delete files
+end
+
+params.action_read = action_read
+params.action_write = action_write
+params.action_delete = action_delete
 
 function init()
     params:read()
