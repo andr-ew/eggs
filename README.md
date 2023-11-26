@@ -47,5 +47,5 @@ in the maiden REPL, type `;install https://github.com/andr-ew/eggs`
   - **K2-3:** fret marks
 - **key**
   - **E1:** tuning system
-  - **E2:** global key
+  - **E2:** base key
   - **E3:** 0v pitch
