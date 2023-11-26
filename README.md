@@ -23,19 +23,19 @@ in the maiden REPL, type `;install https://github.com/andr-ew/eggs`
 
 ## norns UI
 
-- **track: crow**
+- **egg: crow**
   - **E1:** envelope - time
   - **E2:** envelope - shape
   - **E3:** envelope - ramp
   - **K2:** envelope - trigger (hold: free/unfree)
   - **K2:** envelope - mode
-- **track: jf**
+- **egg: jf**
   - **E1:** transpose
   - **E2:** velocity
   - **E3:** run
   - **K2:** god
   - **K3:** mode
-- **track: midi**
+- **egg: midi**
   - **E1-3:** midi CC out 
   - **K2:** note echo
   - **K3:** panic
