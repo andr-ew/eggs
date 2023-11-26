@@ -36,5 +36,7 @@ in the maiden REPL, type `;install https://github.com/andr-ew/eggs`
   - **K2:** god
   - **K3:** mode
 - **MIDI**
+  - **E1-3:** midi CC out 
   - **K2:** keyboard in
+  - **K3:** panic
 - **K1 (hold):** mod source
