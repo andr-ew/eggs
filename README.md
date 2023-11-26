@@ -1,8 +1,8 @@
 # eggs (0.2.0)
 
-cv & ii gesture looper for norns, grid, crow, jf.
+cv, ii & midi gesture looper for norns, grid, crow, jf.
 
-three track grid keyboard with pattern recording, slew, & built-in ASR envelopes for crow.
+four track grid keyboard with pattern recording, arquencer, slew, & built-in ASR envelopes.
 
 ## hardware
 
