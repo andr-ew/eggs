@@ -39,6 +39,7 @@ in the maiden REPL, type `;install https://github.com/andr-ew/eggs`
   - **E1-3:** midi CC out 
   - **K2:** note echo
   - **K3:** panic
+- **K1 (hold):** set mod source
 - **scale**
   - **E1:** scale
   - **E2:** row tuning
@@ -48,4 +49,3 @@ in the maiden REPL, type `;install https://github.com/andr-ew/eggs`
   - **E1:** tuning system
   - **E2:** global key
   - **E3:** 0v pitch
-- **K1 (hold):** mod source
