@@ -13,3 +13,6 @@
 [submodule "lib/arqueggiator"]
 	path = lib/arqueggiator
 	url = https://github.com/andr-ew/arqueggiator
+[submodule "lib/keymap"]
+	path = lib/keymap
+	url = https://github.com/andr-ew/keymap

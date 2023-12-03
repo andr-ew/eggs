@@ -1,6 +1,5 @@
 pattern_time = include 'lib/pattern_time_extended/pattern_time_extended'
 mute_group = include 'lib/pattern_time_extended/mute_group'
-Pattern_time = include 'lib/pattern_time_extended/ui'
 
 include 'lib/crops/core'
 Grid = include 'lib/crops/components/grid'
@@ -10,6 +9,9 @@ Screen = include 'lib/crops/components/screen'
 Produce = {}
 Produce.grid = include 'lib/produce/grid'
 Produce.screen = include 'lib/produce/screen'
+
+keymap = include 'lib/keymap/keymap'
+Keymap = include 'lib/keymap/ui'
 
 tune = include 'lib/tune/tune'
 local tunings, scale_groups = include 'lib/tune/scales'
@@ -31,40 +33,46 @@ engine.name = 'PolySub'
 
 g = grid.connect()
 
-local pat_count = 9
+local pat_count = { manual = 9, arq = 3 }
+track_count = 2
 
 pattern_groups = {}
 mute_groups = {}
 
-for i = 1,3 do
-    pattern_groups[i] = {}
-    for ii = 1,pat_count do
-        pattern_groups[i][ii] = pattern_time.new()
+for i = 1,track_count do
+    pattern_groups[i] = { manual = {}, arq = {} }
+    for k,_ in pairs(pat_count) do
+        for ii = 1,pat_count[k] do
+            pattern_groups[i][k][ii] = pattern_time.new()
+        end
     end
 
-    mute_groups[i] = mute_group.new(pattern_groups[i])
+    mute_groups[i] = {
+        manual = mute_group.new(pattern_groups[i].manual),
+        arq = mute_group.new(pattern_groups[i].arq),
+    }
 end
+
+local keymap_size = 128-16-16
+local keymap_wrap = 16
 
 k1 = false
 
-local size = 128-16-16
-local wrap = 16
+local function note_on_poly(track, idx)
+    local column = (idx-1)%keymap_wrap + 1 + params:get('column_'..track)
+    local row = (idx-1)//keymap_wrap + 1 + params:get('row_'..track)
 
-local function note_on_poly(idx)
-    local column = (idx-1)%wrap + 1 + params:get('column')
-    local row = (idx-1)//wrap + 1 + params:get('row')
-
-    local hz = tune.hz(column, row, nil, params:get('oct')) * 55
+    local hz = tune.hz(column, row, nil, params:get('oct_'..track)) * 55
 
     engine.start(idx, hz)
 end
-local function note_off_poly(idx) engine.stop(idx) end
+local function note_off_poly(track, idx) engine.stop(idx) end
     
-local function note_mono(idx, gate)
-    local column = (idx-1)%wrap + 1 + params:get('column')
-    local row = (idx-1)//wrap + 1 + params:get('row')
+local function note_mono(track, idx, gate)
+    local column = (idx-1)%keymap_wrap + 1 + params:get('column_'..track)
+    local row = (idx-1)//keymap_wrap + 1 + params:get('row_'..track)
 
-    local hz = tune.hz(column, row, nil, params:get('oct')) * 55
+    local hz = tune.hz(column, row, nil, params:get('oct_'..track)) * 55
 
     if gate > 0 then
         engine.start(0, hz)
@@ -72,44 +80,93 @@ local function note_mono(idx, gate)
         engine.stop(0)
     end
 end
+
+
+local NORMAL, LATCH, ARQ = 1, 2, 3
+local mode_names = { 'normal', 'latch', 'arq' }
     
-do
-    params:add_separator('transpose')
+for i = 1,track_count do
+    params:add_separator('track '..i)
+
     params:add{
-        type = 'number', id = 'oct', name = 'oct',
+        type = 'option', id = 'mode_'..i, name = 'mode',
+        options = mode_names,
+        action = function(v) 
+            for _,mute_group in pairs(mute_groups[i]) do
+                mute_group:stop()
+            end
+
+            if v ~= ARQ then
+                arqs[i].sequence = {}
+            else
+                keymaps[i]:clear()
+            end
+            
+            crops.dirty.grid = true 
+        end
+    }
+    params:add{
+        type = 'number', id = 'oct_'..i, name = 'oct',
         min = -5, max = 5, default = 0,
         action = function() crops.dirty.grid = true end
     }
     params:add{
-        type = 'number', id = 'column', name = 'column',
+        type = 'number', id = 'column_'..i, name = 'column',
         min = -16, max = 16, default = 0,
         action = function() crops.dirty.grid = true end
     }
     params:add{
-        type = 'number', id = 'row', name = 'row',
+        type = 'number', id = 'row_'..i, name = 'row',
         min = -16, max = 16, default = 0,
         action = function() crops.dirty.grid = true end
     }
 end
+
+keymaps = {
+    [1] = keymap.poly.new{
+        action_on = function(idx) note_on_poly(1, idx) end,
+        action_off = function(idx) note_off_poly(1, idx) end,
+        pattern = mute_groups[1].manual,
+        size = keymap_size,
+    },
+    [2] = keymap.mono.new{
+        action = function(idx, gate) note_mono(2, idx, gate) end,
+        pattern = mute_groups[2].manual,
+        size = keymap_size,
+    }    
+}
+
+local snapshot_count = 5
     
-arq = arqueggiator.new()
+arqs = {}
+snapshots = {}
+for i = 1,track_count do
+    local arq = arqueggiator.new(i)
 
-params:add_separator('arqueggiator')
-arq:params()
-arq:start()
+    params:add_separator('arqueggiator '..i)
+    arq:params()
+    arq:start()
 
-arq.action_on = note_on_poly
-arq.action_off = note_off_poly
+    params:set_action(arq:pfix('division'), function() crops.dirty.grid = true end)
+    params:set_action(arq:pfix('reverse'), function() crops.dirty.grid = true end)
+
+    arqs[i] = arq
+
+    snapshots[i] = {}
+end
+    
+arqs[1].action_on = function(idx) note_on_poly(1, idx) end
+arqs[1].action_off = function(idx) note_off_poly(1, idx) end
+arqs[2].action_on = function(idx) note_mono(2, idx, 1) end
+arqs[2].action_off = function(idx) note_mono(2, idx, 0) end
+
 
 tune.params()
 params:add_separator('')
 polysub:params()
 
-local snapshot_count = 6
-snapshots = {}
-
-POLY, MONO, ARQ = 1, 2, 3
-mode = POLY
+POLY, MONO = 1, 2
+track = POLY
 
 --add pset params
 do
@@ -133,16 +190,120 @@ do
     }
     params:add{
         id = 'autosave pset', type = 'option', options = { 'yes', 'no' },
-        action = function()
-            params:write()
-        end
+        -- action = function()
+        --     params:write()
+        -- end
     }
+end
+
+local Arq = function(args)
+    local _frets = Tune.grid.fretboard()
+    local _keymap = Arqueggiator.grid.keymap()
+
+    local arq = args.arq
+    local mute_group = args.mute_group
+    local pattern_group = args.pattern_group
+    local snapshots = args.snapshots
+    local snapshot_count = args.snapshot_count
+
+    --TODO: mulipattern alongside div & reverse (?)
+    local function process_arq(new)
+        arq.sequence = new
+
+        crops.dirty.grid = true;
+    end
+    mute_group.process = process_arq
+
+    local function set_arq(new)
+        process_arq(new)
+        mute_group:watch(new)
+    end
+
+    -- clear_arqs = function()
+    --     set_arq({})
+    -- end
+    
+    local _patrecs = {}
+    for i = 1, (#pattern_group - snapshot_count) do
+        _patrecs[i] = Produce.grid.pattern_recorder()
+    end
+
+    function snapshot(i)
+        if #(snapshots[i] or {}) == 0 then 
+            snapshots[i] = arq.sequence
+        end
+    end
+    function clear_snapshot(i)
+        snapshots[i] = {}
+    end
+    function recall(i)
+        if #(snapshots[i] or {}) > 0 then 
+            set_arq(snapshots[i])
+        end
+    end
+
+    local _snapshots = {}
+    for i = 1, snapshot_count do
+        _snapshots[i] = Produce.grid.multitrigger()
+    end
+    
+    local _reverse = Grid.toggle()
+    local _rate_mark = Grid.fill()
+    local _rate = Grid.integer()
+
+    return function(props)
+        for i,_patrec in ipairs(_patrecs) do
+            _patrec{
+                x = 4 + i - 1, y = 1,
+                pattern = pattern_group[i],
+            }
+        end
+
+        for i,_snapshot in ipairs(_snapshots) do
+            local filled = (snapshots[i] and #snapshots[i] > 0)
+            _snapshot{
+                x = 12 - snapshot_count + i, y = 1,
+                levels = { filled and 4 or 0, filled and 15 or 8 },
+                action_tap = function() recall(i) end,
+                action_double_tap = function() snapshot(i) end,
+                action_hold = function() clear_snapshot(i) end,
+            }
+        end
+        
+        if #arq.sequence > 0 then
+            _reverse{
+                x = 1, y = 2, levels = { 4, 15 },
+                state = crops.of_param(arq:pfix('reverse'))
+            }
+            _rate_mark{
+                x = 5, y = 2, level = 4,
+            }
+            _rate{
+                x = 2, y = 2, size = 11,
+                state = crops.of_param(arq:pfix('division'))
+            }
+        end
+
+        _frets{
+            x = 1, y = 8, size = keymap_size, wrap = keymap_wrap,
+            flow = 'right', flow_wrap = 'up',
+            levels = { 0, 1 },
+            toct = params:get('oct_'..props.track),
+            column_offset = params:get('column_'..props.track),
+            row_offset = params:get('row_'..props.track),
+        }
+        _keymap{
+            x = 1, y = 8, size = keymap_size, wrap = keymap_wrap,
+            flow = 'right', flow_wrap = 'up', levels = { 4, 8, 15 }, 
+            step = arq.step, gate = arq.gate,
+            state = crops.of_variable(arq.sequence, set_arq)
+        }
+    end
 end
 
 local Pages = {
     [1] = {}, --poly
     [2] = {}, --mono
-    [3] = {}, --sequeggiator
     tuning = {},
 }
 
@@ -189,188 +350,133 @@ end
 
 Pages[1].grid = function()
     local _patrecs = {}
-    for i = 1, #pattern_groups[1] do
+    for i = 1, #pattern_groups[1].manual do
         _patrecs[i] = Produce.grid.pattern_recorder()
     end
 
     local _rate_rev = Rate_reverse()
 
-    local _frets = Tune.grid.fretboard()
-    local _keymap = Pattern_time.grid.keymap_poly{
-        action_on = note_on_poly,
-        action_off = note_off_poly,
-        pattern = mute_groups[1],
-        size = size,
+    local _mode_arq = Grid.toggle()
+    local _arq = Arq{
+        arq = arqs[1],
+        pattern_group = pattern_groups[1].arq,
+        mute_group = mute_groups[1].arq,
+        snapshots = snapshots[1],
+        snapshot_count = snapshot_count,
     }
 
+    local _frets = Tune.grid.fretboard()
+    local _keymap = Keymap.grid.poly()
+
     return function()
-        for i,_patrec in ipairs(_patrecs) do
-            _patrec{
-                x = 4 + i - 1, y = 1,
-                pattern = pattern_groups[1][i],
+        local mode = params:get('mode_1')
+
+        _mode_arq{
+            x = 3, y = 1, levels = { 4, 15 },
+            state = crops.of_variable(
+                mode==ARQ and 1 or 0,
+                function(v)
+                    params:set('mode_1', v==1 and ARQ or NORMAL)
+
+                    crops.dirty.grid = true
+                end
+            )
+        }
+
+        if mode==NORMAL then
+            for i,_patrec in ipairs(_patrecs) do
+                _patrec{
+                    x = 5 + i - 1, y = 1,
+                    pattern = pattern_groups[1].manual[i],
+                }
+            end
+            _rate_rev{
+                mute_group = mute_groups[1].manual,
             }
+
+            _frets{
+                x = 1, y = 8, size = keymap_size, wrap = keymap_wrap,
+                flow = 'right', flow_wrap = 'up',
+                levels = { 0, 4 },
+                toct = params:get('oct_1'),
+                column_offset = params:get('column_1'),
+                row_offset = params:get('row_1'),
+            }
+            _keymap{
+                x = 1, y = 8, size = keymap_size, wrap = keymap_wrap,
+                flow = 'right', flow_wrap = 'up',
+                levels = { 0, 15 },
+                keymap = keymaps[1],
+            }
+        elseif mode==ARQ then
+            _arq{ track = 1 }
         end
-
-        _rate_rev{
-            mute_group = mute_groups[1],
-        }
-
-        _frets{
-            x = 1, y = 8, size = size, wrap = wrap,
-            flow = 'right', flow_wrap = 'up',
-            levels = { 0, 4 },
-            toct = params:get('oct'),
-            column_offset = params:get('column'),
-            row_offset = params:get('row'),
-        }
-        _keymap{
-            x = 1, y = 8, wrap = wrap,
-            flow = 'right', flow_wrap = 'up',
-            levels = { 0, 15 },
-        }
     end
 end
 
 Pages[2].grid = function()
     local _patrecs = {}
-    for i = 1, #pattern_groups[2] do
+    for i = 1, #pattern_groups[2].manual do
         _patrecs[i] = Produce.grid.pattern_recorder()
     end
     
     local _rate_rev = Rate_reverse()
     
-    local _frets = Tune.grid.fretboard()
-    local _keymap = Pattern_time.grid.keymap_mono{
-        action = note_mono,
-        pattern = mute_groups[2],
-        size = size,
+    local _mode_arq = Grid.toggle()
+    local _arq = Arq{
+        arq = arqs[2],
+        pattern_group = pattern_groups[2].arq,
+        mute_group = mute_groups[2].arq,
+        snapshots = snapshots[2],
+        snapshot_count = snapshot_count,
     }
-
-    return function()
-        for i,_patrec in ipairs(_patrecs) do
-            _patrec{
-                x = 4 + i - 1, y = 1,
-                pattern = pattern_groups[2][i],
-            }
-        end
-        
-        _rate_rev{
-            mute_group = mute_groups[2],
-        }
-
-        _frets{
-            x = 1, y = 8, size = size, wrap = wrap,
-            flow = 'right', flow_wrap = 'up',
-            levels = { 0, 4 },
-            toct = params:get('oct'),
-            column_offset = params:get('column'),
-            row_offset = params:get('row'),
-        }
-        _keymap{
-            x = 1, y = 8, size = size, wrap = wrap,
-            flow = 'right', flow_wrap = 'up',
-        }
-    end
-end
-
-local function clear_arqs() end
-
-Pages[3].grid = function()
+    
     local _frets = Tune.grid.fretboard()
-    local _keymap = Arqueggiator.grid.keymap()
-
-    --TODO: mulipattern alongside div & reverse (?)
-    local function process_arq(new)
-        arq.sequence = new
-
-        crops.dirty.grid = true;
-    end
-    mute_groups[3].process = process_arq
-
-    local function set_arq(new)
-        process_arq(new)
-        mute_groups[3]:watch(new)
-    end
-
-    clear_arqs = function()
-        set_arq({})
-    end
-    
-    local _patrecs = {}
-    for i = 1, (#pattern_groups[3] - snapshot_count) do
-        _patrecs[i] = Produce.grid.pattern_recorder()
-    end
-
-    function snapshot(i)
-        if #(snapshots[i] or {}) == 0 then 
-            snapshots[i] = arq.sequence
-        end
-    end
-    function clear_snapshot(i)
-        snapshots[i] = {}
-    end
-    function recall(i)
-        if #(snapshots[i] or {}) > 0 then 
-            set_arq(snapshots[i])
-        end
-    end
-
-    local _snapshots = {}
-    for i = 1, snapshot_count do
-        _snapshots[i] = Produce.grid.multitrigger()
-    end
-    
-    local _reverse = Grid.toggle()
-    local _rate_mark = Grid.fill()
-    local _rate = Grid.integer()
+    local _keymap = Keymap.grid.mono()
 
     return function()
-        for i,_patrec in ipairs(_patrecs) do
-            _patrec{
-                x = 4 + i - 1, y = 1,
-                pattern = pattern_groups[3][i],
-            }
-        end
+        local mode = params:get('mode_2')
 
-        for i,_snapshot in ipairs(_snapshots) do
-            local filled = (snapshots[i] and #snapshots[i] > 0)
-            _snapshot{
-                x = 12 - snapshot_count + i, y = 1,
-                levels = { filled and 4 or 0, filled and 15 or 8 },
-                action_tap = function() recall(i) end,
-                action_double_tap = function() snapshot(i) end,
-                action_hold = function() clear_snapshot(i) end,
-            }
-        end
-        
-        if #arq.sequence > 0 then
-            _reverse{
-                x = 1, y = 2, levels = { 4, 15 },
-                state = crops.of_param(arq:pfix('reverse'))
-            }
-            _rate_mark{
-                x = 5, y = 2, level = 4,
-            }
-            _rate{
-                x = 2, y = 2, size = 11,
-                state = crops.of_param(arq:pfix('division'))
-            }
-        end
+        _mode_arq{
+            x = 3, y = 1, levels = { 4, 15 },
+            state = crops.of_variable(
+                mode==ARQ and 1 or 0,
+                function(v)
+                    params:set('mode_2', v==1 and ARQ or NORMAL)
 
-        _frets{
-            x = 1, y = 8, size = size, wrap = wrap,
-            flow = 'right', flow_wrap = 'up',
-            levels = { 0, 1 },
-            toct = params:get('oct'),
-            column_offset = params:get('column'),
-            row_offset = params:get('row'),
+                    crops.dirty.grid = true
+                end
+            )
         }
-        _keymap{
-            x = 1, y = 8, size = size, wrap = wrap,
-            flow = 'right', flow_wrap = 'up', levels = { 4, 8, 15 }, 
-            step = arq.step, gate = arq.gate,
-            state = crops.of_variable(arq.sequence, set_arq)
-        }
+
+        if mode==NORMAL then
+            for i,_patrec in ipairs(_patrecs) do
+                _patrec{
+                    x = 5 + i - 1, y = 1,
+                    pattern = pattern_groups[2].manual[i],
+                }
+            end
+            
+            _rate_rev{
+                mute_group = mute_groups[2].manual,
+            }
+
+            _frets{
+                x = 1, y = 8, size = keymap_size, wrap = keymap_wrap,
+                flow = 'right', flow_wrap = 'up',
+                levels = { 0, 4 },
+                toct = params:get('oct_2'),
+                column_offset = params:get('column_2'),
+                row_offset = params:get('row_2'),
+            }
+            _keymap{
+                x = 1, y = 8, size = keymap_size, wrap = keymap_wrap,
+                flow = 'right', flow_wrap = 'up',
+                keymap = keymaps[2],
+            }
+        elseif mode==ARQ then
+            _arq{ track = 1 }
+        end
     end
 end
 
@@ -403,7 +509,7 @@ end
 local App = {}
 
 function App.grid()
-    local _mode = Grid.integer()
+    local _track = Grid.integer()
     
     local _column = Produce.grid.integer_trigger()
     local _row = Produce.grid.integer_trigger()
@@ -415,17 +521,12 @@ function App.grid()
     
     return function()
         if not k1 then
-            _mode{
-                x = 1, y = 1, size = #_pages, levels = { 4, 15 },
+            _track{
+                x = 1, y = 1, size = #_pages, levels = { 0, 15 },
                 state = { 
-                    mode, 
+                    track, 
                     function(v) 
-                        mode = v
-
-                        for _,mute_group in ipairs(mute_groups) do
-                            mute_group:stop()
-                        end
-                        clear_arqs()
+                        track = v
 
                         crops.dirty.grid = true 
                     end
@@ -436,20 +537,20 @@ function App.grid()
                 x_next = 14, y_next = 1,
                 x_prev = 13, y_prev = 1,
                 levels = { 4, 15 }, wrap = false,
-                min = params:lookup_param('column').min,
-                max = params:lookup_param('column').max,
-                state = crops.of_param('column')
+                min = params:lookup_param('column_'..track).min,
+                max = params:lookup_param('column_'..track).max,
+                state = crops.of_param('column_'..track)
             }
             _row{
                 x_next = 16, y_next = 1,
                 x_prev = 16, y_prev = 2,
                 levels = { 4, 15 }, wrap = false,
-                min = params:lookup_param('row').min,
-                max = params:lookup_param('row').max,
-                state = crops.of_param('row')
+                min = params:lookup_param('row_'..track).min,
+                max = params:lookup_param('row_'..track).max,
+                state = crops.of_param('row_'..track)
             }
 
-            _pages[mode]()
+            _pages[track]()
         else
             _tuning()
         end
@@ -569,13 +670,15 @@ local function action_read(file, name, slot)
 
     if err then print('ERROR pset action read: '..err) end
     if data then
-        arq.sequence = data.sequence or {}
         snapshots = data.snapshots or {}
-        mode = data.mode or POLY
         
-        for i,_ in ipairs(data.pattern_groups) do
-            for ii,_ in ipairs(data.pattern_groups[i]) do
-                pattern_groups[i][ii]:import(data.pattern_groups[i][ii], true)
+        for i = 1,track_count do
+            arqs[i].sequence = data.sequences[i] or {}
+
+            for k,_ in pairs(data.pattern_groups[i]) do
+                for ii,_ in ipairs(data.pattern_groups[i][k]) do
+                    pattern_groups[i][ii]:import(data.pattern_groups[i][k][ii], true)
+                end
             end
         end
     else
@@ -591,16 +694,20 @@ local function action_write(file, name, slot)
     local fname = norns.state.data..name..'.data'
 
     local data = {
-        sequence = arq.sequence,
+        sequences = {},
         snapshots = snapshots,
         pattern_groups = {},
-        mode = mode,
     }
 
-    for i,pattern_group in ipairs(pattern_groups) do
+    for i = 1,track_count do
+        data.sequences[i] = arqs[i].sequence
+
         data.pattern_groups[i] = {}
-        for ii, pattern in ipairs(pattern_groups[i]) do
-            data.pattern_groups[i][ii] = pattern:export()
+        for k,_ in pairs(data.pattern_groups[i]) do
+            data.pattern_groups[i][k] = {}
+            for ii, pattern in ipairs(pattern_groups[i][k]) do
+                data.pattern_groups[i][k][ii] = pattern:export()
+            end
         end
     end
 
