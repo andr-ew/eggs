@@ -96,10 +96,11 @@ for i = 1,track_count do
                 mute_group:stop()
             end
 
+            if v ~= LATCH then
+                keymaps[i]:clear()
+            end
             if v ~= ARQ then
                 arqs[i].sequence = {}
-            else
-                keymaps[i]:clear()
             end
             
             crops.dirty.grid = true 
@@ -357,6 +358,8 @@ Pages[1].grid = function()
     local _rate_rev = Rate_reverse()
 
     local _mode_arq = Grid.toggle()
+    local _mode_latch = Grid.toggle()
+
     local _arq = Arq{
         arq = arqs[1],
         pattern_group = pattern_groups[1].arq,
@@ -377,13 +380,22 @@ Pages[1].grid = function()
                 mode==ARQ and 1 or 0,
                 function(v)
                     params:set('mode_1', v==1 and ARQ or NORMAL)
-
-                    crops.dirty.grid = true
+                end
+            )
+        }
+        _mode_latch{
+            x = 4, y = 1, levels = { 4, 15 },
+            state = crops.of_variable(
+                mode==LATCH and 1 or 0,
+                function(v)
+                    params:set('mode_1', v==1 and LATCH or NORMAL)
                 end
             )
         }
 
-        if mode==NORMAL then
+        if mode==ARQ then
+            _arq{ track = 1 }
+        else
             for i,_patrec in ipairs(_patrecs) do
                 _patrec{
                     x = 5 + i - 1, y = 1,
@@ -407,9 +419,8 @@ Pages[1].grid = function()
                 flow = 'right', flow_wrap = 'up',
                 levels = { 0, 15 },
                 keymap = keymaps[1],
+                mode = mode_names[mode]
             }
-        elseif mode==ARQ then
-            _arq{ track = 1 }
         end
     end
 end
@@ -565,7 +576,6 @@ do
     x = { left, left + mul.x*5/4, [1.5] = 24  }
     y = { top, bottom - 22, bottom, [1.5] = 20, }
 end
-
 
 function Pages.tuning.norns()
     local _degs = Tune.screen.scale_degrees()    
