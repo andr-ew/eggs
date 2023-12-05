@@ -33,7 +33,7 @@ engine.name = 'PolySub'
 
 g = grid.connect()
 
-local pat_count = { manual = 9, arq = 3 }
+local pat_count = 4
 track_count = 2
 
 pattern_groups = {}
@@ -41,8 +41,8 @@ mute_groups = {}
 
 for i = 1,track_count do
     pattern_groups[i] = { manual = {}, arq = {} }
-    for k,_ in pairs(pat_count) do
-        for ii = 1,pat_count[k] do
+    for k,_ in pairs(pattern_groups[i]) do
+        for ii = 1,pat_count do
             pattern_groups[i][k][ii] = pattern_time.new()
         end
     end
@@ -96,6 +96,8 @@ for i = 1,track_count do
                 mute_group:stop()
             end
 
+            keymaps[i]:set_latch(v == LATCH)
+
             if v ~= LATCH then
                 keymaps[i]:clear()
             end
@@ -137,7 +139,7 @@ keymaps = {
     }    
 }
 
-local snapshot_count = 5
+local snapshot_count = 4
     
 arqs = {}
 snapshots = {}
@@ -153,7 +155,7 @@ for i = 1,track_count do
 
     arqs[i] = arq
 
-    snapshots[i] = {}
+    snapshots[i] = { manual = {}, arq = {} }
 end
     
 arqs[1].action_on = function(idx) note_on_poly(1, idx) end
@@ -204,7 +206,6 @@ local Arq = function(args)
     local arq = args.arq
     local mute_group = args.mute_group
     local pattern_group = args.pattern_group
-    local snapshots = args.snapshots
     local snapshot_count = args.snapshot_count
 
     --TODO: mulipattern alongside div & reverse (?)
@@ -220,32 +221,14 @@ local Arq = function(args)
         mute_group:watch(new)
     end
 
-    -- clear_arqs = function()
-    --     set_arq({})
-    -- end
-    
     local _patrecs = {}
-    for i = 1, (#pattern_group - snapshot_count) do
+    for i = 1, #pattern_group do
         _patrecs[i] = Produce.grid.pattern_recorder()
-    end
-
-    function snapshot(i)
-        if #(snapshots[i] or {}) == 0 then 
-            snapshots[i] = arq.sequence
-        end
-    end
-    function clear_snapshot(i)
-        snapshots[i] = {}
-    end
-    function recall(i)
-        if #(snapshots[i] or {}) > 0 then 
-            set_arq(snapshots[i])
-        end
     end
 
     local _snapshots = {}
     for i = 1, snapshot_count do
-        _snapshots[i] = Produce.grid.multitrigger()
+        _snapshots[i] = Produce.grid.triggerhold()
     end
     
     local _reverse = Grid.toggle()
@@ -253,6 +236,8 @@ local Arq = function(args)
     local _rate = Grid.integer()
 
     return function(props)
+        local ss = props.snapshots
+
         for i,_patrec in ipairs(_patrecs) do
             _patrec{
                 x = 4 + i - 1, y = 1,
@@ -261,26 +246,38 @@ local Arq = function(args)
         end
 
         for i,_snapshot in ipairs(_snapshots) do
-            local filled = (snapshots[i] and #snapshots[i] > 0)
+            local filled = (ss[i] and #ss[i] > 0)
+
+            function snapshot()
+                ss[i] = arq.sequence
+            end
+            function clear_snapshot()
+                ss[i] = {}
+                -- arq.sequence = {}
+            end
+            function recall()
+                if #(ss[i] or {}) > 0 then 
+                    set_arq(ss[i])
+                end
+            end
             _snapshot{
-                x = 12 - snapshot_count + i, y = 1,
+                x = 9 + i - 1, y = 1,
                 levels = { filled and 4 or 0, filled and 15 or 8 },
-                action_tap = function() recall(i) end,
-                action_double_tap = function() snapshot(i) end,
-                action_hold = function() clear_snapshot(i) end,
+                action_tap = filled and recall or snapshot,
+                action_hold = clear_snapshot,
             }
         end
         
         if #arq.sequence > 0 then
             _reverse{
-                x = 1, y = 2, levels = { 4, 15 },
+                x = 4, y = 2, levels = { 4, 15 },
                 state = crops.of_param(arq:pfix('reverse'))
             }
             _rate_mark{
-                x = 5, y = 2, level = 4,
+                x = 8, y = 2, level = 4,
             }
             _rate{
-                x = 2, y = 2, size = 11,
+                x = 5, y = 2, size = 8,
                 state = crops.of_param(arq:pfix('division'))
             }
         end
@@ -302,12 +299,6 @@ local Arq = function(args)
     end
 end
 
-local Pages = {
-    [1] = {}, --poly
-    [2] = {}, --mono
-    tuning = {},
-}
-
 local function Rate_reverse()
     local _reverse = Grid.toggle()
     local _rate_mark = Grid.fill()
@@ -318,7 +309,7 @@ local function Rate_reverse()
 
         if pattern then
             _reverse{
-                x = 1, y = 2, levels = { 4, 15 },
+                x = 4, y = 2, levels = { 4, 15 },
                 state = {
                     pattern.reverse and 1 or 0,
                     function(v)
@@ -329,12 +320,12 @@ local function Rate_reverse()
                 }
             }
             _rate_mark{
-                x = 7, y = 2, level = 4,
+                x = 8, y = 2, level = 4,
             }
             do
                 local tf = pattern.time_factor
                 _rate{
-                    x = 2, y = 2, size = 11, min = -5,
+                    x = 5, y = 2, size = 8, min = -3,
                     state = {
                         (tf < 1) and ((1/tf) - 1) or ((-tf) + 1),
                         function(v)
@@ -349,11 +340,20 @@ local function Rate_reverse()
     end
 end
 
-Pages[1].grid = function()
+function Grid_page(args)
+    local track = args.track
+
     local _patrecs = {}
-    for i = 1, #pattern_groups[1].manual do
+    for i = 1, #pattern_groups[track].manual do
         _patrecs[i] = Produce.grid.pattern_recorder()
     end
+    
+    local _snapshots_latch = {}
+    for i = 1, snapshot_count do
+        _snapshots_latch[i] = Produce.grid.triggerhold()
+    end
+    local snapshots_normal_held = {}
+    local _snapshots_normal = Grid.momentaries()
 
     local _rate_rev = Rate_reverse()
 
@@ -361,137 +361,96 @@ Pages[1].grid = function()
     local _mode_latch = Grid.toggle()
 
     local _arq = Arq{
-        arq = arqs[1],
-        pattern_group = pattern_groups[1].arq,
-        mute_group = mute_groups[1].arq,
-        snapshots = snapshots[1],
+        arq = arqs[track],
+        pattern_group = pattern_groups[track].arq,
+        mute_group = mute_groups[track].arq,
         snapshot_count = snapshot_count,
     }
 
     local _frets = Tune.grid.fretboard()
-    local _keymap = Keymap.grid.poly()
+    local _keymap = Keymap.grid[args.voicing]()
 
     return function()
-        local mode = params:get('mode_1')
+        local mode = params:get('mode_'..track)
 
         _mode_arq{
             x = 3, y = 1, levels = { 4, 15 },
             state = crops.of_variable(
                 mode==ARQ and 1 or 0,
                 function(v)
-                    params:set('mode_1', v==1 and ARQ or NORMAL)
+                    params:set('mode_'..track, v==1 and ARQ or NORMAL)
                 end
             )
         }
         _mode_latch{
-            x = 4, y = 1, levels = { 4, 15 },
+            x = 8, y = 1, levels = { 4, 15 },
             state = crops.of_variable(
                 mode==LATCH and 1 or 0,
                 function(v)
-                    params:set('mode_1', v==1 and LATCH or NORMAL)
+                    params:set('mode_'..track, v==1 and LATCH or NORMAL)
                 end
             )
         }
 
         if mode==ARQ then
-            _arq{ track = 1 }
+            _arq{ track = track, snapshots = snapshots[track].arq }
         else
+            local ss = snapshots[track].manual
+
             for i,_patrec in ipairs(_patrecs) do
                 _patrec{
-                    x = 5 + i - 1, y = 1,
-                    pattern = pattern_groups[1].manual[i],
+                    x = 4 + i - 1, y = 1,
+                    pattern = pattern_groups[track].manual[i],
                 }
             end
             _rate_rev{
-                mute_group = mute_groups[1].manual,
+                mute_group = mute_groups[track].manual,
             }
+
+            if mode==LATCH then
+                for i,_snapshot in ipairs(_snapshots_latch) do
+                    local filled = (ss[i] and next(ss[i]))
+
+                    function snapshot()
+                        ss[i] = keymaps[track]:get()
+                    end
+                    function clear_snapshot()
+                        ss[i] = {}
+                        -- keymaps[track]:clear()
+                    end
+                    function recall()
+                        keymaps[track]:set(ss[i] or {})
+                    end
+                    _snapshot{
+                        x = 9 + i - 1, y = 1,
+                        levels = { filled and 4 or 0, filled and 15 or 8 },
+                        action_tap = filled and recall or snapshot,
+                        action_hold = clear_snapshot,
+                    }
+                end
+            else
+            end
 
             _frets{
                 x = 1, y = 8, size = keymap_size, wrap = keymap_wrap,
                 flow = 'right', flow_wrap = 'up',
                 levels = { 0, 4 },
-                toct = params:get('oct_1'),
-                column_offset = params:get('column_1'),
-                row_offset = params:get('row_1'),
+                toct = params:get('oct_'..track),
+                column_offset = params:get('column_'..track),
+                row_offset = params:get('row_'..track),
             }
             _keymap{
                 x = 1, y = 8, size = keymap_size, wrap = keymap_wrap,
                 flow = 'right', flow_wrap = 'up',
                 levels = { 0, 15 },
-                keymap = keymaps[1],
+                state = keymaps[track]:get_state(),
                 mode = mode_names[mode]
             }
         end
     end
 end
 
-Pages[2].grid = function()
-    local _patrecs = {}
-    for i = 1, #pattern_groups[2].manual do
-        _patrecs[i] = Produce.grid.pattern_recorder()
-    end
-    
-    local _rate_rev = Rate_reverse()
-    
-    local _mode_arq = Grid.toggle()
-    local _arq = Arq{
-        arq = arqs[2],
-        pattern_group = pattern_groups[2].arq,
-        mute_group = mute_groups[2].arq,
-        snapshots = snapshots[2],
-        snapshot_count = snapshot_count,
-    }
-    
-    local _frets = Tune.grid.fretboard()
-    local _keymap = Keymap.grid.mono()
-
-    return function()
-        local mode = params:get('mode_2')
-
-        _mode_arq{
-            x = 3, y = 1, levels = { 4, 15 },
-            state = crops.of_variable(
-                mode==ARQ and 1 or 0,
-                function(v)
-                    params:set('mode_2', v==1 and ARQ or NORMAL)
-
-                    crops.dirty.grid = true
-                end
-            )
-        }
-
-        if mode==NORMAL then
-            for i,_patrec in ipairs(_patrecs) do
-                _patrec{
-                    x = 5 + i - 1, y = 1,
-                    pattern = pattern_groups[2].manual[i],
-                }
-            end
-            
-            _rate_rev{
-                mute_group = mute_groups[2].manual,
-            }
-
-            _frets{
-                x = 1, y = 8, size = keymap_size, wrap = keymap_wrap,
-                flow = 'right', flow_wrap = 'up',
-                levels = { 0, 4 },
-                toct = params:get('oct_2'),
-                column_offset = params:get('column_2'),
-                row_offset = params:get('row_2'),
-            }
-            _keymap{
-                x = 1, y = 8, size = keymap_size, wrap = keymap_wrap,
-                flow = 'right', flow_wrap = 'up',
-                keymap = keymaps[2],
-            }
-        elseif mode==ARQ then
-            _arq{ track = 1 }
-        end
-    end
-end
-
-Pages.tuning.grid = function()
+function Grid_tuning()
     local _tonic = Tune.grid.tonic()
     
     local _degs_bg = Tune.grid.scale_degrees_background()
@@ -525,10 +484,12 @@ function App.grid()
     local _column = Produce.grid.integer_trigger()
     local _row = Produce.grid.integer_trigger()
 
-    local _pages = {}
-    for i,Page in ipairs(Pages) do _pages[i] = Page.grid() end
+    local _pages = {
+        [1] = Grid_page{ track = 1, voicing = 'poly' },
+        [2] = Grid_page{ track = 2, voicing = 'mono' },
+    }
 
-    local _tuning = Pages.tuning.grid()
+    local _tuning = Grid_tuning()
     
     return function()
         if not k1 then
@@ -577,7 +538,7 @@ do
     y = { top, bottom - 22, bottom, [1.5] = 20, }
 end
 
-function Pages.tuning.norns()
+function Tuning_norns()
     local _degs = Tune.screen.scale_degrees()    
     
     local _scale = { enc = Enc.integer(), screen = Screen.list() }
@@ -642,7 +603,7 @@ end
 
 function App.norns()
     local _text = Screen.text()
-    local _tuning = Pages.tuning.norns()
+    local _tuning = Tuning_norns()
 
     local _k1 = Key.momentary()
 
