@@ -348,12 +348,13 @@ function Grid_page(args)
         _patrecs[i] = Produce.grid.pattern_recorder()
     end
     
-    local _snapshots_latch = {}
+    local _snapshots = {}
     for i = 1, snapshot_count do
-        _snapshots_latch[i] = Produce.grid.triggerhold()
+        _snapshots[i] = {}
+        _snapshots[i].latch = Produce.grid.triggerhold()
+        _snapshots[i].normal = Grid.momentary() 
     end
     local snapshots_normal_held = {}
-    local _snapshots_normal = Grid.momentaries()
 
     local _rate_rev = Rate_reverse()
 
@@ -407,28 +408,45 @@ function Grid_page(args)
                 mute_group = mute_groups[track].manual,
             }
 
-            if mode==LATCH then
-                for i,_snapshot in ipairs(_snapshots_latch) do
-                    local filled = (ss[i] and next(ss[i]))
+            for i,_snapshot in ipairs(_snapshots) do
+                local filled = (ss[i] and next(ss[i]))
 
-                    function snapshot()
-                        ss[i] = keymaps[track]:get()
-                    end
-                    function clear_snapshot()
-                        ss[i] = {}
-                        -- keymaps[track]:clear()
-                    end
-                    function recall()
-                        keymaps[track]:set(ss[i] or {})
-                    end
-                    _snapshot{
+                function snapshot()
+                    ss[i] = keymaps[track]:get()
+                end
+                function clear_snapshot()
+                    ss[i] = {}
+                    -- keymaps[track]:clear()
+                end
+                function recall()
+                    keymaps[track]:set(ss[i] or {})
+                end
+                
+                if mode==LATCH then
+                    _snapshot.latch{
                         x = 9 + i - 1, y = 1,
                         levels = { filled and 4 or 0, filled and 15 or 8 },
                         action_tap = filled and recall or snapshot,
                         action_hold = clear_snapshot,
                     }
+                else
+                    _snapshot.normal{
+                        x = 9 + i - 1, y = 1,
+                        levels = { filled and 4 or 0, filled and 15 or 8 },
+                        state = crops.of_variable(snapshots_normal_held[i], function(v)
+                            snapshots_normal_held[i] = v
+
+                            if v > 0 then
+                                if filled then recall() 
+                                elseif next(keymaps[track]:get()) then snapshot() end
+                            else
+                                keymaps[track]:set({})
+                            end
+
+                            crops.dirty.grid = true
+                        end)
+                    }
                 end
-            else
             end
 
             _frets{
