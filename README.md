@@ -1,8 +1,8 @@
-# eggs (0.1.0-beta)
+# eggs (0.2.0)
 
-cv & ii gesture looper for norns, grid, crow, jf.
+cv, ii & midi gesture looper for norns, grid, crow, jf.
 
-three track grid keyboard with pattern recording, slew, & built-in ASR envelopes for crow.
+four track grid keyboard with pattern recording, arquencer, slew, & built-in ASR envelopes.
 
 ## hardware
 
@@ -15,33 +15,37 @@ three track grid keyboard with pattern recording, slew, & built-in ASR envelopes
 **also supported**
 
 - [just friends](https://www.whimsicalraps.com/products/just-friends?variant=5586981781533)
+- midi
 
 ## install
 
 in the maiden REPL, type `;install https://github.com/andr-ew/eggs`
 
-## documentation
+## norns UI
 
-use the **page** component on the top left of the grid to switch pages. there are four pages:
-- **1:** crow outputs 1 + 2 (cv + env)
-- **2:** crow outputs 3 + 4 (cv + env)
-- **jf:** just friends (synth mode, polyphonic)
-- **scale:** scale & tuning options for all tracks
-
-
-### cv page (1 & 2)
-
-![documentation image](lib/doc/eggs-01.png)
-
-### jf page
-
-![documentation image](lib/doc/eggs-02.png)
-
-### scale page
-
-![documentation image](lib/doc/eggs-03.png)
-
-### inputs
-
-crow
-- input 2: linear FM for just friends (control-rate)
+- **egg: crow**
+  - **E1:** envelope - time
+  - **E2:** envelope - shape
+  - **E3:** envelope - ramp
+  - **K2:** envelope - trigger (hold: free/unfree)
+  - **K2:** envelope - mode
+- **egg: jf**
+  - **E1:** transpose
+  - **E2:** velocity
+  - **E3:** run
+  - **K2:** god
+  - **K3:** mode
+- **egg: midi**
+  - **E1-3:** midi CC out 
+  - **K2:** note echo
+  - **K3:** panic
+- **K1 (hold):** set mod source
+- **scale**
+  - **E1:** scale
+  - **E2:** row tuning
+  - **E3:** midi in
+  - **K2-3:** fret marks
+- **key**
+  - **E1:** tuning system
+  - **E2:** base key
+  - **E3:** 0v pitch
