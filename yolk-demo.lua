@@ -345,6 +345,7 @@ local function Rate_reverse()
     local _reverse = Grid.toggle()
     local _rate_mark = Grid.fill()
     local _rate = Grid.integer()
+    local _loop = Grid.toggle()
 
     return function(props)
         local pattern = props.mute_group:get_playing_pattern()
@@ -367,7 +368,7 @@ local function Rate_reverse()
             do
                 local tf = pattern.time_factor
                 _rate{
-                    x = 5, y = 2, size = 8, min = -3,
+                    x = 5, y = 2, size = 7, min = -3,
                     state = {
                         (tf < 1) and ((1/tf) - 1) or ((-tf) + 1),
                         function(v)
@@ -378,6 +379,17 @@ local function Rate_reverse()
                     }
                 }
             end
+            _loop{
+                x = 12, y = 2, levels = { 4, 15 },
+                state = {
+                    pattern.loop and 1 or 0,
+                    function(v)
+                        pattern:set_loop(v == 1)
+
+                        crops.dirty.grid = true
+                    end
+                }
+            }
         end
     end
 end
@@ -716,7 +728,7 @@ local function action_read(file, name, slot)
 
             for k,_ in pairs(data.pattern_groups[i]) do
                 for ii,_ in ipairs(data.pattern_groups[i][k]) do
-                    pattern_groups[i][ii]:import(data.pattern_groups[i][k][ii], true)
+                    pattern_groups[i][k][ii]:import(data.pattern_groups[i][k][ii], true)
                 end
             end
         end
@@ -742,9 +754,10 @@ local function action_write(file, name, slot)
         data.sequences[i] = arqs[i].sequence
 
         data.pattern_groups[i] = {}
-        for k,_ in pairs(data.pattern_groups[i]) do
+        for k,_ in pairs(pattern_groups[i]) do
             data.pattern_groups[i][k] = {}
             for ii, pattern in ipairs(pattern_groups[i][k]) do
+                print('export pattern', i, k, ii)
                 data.pattern_groups[i][k][ii] = pattern:export()
             end
         end
