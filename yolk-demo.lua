@@ -20,22 +20,47 @@ Tune = include 'lib/tune/ui'
 arqueggiator = include 'lib/arqueggiator/arqueggiator'
 Arqueggiator = include 'lib/arqueggiator/ui'
 
-tune.setup{ 
-    tunings = tunings, scale_groups = scale_groups, presets = 8,
-    action = function() 
-        crops.dirty.grid = true 
-        crops.dirty.screen = true
-    end
-}
-
 polysub = require 'engine/polysub'
 engine.name = 'PolySub'
 
 g = grid.connect()
 
-local pat_count = 4
 track_count = 2
+track_focus = 1
 
+tune_count = 8
+tunes = {}
+
+function get_tune(track)
+    return tunes[params:get('tuning_preset_'..track)]
+end
+
+for i = 1,tune_count do
+    tunes[i] = tune.new{ 
+        tunings = tunings, id = i,
+        scale_groups = scale_groups,
+        add_param_separator = false,
+        add_param_group = true,
+        visibility_condition = function() 
+            local visible = false
+
+            for track = 1,track_count do
+                if params:get('tuning_preset_'..track) == i then
+                    visible = true
+                    break
+                end
+            end
+
+            return visible
+        end,
+        action = function() 
+            crops.dirty.grid = true 
+            crops.dirty.screen = true
+        end
+    }
+end
+
+local pat_count = 4
 pattern_groups = {}
 mute_groups = {}
 
@@ -62,7 +87,7 @@ local function note_on_poly(track, idx)
     local column = (idx-1)%keymap_wrap + 1 + params:get('column_'..track)
     local row = (idx-1)//keymap_wrap + 1 + params:get('row_'..track)
 
-    local hz = tune.hz(column, row, nil, params:get('oct_'..track)) * 55
+    local hz = get_tune(track):hz(column, row, nil, params:get('oct_'..track)) * 55
 
     engine.start(idx, hz)
 end
@@ -72,7 +97,7 @@ local function note_mono(track, idx, gate)
     local column = (idx-1)%keymap_wrap + 1 + params:get('column_'..track)
     local row = (idx-1)//keymap_wrap + 1 + params:get('row_'..track)
 
-    local hz = tune.hz(column, row, nil, params:get('oct_'..track)) * 55
+    local hz = get_tune(track):hz(column, row, nil, params:get('oct_'..track)) * 55
 
     if gate > 0 then
         engine.start(0, hz)
@@ -163,8 +188,24 @@ arqs[1].action_off = function(idx) note_off_poly(1, idx) end
 arqs[2].action_on = function(idx) note_mono(2, idx, 1) end
 arqs[2].action_off = function(idx) note_mono(2, idx, 0) end
 
+do
+    params:add_separator('tuning')
 
-tune.params()
+    for i = 1,track_count do
+        params:add{
+            type = 'number', id = 'tuning_preset_'..i, name = 'track '..i..' preset',
+            min = 1, max = presets, default = 1, 
+            action = function() for _,t in ipairs(tunes) do
+                t:update_tuning()
+            end end,
+        }
+    end
+
+    for i,t in ipairs(tunes) do
+        t:add_params('preset '..i)
+    end
+end
+
 params:add_separator('')
 polysub:params()
 
@@ -286,6 +327,7 @@ local Arq = function(args)
             x = 1, y = 8, size = keymap_size, wrap = keymap_wrap,
             flow = 'right', flow_wrap = 'up',
             levels = { 0, 1 },
+            tune = get_tune(props.track),
             toct = params:get('oct_'..props.track),
             column_offset = params:get('column_'..props.track),
             row_offset = params:get('row_'..props.track),
@@ -453,6 +495,7 @@ function Grid_page(args)
                 x = 1, y = 8, size = keymap_size, wrap = keymap_wrap,
                 flow = 'right', flow_wrap = 'up',
                 levels = { 0, 4 },
+                tune = get_tune(track),
                 toct = params:get('oct_'..track),
                 column_offset = params:get('column_'..track),
                 row_offset = params:get('row_'..track),
@@ -477,10 +520,12 @@ function Grid_tuning()
         _degs[i] = Tune.grid.scale_degree()
     end
 
-    return function()
+    return function(props)
+        local track = props.track
+
         _tonic{
             left = 1, top = 7, levels = { 4, 15 },
-            state = Tune.of_preset_param('tonic'),
+            state = Tune.of_param(get_tune(track), 'tonic'), tune = get_tune(track),
         }
         _degs_bg{
             left = 1, top = 4, level = 4
@@ -488,7 +533,8 @@ function Grid_tuning()
         for i,_deg in ipairs(_degs) do
             _deg{
                 left = 1, top = 4, levels = { 8, 15 },
-                degree = i, state = Tune.of_preset_param('enable_'..i)
+                tune = get_tune(track),
+                degree = i, state = Tune.of_param(get_tune(track), 'enable_'..i),
             }
         end
     end
@@ -514,9 +560,9 @@ function App.grid()
             _track{
                 x = 1, y = 1, size = #_pages, levels = { 0, 15 },
                 state = { 
-                    track, 
+                    track_focus, 
                     function(v) 
-                        track = v
+                        track_focus = v
 
                         crops.dirty.grid = true 
                     end
@@ -527,22 +573,22 @@ function App.grid()
                 x_next = 14, y_next = 1,
                 x_prev = 13, y_prev = 1,
                 levels = { 4, 15 }, wrap = false,
-                min = params:lookup_param('column_'..track).min,
-                max = params:lookup_param('column_'..track).max,
-                state = crops.of_param('column_'..track)
+                min = params:lookup_param('column_'..track_focus).min,
+                max = params:lookup_param('column_'..track_focus).max,
+                state = crops.of_param('column_'..track_focus)
             }
             _row{
                 x_next = 16, y_next = 1,
                 x_prev = 16, y_prev = 2,
                 levels = { 4, 15 }, wrap = false,
-                min = params:lookup_param('row_'..track).min,
-                max = params:lookup_param('row_'..track).max,
-                state = crops.of_param('row_'..track)
+                min = params:lookup_param('row_'..track_focus).min,
+                max = params:lookup_param('row_'..track_focus).max,
+                state = crops.of_param('row_'..track_focus)
             }
 
-            _pages[track]()
+            _pages[track_focus]()
         else
-            _tuning()
+            _tuning{ track = track_focus }
         end
     end
 end
@@ -564,17 +610,19 @@ function Tuning_norns()
     local _rows = { enc = Enc.integer(), screen = Screen.list() }
     local _frets = { key = Key.integer(), screen = Screen.list() }
 
-    local fret_id = tune.get_preset_param_id('fret_marks')
+    local fret_id = get_tune(track):get_param_id('fret_marks')
     local fret_opts = params:lookup_param(fret_id).options
     local frets_text = { 'frets' }
     for _,v in ipairs(fret_opts) do table.insert(frets_text, v) end
 
-    return function()
+    return function(props)
+        local track = props.track
+
         _degs{
-            x = x[1], y = y[1.5]
+            x = x[1], y = y[1.5], tune = get_tune(track),
         }
         do
-            local id = tune.get_scale_param_id()
+            local id = get_tune(track):get_scale_param_id()
             _scale.enc{
                 n = 1, max = #params:lookup_param(id).options,
                 state = crops.of_param(id)
@@ -585,7 +633,7 @@ function Tuning_norns()
             }
         end
         do
-            local id = tune.get_preset_param_id('tuning')
+            local id = get_tune(track):get_param_id('tuning')
             _tuning.enc{
                 n = 2, max = #params:lookup_param(id).options,
                 state = crops.of_param(id)
@@ -596,7 +644,7 @@ function Tuning_norns()
             }
         end
         do
-            local id = tune.get_preset_param_id('row_tuning')
+            local id = get_tune(track):get_param_id('row_tuning')
             _rows.enc{
                 n = 3, max = params:lookup_param(id).max,
                 state = crops.of_param(id)
@@ -641,7 +689,9 @@ function App.norns()
 
         if not k1 then 
             _text{ x = x[1], y = y[1], text = 'yolk-demo' }
-        else _tuning() end
+        else
+            _tuning{ track = track_focus }
+        end
     end
 end
 
