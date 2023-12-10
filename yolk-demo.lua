@@ -251,7 +251,7 @@ local Arq = function(args)
 
     --TODO: mulipattern alongside div & reverse (?)
     local function process_arq(new)
-        arq.sequence = new
+        arq:set_sequence(new)
 
         crops.dirty.grid = true;
     end
@@ -272,9 +272,10 @@ local Arq = function(args)
         _snapshots[i] = Produce.grid.triggerhold()
     end
     
-    local _reverse = Grid.toggle()
     local _rate_mark = Grid.fill()
     local _rate = Grid.integer()
+    local _reverse = Grid.toggle()
+    local _loop = Grid.toggle()
 
     return function(props)
         local ss = props.snapshots
@@ -318,8 +319,12 @@ local Arq = function(args)
                 x = 8, y = 2, level = 4,
             }
             _rate{
-                x = 5, y = 2, size = 8,
+                x = 5, y = 2, size = 7,
                 state = crops.of_param(arq:pfix('division'))
+            }
+            _loop{
+                x = 12, y = 2, levels = { 4, 15 },
+                state = crops.of_param(arq:pfix('loop'))
             }
         end
 
@@ -336,7 +341,8 @@ local Arq = function(args)
             x = 1, y = 8, size = keymap_size, wrap = keymap_wrap,
             flow = 'right', flow_wrap = 'up', levels = { 4, 8, 15 }, 
             step = arq.step, gate = arq.gate,
-            state = crops.of_variable(arq.sequence, set_arq)
+            state = crops.of_variable(arq.sequence, set_arq),
+            -- action_replace = function() arq:restart() end
         }
     end
 end
