@@ -26,7 +26,11 @@ engine.name = 'PolySub'
 g = grid.connect()
 
 track_count = 2
+
 track_focus = 1
+
+NORMAL, SCALE, KEY = 1, 2, 3
+view_focus = NORMAL
 
 tune_count = 8
 tunes = {}
@@ -191,6 +195,11 @@ arqs[2].action_off = function(idx) note_mono(2, idx, 0) end
 do
     params:add_separator('tuning')
 
+    tune.add_global_params(function() 
+        crops.dirty.screen = true
+        crops.dirty.grid = true
+    end)
+    
     for i = 1,track_count do
         params:add{
             type = 'number', id = 'tuning_preset_'..i, name = 'track '..i..' preset',
@@ -280,52 +289,54 @@ local Arq = function(args)
     return function(props)
         local ss = props.snapshots
 
-        for i,_patrec in ipairs(_patrecs) do
-            _patrec{
-                x = 4 + i - 1, y = 1,
-                pattern = pattern_group[i],
-            }
-        end
-
-        for i,_snapshot in ipairs(_snapshots) do
-            local filled = (ss[i] and #ss[i] > 0)
-
-            function snapshot()
-                ss[i] = arq.sequence
+        if view_focus == NORMAL then
+            for i,_patrec in ipairs(_patrecs) do
+                _patrec{
+                    x = 4 + i - 1, y = 1,
+                    pattern = pattern_group[i],
+                }
             end
-            function clear_snapshot()
-                ss[i] = {}
-                -- arq.sequence = {}
-            end
-            function recall()
-                if #(ss[i] or {}) > 0 then 
-                    set_arq(ss[i])
+
+            for i,_snapshot in ipairs(_snapshots) do
+                local filled = (ss[i] and #ss[i] > 0)
+
+                function snapshot()
+                    ss[i] = arq.sequence
                 end
+                function clear_snapshot()
+                    ss[i] = {}
+                    -- arq.sequence = {}
+                end
+                function recall()
+                    if #(ss[i] or {}) > 0 then 
+                        set_arq(ss[i])
+                    end
+                end
+                _snapshot{
+                    x = 9 + i - 1, y = 1,
+                    levels = { filled and 4 or 0, filled and 15 or 8 },
+                    action_tap = filled and recall or snapshot,
+                    action_hold = clear_snapshot,
+                }
             end
-            _snapshot{
-                x = 9 + i - 1, y = 1,
-                levels = { filled and 4 or 0, filled and 15 or 8 },
-                action_tap = filled and recall or snapshot,
-                action_hold = clear_snapshot,
-            }
-        end
-        
-        if #arq.sequence > 0 then
-            _reverse{
-                x = 4, y = 2, levels = { 4, 15 },
-                state = crops.of_param(arq:pfix('reverse'))
-            }
-            _rate_mark{
-                x = 8, y = 2, level = 4,
-            }
-            _rate{
-                x = 5, y = 2, size = 7,
-                state = crops.of_param(arq:pfix('division'))
-            }
-            _loop{
-                x = 12, y = 2, levels = { 4, 15 },
-                state = crops.of_param(arq:pfix('loop'))
-            }
+            
+            if #arq.sequence > 0 then
+                _reverse{
+                    x = 4, y = 2, levels = { 4, 15 },
+                    state = crops.of_param(arq:pfix('reverse'))
+                }
+                _rate_mark{
+                    x = 8, y = 2, level = 4,
+                }
+                _rate{
+                    x = 5, y = 2, size = 7,
+                    state = crops.of_param(arq:pfix('division'))
+                }
+                _loop{
+                    x = 12, y = 2, levels = { 4, 15 },
+                    state = crops.of_param(arq:pfix('loop'))
+                }
+            end
         end
 
         _frets{
@@ -402,6 +413,12 @@ end
 
 function Grid_page(args)
     local track = args.track
+    
+    local _view_scale = Grid.momentary()
+    local _view_key = Grid.momentary()
+    
+    local _mode_arq = Grid.toggle()
+    local _mode_latch = Grid.toggle()
 
     local _patrecs = {}
     for i = 1, #pattern_groups[track].manual do
@@ -418,94 +435,129 @@ function Grid_page(args)
 
     local _rate_rev = Rate_reverse()
 
-    local _mode_arq = Grid.toggle()
-    local _mode_latch = Grid.toggle()
-
     local _arq = Arq{
         arq = arqs[track],
         pattern_group = pattern_groups[track].arq,
         mute_group = mute_groups[track].arq,
         snapshot_count = snapshot_count,
     }
+    
+    local _column = Produce.grid.integer_trigger()
+    local _row = Produce.grid.integer_trigger()
 
     local _frets = Tune.grid.fretboard()
     local _keymap = Keymap.grid[args.voicing]()
 
+    local _tonic = Tune.grid.tonic()
+    
+    local _degs_bg = Tune.grid.scale_degrees_background()
+    local _degs = {}
+    for i = 1, 12 do 
+        _degs[i] = Tune.grid.scale_degree()
+    end
+
     return function()
+        _view_scale{
+            x = 15, y = 1, levels = { 1, 15 },
+            state = crops.of_variable(
+                view_focus==SCALE and 1 or 0,
+                function(v)
+                    view_focus = v>0 and SCALE or NORMAL
+                    crops.dirty.grid = true
+                    crops.dirty.screen = true
+                end
+            )
+        }
+        _view_key{
+            x = 15, y = 2, levels = { 1, 15 },
+            state = crops.of_variable(
+                view_focus==KEY and 1 or 0,
+                function(v)
+                    view_focus = v>0 and KEY or NORMAL
+                    crops.dirty.grid = true
+                    crops.dirty.screen = true
+                end
+            )
+        }
+
         local mode = params:get('mode_'..track)
 
-        _mode_arq{
-            x = 3, y = 1, levels = { 4, 15 },
-            state = crops.of_variable(
-                mode==ARQ and 1 or 0,
-                function(v)
-                    params:set('mode_'..track, v==1 and ARQ or NORMAL)
-                end
-            )
-        }
-        _mode_latch{
-            x = 8, y = 1, levels = { 4, 15 },
-            state = crops.of_variable(
-                mode==LATCH and 1 or 0,
-                function(v)
-                    params:set('mode_'..track, v==1 and LATCH or NORMAL)
-                end
-            )
-        }
+        if view_focus == NORMAL then
+            _mode_arq{
+                x = 3, y = 1, levels = { 4, 15 },
+                state = crops.of_variable(
+                    mode==ARQ and 1 or 0,
+                    function(v)
+                        params:set('mode_'..track, v==1 and ARQ or NORMAL)
+                    end
+                )
+            }
+            _mode_latch{
+                x = 8, y = 1, levels = { 4, 15 },
+                state = crops.of_variable(
+                    mode==LATCH and 1 or 0,
+                    function(v)
+                        params:set('mode_'..track, v==1 and LATCH or NORMAL)
+                    end
+                )
+            }
+        end
 
         if mode==ARQ then
             _arq{ track = track, snapshots = snapshots[track].arq }
         else
-            local ss = snapshots[track].manual
+            if view_focus == NORMAL then
+                local ss = snapshots[track].manual
 
-            for i,_patrec in ipairs(_patrecs) do
-                _patrec{
-                    x = 4 + i - 1, y = 1,
-                    pattern = pattern_groups[track].manual[i],
+                for i,_patrec in ipairs(_patrecs) do
+                    _patrec{
+                        x = 4 + i - 1, y = 1,
+                        pattern = pattern_groups[track].manual[i],
+                    }
+                end
+                _rate_rev{
+                    mute_group = mute_groups[track].manual,
                 }
-            end
-            _rate_rev{
-                mute_group = mute_groups[track].manual,
-            }
 
-            for i,_snapshot in ipairs(_snapshots) do
-                local filled = (ss[i] and next(ss[i]))
+                for i,_snapshot in ipairs(_snapshots) do
+                    local filled = (ss[i] and next(ss[i]))
 
-                function snapshot()
-                    ss[i] = keymaps[track]:get()
-                end
-                function clear_snapshot()
-                    ss[i] = {}
-                    -- keymaps[track]:clear()
-                end
-                function recall()
-                    keymaps[track]:set(ss[i] or {})
-                end
-                
-                if mode==LATCH then
-                    _snapshot.latch{
-                        x = 9 + i - 1, y = 1,
-                        levels = { filled and 4 or 0, filled and 15 or 8 },
-                        action_tap = filled and recall or snapshot,
-                        action_hold = clear_snapshot,
-                    }
-                else
-                    _snapshot.normal{
-                        x = 9 + i - 1, y = 1,
-                        levels = { filled and 4 or 0, filled and 15 or 8 },
-                        state = crops.of_variable(snapshots_normal_held[i], function(v)
-                            snapshots_normal_held[i] = v
+                    function snapshot()
+                        ss[i] = keymaps[track]:get()
+                    end
+                    function clear_snapshot()
+                        ss[i] = {}
+                        -- keymaps[track]:clear()
+                    end
+                    function recall()
+                        keymaps[track]:set(ss[i] or {})
+                    end
+                    
+                    if mode==LATCH then
+                        _snapshot.latch{
+                            x = 9 + i - 1, y = 1,
+                            levels = { filled and 4 or 0, filled and 15 or 8 },
+                            action_tap = filled and recall or snapshot,
+                            action_hold = clear_snapshot,
+                        }
+                    else
+                        _snapshot.normal{
+                            x = 9 + i - 1, y = 1,
+                            levels = { filled and 4 or 0, filled and 15 or 8 },
+                            state = crops.of_variable(snapshots_normal_held[i], function(v)
+                                snapshots_normal_held[i] = v
 
-                            if v > 0 then
-                                if filled then recall() 
-                                elseif next(keymaps[track]:get()) then snapshot() end
-                            else
-                                keymaps[track]:set({})
-                            end
+                                if v > 0 then
+                                    if filled then recall() 
+                                    elseif next(keymaps[track]:get()) then snapshot() end
+                                else
+                                    keymaps[track]:set({})
+                                end
 
-                            crops.dirty.grid = true
-                        end)
-                    }
+                                crops.dirty.grid = true
+                            end)
+                        }
+                    end
                 end
             end
 
@@ -526,55 +578,92 @@ function Grid_page(args)
                 mode = mode_names[mode]
             }
         end
-    end
-end
-
-function Grid_tuning()
-    local _tonic = Tune.grid.tonic()
-    
-    local _degs_bg = Tune.grid.scale_degrees_background()
-    local _degs = {}
-    for i = 1, 12 do 
-        _degs[i] = Tune.grid.scale_degree()
-    end
-
-    return function(props)
-        local track = props.track
-
-        _tonic{
-            left = 1, top = 7, levels = { 4, 15 },
-            state = Tune.of_param(get_tune(track), 'tonic'), tune = get_tune(track),
+            
+        _row{
+            x_next = 16, y_next = 1,
+            x_prev = 16, y_prev = 2,
+            levels = { 4, 15 }, wrap = false,
+            min = params:lookup_param('row_'..track).min,
+            max = params:lookup_param('row_'..track).max,
+            state = crops.of_param('row_'..track)
         }
-        _degs_bg{
-            left = 1, top = 4, level = 4
-        }
-        for i,_deg in ipairs(_degs) do
-            _deg{
-                left = 1, top = 4, levels = { 8, 15 },
+
+        if view_focus == NORMAL then 
+                _column{
+                x_next = 14, y_next = 1,
+                x_prev = 13, y_prev = 1,
+                levels = { 4, 15 }, wrap = false,
+                min = params:lookup_param('column_'..track).min,
+                max = params:lookup_param('column_'..track).max,
+                state = crops.of_param('column_'..track)
+            } 
+        elseif view_focus == SCALE then
+            _degs_bg{
+                left = 3, top = 1, level = 4
+            }
+            for i,_deg in ipairs(_degs) do
+                _deg{
+                    left = 3, top = 1, levels = { 8, 15 },
+                    tune = get_tune(track), degree = i, 
+                    state = Tune.of_param(get_tune(track), 'enable_'..i),
+                }
+            end
+        elseif view_focus == KEY then
+            _tonic{
+                left = 3, top = 1, levels = { 4, 15 },
+                state = Tune.of_param(get_tune(track), 'tonic'), 
                 tune = get_tune(track),
-                degree = i, state = Tune.of_param(get_tune(track), 'enable_'..i),
             }
         end
     end
 end
+
+-- function Grid_tuning()
+--     local _tonic = Tune.grid.tonic()
+    
+--     local _degs_bg = Tune.grid.scale_degrees_background()
+--     local _degs = {}
+--     for i = 1, 12 do 
+--         _degs[i] = Tune.grid.scale_degree()
+--     end
+
+--     return function(props)
+--         local track = props.track
+
+--         _tonic{
+--             left = 1, top = 7, levels = { 4, 15 },
+--             state = Tune.of_param(get_tune(track), 'tonic'), tune = get_tune(track),
+--         }
+--         _degs_bg{
+--             left = 1, top = 4, level = 4
+--         }
+--         for i,_deg in ipairs(_degs) do
+--             _deg{
+--                 left = 1, top = 4, levels = { 8, 15 },
+--                 tune = get_tune(track),
+--                 degree = i, state = Tune.of_param(get_tune(track), 'enable_'..i),
+--             }
+--         end
+--     end
+-- end
 
 local App = {}
 
 function App.grid()
     local _track = Grid.integer()
     
-    local _column = Produce.grid.integer_trigger()
-    local _row = Produce.grid.integer_trigger()
+    -- local _column = Produce.grid.integer_trigger()
+    -- local _row = Produce.grid.integer_trigger()
 
     local _pages = {
         [1] = Grid_page{ track = 1, voicing = 'poly' },
         [2] = Grid_page{ track = 2, voicing = 'mono' },
     }
 
-    local _tuning = Grid_tuning()
+    -- local _tuning = Grid_tuning()
     
     return function()
-        if not k1 then
+        -- if not k1 then
             _track{
                 x = 1, y = 1, size = #_pages, levels = { 0, 15 },
                 state = { 
@@ -587,27 +676,10 @@ function App.grid()
                 }
             }
         
-            _column{
-                x_next = 14, y_next = 1,
-                x_prev = 13, y_prev = 1,
-                levels = { 4, 15 }, wrap = false,
-                min = params:lookup_param('column_'..track_focus).min,
-                max = params:lookup_param('column_'..track_focus).max,
-                state = crops.of_param('column_'..track_focus)
-            }
-            _row{
-                x_next = 16, y_next = 1,
-                x_prev = 16, y_prev = 2,
-                levels = { 4, 15 }, wrap = false,
-                min = params:lookup_param('row_'..track_focus).min,
-                max = params:lookup_param('row_'..track_focus).max,
-                state = crops.of_param('row_'..track_focus)
-            }
-
             _pages[track_focus]()
-        else
-            _tuning{ track = track_focus }
-        end
+        -- else
+        --     _tuning{ track = track_focus }
+        -- end
     end
 end
     
@@ -635,52 +707,57 @@ function Tuning_norns()
 
     return function(props)
         local track = props.track
+        local view = props.view
 
         _degs{
             x = x[1], y = y[1.5], tune = get_tune(track),
         }
-        do
-            local id = get_tune(track):get_scale_param_id()
-            _scale.enc{
-                n = 1, max = #params:lookup_param(id).options,
-                state = crops.of_param(id)
-            }
-            _scale.screen{
-                x = x[1], y = y[1],
-                text = { scale = params:string(id) }
-            }
-        end
-        do
-            local id = get_tune(track):get_param_id('tuning')
-            _tuning.enc{
-                n = 2, max = #params:lookup_param(id).options,
-                state = crops.of_param(id)
-            }
-            _tuning.screen{
-                x = x[1], y = y[2], flow = 'down',
-                text = { tuning = params:string(id) }
-            }
-        end
-        do
-            local id = get_tune(track):get_param_id('row_tuning')
-            _rows.enc{
-                n = 3, max = params:lookup_param(id).max,
-                state = crops.of_param(id)
-            }
-            _rows.screen{
-                x = x[2], y = y[2], flow = 'down',
-                text = { rows = params:string(id) }
-            }
-        end
-        do
-            _frets.key{
-                n_prev = 2, n_next = 3, max = #fret_opts,
-                state = crops.of_param(fret_id)
-            }
-            _frets.screen{
-                x = x[1], y = y[3],
-                text = frets_text, focus = params:get(fret_id) + 1,
-            }
+
+        if view == SCALE then
+            do
+                local id = get_tune(track):get_scale_param_id()
+                _scale.enc{
+                    n = 1, max = #params:lookup_param(id).options,
+                    state = crops.of_param(id)
+                }
+                _scale.screen{
+                    x = x[1], y = y[1],
+                    text = { scale = params:string(id) }
+                }
+            end
+            do
+                local id = get_tune(track):get_param_id('row_tuning')
+                _rows.enc{
+                    n = 2, max = params:lookup_param(id).max,
+                    state = crops.of_param(id)
+                }
+                _rows.screen{
+                    x = x[1], y = y[2], flow = 'down',
+                    text = { rows = params:string(id) }
+                }
+            end
+            do
+                _frets.key{
+                    n_prev = 2, n_next = 3, max = #fret_opts,
+                    state = crops.of_param(fret_id)
+                }
+                _frets.screen{
+                    x = x[1], y = y[3],
+                    text = frets_text, focus = params:get(fret_id) + 1,
+                }
+            end
+        elseif view == KEY then
+            do
+                local id = get_tune(track):get_param_id('tuning')
+                _tuning.enc{
+                    n = 1, max = #params:lookup_param(id).options,
+                    state = crops.of_param(id)
+                }
+                _tuning.screen{
+                    x = x[1], y = y[1],
+                    text = { tuning = params:string(id) }
+                }
+            end
         end
     end
 end
@@ -689,26 +766,26 @@ function App.norns()
     local _text = Screen.text()
     local _tuning = Tuning_norns()
 
-    local _k1 = Key.momentary()
+    -- local _k1 = Key.momentary()
 
     return function()
-        _k1{
-            n = 1,
-            state = {
-                k1 and 1 or 0,
-                function(v) 
-                    k1 = (v==1) 
+        -- _k1{
+        --     n = 1,
+        --     state = {
+        --         k1 and 1 or 0,
+        --         function(v) 
+        --             k1 = (v==1) 
 
-                    crops.dirty.grid = true
-                    crops.dirty.screen = true
-                end
-            }
-        }
+        --             crops.dirty.grid = true
+        --             crops.dirty.screen = true
+        --         end
+        --     }
+        -- }
 
-        if not k1 then 
+        if view_focus == NORMAL then 
             _text{ x = x[1], y = y[1], text = 'yolk-demo' }
         else
-            _tuning{ track = track_focus }
+            _tuning{ track = track_focus, view = view_focus }
         end
     end
 end
@@ -763,7 +840,6 @@ local function action_write(file, name, slot)
         for k,_ in pairs(pattern_groups[i]) do
             data.pattern_groups[i][k] = {}
             for ii, pattern in ipairs(pattern_groups[i][k]) do
-                print('export pattern', i, k, ii)
                 data.pattern_groups[i][k][ii] = pattern:export()
             end
         end
