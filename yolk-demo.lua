@@ -87,27 +87,69 @@ local keymap_size = 128-16-16
 local keymap_wrap = 16
 
 k1 = false
+    
+local midi_devices = {}
+local device_names = { 'engine' }
+local ENGINE = 1
+for i = 1,#midi.vports do
+    midi_devices[i + 1] = midi.connect(i)
+    device_names[i + 1] = util.trim_string_to_width(midi_devices[i+1].name,80)
+end
+
 
 local function note_on_poly(track, idx)
+    local target = params:get('target_'..track)
+
     local column = (idx-1)%keymap_wrap + 1 + params:get('column_'..track)
     local row = (idx-1)//keymap_wrap + 1 + params:get('row_'..track)
+    local oct = params:get('oct_'..track)
 
-    local hz = get_tune(track):hz(column, row, nil, params:get('oct_'..track)) * 55
-
-    engine.start(idx, hz)
+    if target == ENGINE then
+        local hz = get_tune(track):hz(column, row, nil, oct) * 55
+        engine.start(idx, hz)
+    else
+        local note = get_tune(track):midi(column, row, nil, oct) + 33
+        midi_devices[target]:note_on(note)
+    end
 end
-local function note_off_poly(track, idx) engine.stop(idx) end
+local function note_off_poly(track, idx) 
+    local target = params:get('target_'..track)
+
+    if target == ENGINE then
+        engine.stop(idx) 
+    else
+        local column = (idx-1)%keymap_wrap + 1 + params:get('column_'..track)
+        local row = (idx-1)//keymap_wrap + 1 + params:get('row_'..track)
+        local oct = params:get('oct_'..track)
+
+        local note = get_tune(track):midi(column, row, nil, oct) + 33
+        midi_devices[target]:note_off(note)
+    end
+end
     
 local function note_mono(track, idx, gate)
+    local target = params:get('target_'..track)
+
     local column = (idx-1)%keymap_wrap + 1 + params:get('column_'..track)
     local row = (idx-1)//keymap_wrap + 1 + params:get('row_'..track)
+    local oct = params:get('oct_'..track)
 
-    local hz = get_tune(track):hz(column, row, nil, params:get('oct_'..track)) * 55
+    if target == ENGINE then
+        local hz = get_tune(track):hz(column, row, nil, oct) * 55
 
-    if gate > 0 then
-        engine.start(0, hz)
+        if gate > 0 then
+            engine.start(0, hz)
+        else
+            engine.stop(0)
+        end
     else
-        engine.stop(0)
+        local note = get_tune(track):midi(column, row, nil, oct) + 33
+
+        if gate > 0 then
+            midi_devices[target]:note_on(note)
+        else
+            midi_devices[target]:note_off(note)
+        end
     end
 end
 
@@ -117,6 +159,14 @@ local mode_names = { 'normal', 'latch', 'arq' }
     
 for i = 1,track_count do
     params:add_separator('track '..i)
+
+    params:add{
+        type = 'option', id = 'target_'..i, name = 'destination',
+        options = device_names, default = ENGINE,
+        action = function()
+            crops.dirty.screen = true
+        end
+    }
 
     params:add{
         type = 'option', id = 'mode_'..i, name = 'mode',
@@ -131,7 +181,7 @@ for i = 1,track_count do
                 mute_groups[i].manual:stop()
             end
             if v ~= LATCH then
-                -- keymaps[i]:clear()
+                keymaps[i]:clear()
             end
             
             crops.dirty.grid = true 
@@ -149,7 +199,7 @@ for i = 1,track_count do
     }
     params:add{
         type = 'number', id = 'row_'..i, name = 'row',
-        min = -16, max = 16, default = 0,
+        min = -16, max = 16, default = -2,
         action = function() crops.dirty.grid = true end
     }
 end
@@ -203,7 +253,7 @@ do
     for i = 1,track_count do
         params:add{
             type = 'number', id = 'tuning_preset_'..i, name = 'track '..i..' preset',
-            min = 1, max = presets, default = 1, 
+            min = 1, max = presets, default = i, 
             action = function() for _,t in ipairs(tunes) do
                 t:update_tuning()
             end end,
@@ -703,6 +753,7 @@ function App.grid()
                         track_focus = v
 
                         crops.dirty.grid = true 
+                        crops.dirty.screen = true 
                     end
                 }
             }
@@ -727,9 +778,11 @@ function Tuning_norns()
     local _degs = Tune.screen.scale_degrees()    
     
     local _scale = { enc = Enc.integer(), screen = Screen.list() }
-    local _tuning = { enc = Enc.integer(), screen = Screen.list() }
     local _rows = { enc = Enc.integer(), screen = Screen.list() }
     local _frets = { key = Key.integer(), screen = Screen.list() }
+
+    local _tuning = { enc = Enc.integer(), screen = Screen.list() }
+    local _base_key = { enc = Enc.integer(), screen = Screen.list() }
 
     local fret_id = get_tune(track):get_param_id('fret_marks')
     local fret_opts = params:lookup_param(fret_id).options
@@ -791,6 +844,17 @@ function Tuning_norns()
                     text = { tuning = params:string(id) }
                 }
             end
+            do
+                local id = 'base_tonic'
+                _tuning.enc{
+                    n = 2, state = crops.of_param(id),
+                    min = params:lookup_param(id).min, max = params:lookup_param(id).max,
+                }
+                _tuning.screen{
+                    x = x[1], y = y[2], flow = 'down',
+                    text = { ['base key'] = params:string(id) },
+                }
+            end
         end
     end
 end
@@ -798,25 +862,23 @@ end
 function App.norns()
     local _text = Screen.text()
     local _tuning = Tuning_norns()
-
-    -- local _k1 = Key.momentary()
+    local _dest = { enc = Enc.integer(), screen = Screen.list() }
 
     return function()
-        -- _k1{
-        --     n = 1,
-        --     state = {
-        --         k1 and 1 or 0,
-        --         function(v) 
-        --             k1 = (v==1) 
-
-        --             crops.dirty.grid = true
-        --             crops.dirty.screen = true
-        --         end
-        --     }
-        -- }
-
         if view_focus == NORMAL then 
-            _text{ x = x[1], y = y[1], text = 'yolk-demo' }
+            _text{ x = x[1], y = y[1], text = 'this is eggs' }
+            
+            do
+                local id = 'target_'..track_focus
+                _dest.enc{
+                    n = 2, state = crops.of_param(id),
+                    max = #params:lookup_param(id).options,
+                }
+                _dest.screen{
+                    x = x[1], y = y[2], flow = 'down',
+                    text = { ['destination'] = params:string(id) },
+                }
+            end
         else
             _tuning{ track = track_focus, view = view_focus }
         end
