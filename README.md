@@ -17,12 +17,6 @@ note that the last version supported crow & jf. they're coming back later
 
 ## install
 
-in the maiden REPL, type 
-
-`;install https://github.com/andr-ew/eggs/releases/download/latest/complete-source-code.zip`
-
-## install
-
 in the maiden [REPL](https://monome.org/docs/norns/image/wifi_maiden-images/install-repl.png), type:
 
 ```
