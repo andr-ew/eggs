@@ -62,6 +62,7 @@ for i = 1,tune_count do
             crops.dirty.screen = true
         end
     }
+
 end
 
 local pat_count = 4
@@ -121,17 +122,16 @@ for i = 1,track_count do
         type = 'option', id = 'mode_'..i, name = 'mode',
         options = mode_names,
         action = function(v) 
-            for _,mute_group in pairs(mute_groups[i]) do
-                mute_group:stop()
-            end
-
             keymaps[i]:set_latch(v == LATCH)
 
-            if v ~= LATCH then
-                keymaps[i]:clear()
-            end
             if v ~= ARQ then
+                mute_groups[i].arq:stop()
                 arqs[i].sequence = {}
+            else
+                mute_groups[i].manual:stop()
+            end
+            if v ~= LATCH then
+                -- keymaps[i]:clear()
             end
             
             crops.dirty.grid = true 
@@ -212,6 +212,24 @@ do
 
     for i,t in ipairs(tunes) do
         t:add_params('preset '..i)
+
+        params:set_action(tunes[i]:get_param_id('tonic'), function()
+            crops.dirty.grid = true 
+            crops.dirty.screen = true
+
+            for track = 1,track_count do
+                if params:get('tuning_preset_'..track) == i then
+                    local arq = arqs[track]
+                    local pat = mute_groups[track].manual:get_playing_pattern()
+
+                    if params:get('mode_'..track) == ARQ then
+                        if params:get(arq:pfix('loop')) == 0 then arq:restart() end
+                    elseif pat and (not pat.loop) then
+                        pat:start()
+                    end
+                end
+            end
+        end)
     end
 end
 
@@ -599,19 +617,32 @@ function Grid_page(args)
             } 
         elseif view_focus == SCALE then
             _degs_bg{
-                left = 3, top = 1, level = 4
+                left = 3, top = 1, level = 4,
+                -- width = 7, nudge = 6, -- 8x8 sizing
+                width = 12, nudge = 3,
             }
             for i,_deg in ipairs(_degs) do
                 _deg{
                     left = 3, top = 1, levels = { 8, 15 },
                     tune = get_tune(track), degree = i, 
+                    -- width = 7, nudge = 6, -- 8x8 sizing
+                    width = 12, nudge = 3,
                     state = Tune.of_param(get_tune(track), 'enable_'..i),
                 }
             end
         elseif view_focus == KEY then
             _tonic{
                 left = 3, top = 1, levels = { 4, 15 },
-                state = Tune.of_param(get_tune(track), 'tonic'), 
+                -- width = 7, nudge = 6, -- 8x8 sizing
+                width = 12, nudge = 3,
+                -- state = Tune.of_param(get_tune(track), 'tonic'), 
+                state = crops.of_variable(
+                    params:get(get_tune(track):get_param_id('tonic')), 
+                    function(v)
+                        params:set(get_tune(track):get_param_id('tonic'), v, true) 
+                        params:lookup_param(get_tune(track):get_param_id('tonic')):bang()
+                    end
+                ),
                 tune = get_tune(track),
             }
         end
@@ -711,6 +742,8 @@ function Tuning_norns()
 
         _degs{
             x = x[1], y = y[1.5], tune = get_tune(track),
+            -- width = 7, nudge = 6, -- 8x8 sizing
+            width = 12, nudge = 3,
         }
 
         if view == SCALE then
