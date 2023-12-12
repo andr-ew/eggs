@@ -14,7 +14,7 @@ pitch gesture looper for norns + grid
 
 - midi
 
-note that the last version supported crow & jf. they're coming back later
+note that the last version supported crow & jf. they're coming back later. u better beleive it
 
 ## install
 
