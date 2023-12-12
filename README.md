@@ -28,7 +28,7 @@ in the maiden [REPL](https://monome.org/docs/norns/image/wifi_maiden-images/inst
 
 **view:** normal
 - **K2:** select between engine & midi output destinations
-- 
+ 
 **view:** scale
 - other stuff
 
