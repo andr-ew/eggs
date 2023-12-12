@@ -1,3 +1,14 @@
+-- eggs
+--
+-- pitch gesture looper for norns + grid
+--
+-- version 0.2.0 @andrew
+--
+-- required: grid (128)
+--
+-- documentation:
+-- github.com/andr-ew/eggs
+
 pattern_time = include 'lib/pattern_time_extended/pattern_time_extended'
 mute_group = include 'lib/pattern_time_extended/mute_group'
 
@@ -127,31 +138,31 @@ local function note_off_poly(track, idx)
     end
 end
     
-local function note_mono(track, idx, gate)
-    local target = params:get('target_'..track)
+-- local function note_mono(track, idx, gate)
+--     local target = params:get('target_'..track)
 
-    local column = (idx-1)%keymap_wrap + 1 + params:get('column_'..track)
-    local row = (idx-1)//keymap_wrap + 1 + params:get('row_'..track)
-    local oct = params:get('oct_'..track)
+--     local column = (idx-1)%keymap_wrap + 1 + params:get('column_'..track)
+--     local row = (idx-1)//keymap_wrap + 1 + params:get('row_'..track)
+--     local oct = params:get('oct_'..track)
 
-    if target == ENGINE then
-        local hz = get_tune(track):hz(column, row, nil, oct) * 55
+--     if target == ENGINE then
+--         local hz = get_tune(track):hz(column, row, nil, oct) * 55
 
-        if gate > 0 then
-            engine.start(0, hz)
-        else
-            engine.stop(0)
-        end
-    else
-        local note = get_tune(track):midi(column, row, nil, oct) + 33
+--         if gate > 0 then
+--             engine.start(0, hz)
+--         else
+--             engine.stop(0)
+--         end
+--     else
+--         local note = get_tune(track):midi(column, row, nil, oct) + 33
 
-        if gate > 0 then
-            midi_devices[target]:note_on(note)
-        else
-            midi_devices[target]:note_off(note)
-        end
-    end
-end
+--         if gate > 0 then
+--             midi_devices[target]:note_on(note)
+--         else
+--             midi_devices[target]:note_off(note)
+--         end
+--     end
+-- end
 
 
 local NORMAL, LATCH, ARQ = 1, 2, 3
@@ -211,8 +222,10 @@ keymaps = {
         pattern = mute_groups[1].manual,
         size = keymap_size,
     },
-    [2] = keymap.mono.new{
-        action = function(idx, gate) note_mono(2, idx, gate) end,
+    [2] = keymap.poly.new{
+        -- action = function(idx, gate) note_mono(2, idx, gate) end,
+        action_on = function(idx) note_on_poly(2, idx) end,
+        action_off = function(idx) note_off_poly(2, idx) end,
         pattern = mute_groups[2].manual,
         size = keymap_size,
     }    
@@ -239,8 +252,10 @@ end
     
 arqs[1].action_on = function(idx) note_on_poly(1, idx) end
 arqs[1].action_off = function(idx) note_off_poly(1, idx) end
-arqs[2].action_on = function(idx) note_mono(2, idx, 1) end
-arqs[2].action_off = function(idx) note_mono(2, idx, 0) end
+-- arqs[2].action_on = function(idx) note_mono(2, idx, 1) end
+-- arqs[2].action_off = function(idx) note_mono(2, idx, 0) end
+arqs[2].action_on = function(idx) note_on_poly(2, idx) end
+arqs[2].action_off = function(idx) note_off_poly(2, idx) end
 
 do
     params:add_separator('tuning')
@@ -738,7 +753,7 @@ function App.grid()
 
     local _pages = {
         [1] = Grid_page{ track = 1, voicing = 'poly' },
-        [2] = Grid_page{ track = 2, voicing = 'mono' },
+        [2] = Grid_page{ track = 2, voicing = 'poly' },
     }
 
     -- local _tuning = Grid_tuning()
