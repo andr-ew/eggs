@@ -24,17 +24,6 @@ in the maiden [REPL](https://monome.org/docs/norns/image/wifi_maiden-images/inst
 ;install https://github.com/andr-ew/eggs/releases/download/latest/complete-source-code.zip
 ```
 
-## norns UI
-
-**view:** normal
-- **K2:** select between engine & midi output destinations
- 
-**view:** scale
-- other stuff
-
-**view:** key
-- other stuff
-
 ## grid UI
 
 ![diagram of the grid interface. text description forthcoming](/lib/doc/eggs_grid.png)
@@ -81,4 +70,13 @@ in the maiden [REPL](https://monome.org/docs/norns/image/wifi_maiden-images/inst
 
 **key:** hold to edit the key / tonic
 
+## norns UI
 
+**view:** normal
+- **K2:** select between engine & midi output destinations
+ 
+**view:** scale
+- other stuff
+
+**view:** key
+- other stuff
