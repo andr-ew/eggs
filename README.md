@@ -17,8 +17,9 @@ note that the last version supported crow & jf. they're coming back later
 
 ## install
 
-in the maiden REPL, type `;install https://github.com/andr-ew/grvl/releases/download/latest/complete-source-code.zip`
+in the maiden REPL, type 
 
+`;install https://github.com/andr-ew/eggs/releases/download/latest/complete-source-code.zip`
 
 ## install
 
