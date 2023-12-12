@@ -32,7 +32,7 @@ in the maiden [REPL](https://monome.org/docs/norns/image/wifi_maiden-images/inst
 
 **latch:** make it drone
 
-**arquencer:** the arqueggiator is a mix between an arpeggiator & a sequencer. here are some ways to interact with it:
+**arquencer:** the arquencer is a mix between an arpeggiator & a sequencer. here are some ways to interact with it:
 
 - **hold & release multiple keys:** creates a new arq (clears any previous keys). notes are played in the order they are pressed, including double-presses on the same key.
 - **single tap**
