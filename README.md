@@ -7,7 +7,8 @@ pitch gesture looper for norns + grid
 **required**
 
 - [norns](https://github.com/p3r7/awesome-monome-norns) (220321 or later)
-- [grid](https://monome.org/docs/grid/) (128, 64, or midigrid)
+- [grid](https://monome.org/docs/grid/) (128)
+  - other grid sizes forthcoming
 
 **also supported**
 
