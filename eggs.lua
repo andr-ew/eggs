@@ -9,7 +9,19 @@
 -- documentation:
 -- github.com/andr-ew/eggs
 
-pattern_time = include 'lib/pattern_time_extended/pattern_time_extended'
+--device globals
+
+g = grid.connect()
+
+--system libs
+
+polysub = require 'engine/polysub'
+engine.name = 'PolySub'
+cs = require 'controlspec'
+
+--git submodule libs
+
+pattern_time = include 'lib/pattern_time_extended/pattern_time_extended' --pattern_time fork
 mute_group = include 'lib/pattern_time_extended/mute_group'
 
 include 'lib/crops/core'
@@ -30,11 +42,6 @@ Tune = include 'lib/tune/ui'
 
 arqueggiator = include 'lib/arqueggiator/arqueggiator'
 Arqueggiator = include 'lib/arqueggiator/ui'
-
-polysub = require 'engine/polysub'
-engine.name = 'PolySub'
-
-g = grid.connect()
 
 track_count = 2
 
@@ -73,7 +80,6 @@ for i = 1,tune_count do
             crops.dirty.screen = true
         end
     }
-
 end
 
 local pat_count = 4
