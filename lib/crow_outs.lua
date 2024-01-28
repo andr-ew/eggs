@@ -1,4 +1,5 @@
 local crow_outs = { {}, {} }
+local Crow_outs = { { norns = {} }, { norns = {} } }
 
 local TRANSIENT, SUSTAIN, CYCLE = 1,2,3
 local mode_names = { 'transient', 'sustain', 'cycle' }
@@ -14,21 +15,32 @@ local shape_names = {
     'rebound',
 }
 
-for track = 1,2 do
-    local off = track==2 and 2 or 0
+for i = 1,2 do
+    local off = i==2 and 2 or 0
     local outs = { cv = 1+off, gate = 2+off }
     
     local mode = SUSTAIN
+
+    local preset = 2 + i
+    local oct = 0
+    local column = 0
+    local row = -2
+    local index = 0
     local volts = 0
+    
+    local function update_volts()
+        local x = (index-1)%eggs.keymap_wrap + 1 + column 
+        local y = (index-1)//eggs.keymap_wrap + 1 + row 
 
-    crow_outs[track].set_note = function(idx, gate)
+        volts = eggs.tunes[preset]:volts(x, y, nil, oct) 
+        crow.output[outs.cv].volts = volts
+    end
+
+    crow_outs[i].voicing = 'mono'
+
+    crow_outs[i].set_note = function(idx, gate)
         if gate > 0 then
-            local column = (idx-1)%eggs.keymap_wrap + 1 + params:get('column_'..track)
-            local row = (idx-1)//eggs.keymap_wrap + 1 + params:get('row_'..track)
-            local oct = params:get('oct_'..track)
-
-            volts = eggs.get_tune(track):volts(column, row, nil, oct) 
-            crow.output[outs.cv].volts = volts
+            index = idx; update_volts()
         end
 
         if mode == SUSTAIN then
@@ -38,7 +50,7 @@ for track = 1,2 do
         end
     end
     
-    -- crow_outs[track].set_slew = function(v)
+    -- crow_outs[i].set_slew = function(v)
     --     crow.output[outs.cv].slew = v
     -- end
 
@@ -98,15 +110,23 @@ for track = 1,2 do
         update_dyn()
     end
 
-    crow_outs[track].params_count = 6
+    crow_outs[i].params_count = 12
 
-    crow_outs[track].name = 'output '..outs.cv..' + '..outs.gate
+    crow_outs[i].name = 'output '..outs.cv..' + '..outs.gate
 
-    crow_outs[track].add_params = function()
-        -- params:add_separator()
+    local param_ids = {
+        tuning_preset = 'tuning_preset_crow_outs_'..i,
+        oct = 'oct_crow_outs_'..i,
+        row = 'row_crow_outs_'..i,
+        column = 'column_crow_outs_'..i,
+    }
+    crow_outs[i].param_ids = param_ids
+
+    crow_outs[i].add_params = function()
+        params:add_separator('function generator')
 
         params:add{
-            id = 'shape '..track, name = 'shape',
+            id = 'shape '..i, name = 'shape',
             type = 'option', options = shape_names, default = shape,
             action = function(v)
                 shape = v; update_asl()
@@ -115,7 +135,7 @@ for track = 1,2 do
             end,
         }
         params:add{
-            id = 'mode '..track, name = 'mode',
+            id = 'mode '..i, name = 'mode',
             type = 'option', options = mode_names, default = mode,
             action = function(v)
                 mode = v; update_asl()
@@ -124,7 +144,7 @@ for track = 1,2 do
             end,
         }
         params:add{
-            id = 'retrigger '..track, name = 'retrigger',
+            id = 'retrigger '..i, name = 'retrigger',
             type = 'binary', 
             behavior = 'toggle', default = retrigger,
             action = function(v)
@@ -134,7 +154,7 @@ for track = 1,2 do
             end,
         }
         params:add{
-            id = 'time '..track, name = 'time', type = 'control',
+            id = 'time '..i, name = 'time', type = 'control',
             controlspec = cs.new(0.001, 16, 'exp', 0, time, "s"),
             action = function(v)
                 time = v; update_dyn()
@@ -143,7 +163,7 @@ for track = 1,2 do
             end,
         }
         params:add{
-            id = 'ramp '..track, name = 'ramp', type = 'control',
+            id = 'ramp '..i, name = 'ramp', type = 'control',
             controlspec = cs.def { min = -1, max = 1, default = ramp },
             action = function(v)
                 ramp = v; update_dyn()
@@ -152,7 +172,7 @@ for track = 1,2 do
             end,
         }
         params:add{
-            id = 'level '..track, name = 'level', type = 'control',
+            id = 'level '..i, name = 'level', type = 'control',
             controlspec = cs.def{ min = 0, max = 10, default = level },
             action = function(v)
                 level = v; update_dyn()
@@ -160,7 +180,55 @@ for track = 1,2 do
                 crops.dirty.screen = true
             end,
         }
+
+        params:add_separator('CV')
+
+        params:add{
+            type = 'number', id = param_ids.tuning_preset, name = 'tuning preset',
+            min = 1, max = presets, default = preset, 
+            action = function(v) 
+                preset = v
+
+                for _,t in ipairs(eggs.tunes) do
+                    t:update_tuning()
+                end 
+            end,
+        }
+        params:add{
+            type = 'number', id = param_ids.oct, name = 'oct',
+            min = -5, max = 5, default = oct,
+            action = function(v) 
+                oct = v; update_volts()
+
+                crops.dirty.grid = true 
+            end
+        }
+        params:add{
+            type = 'number', id = param_ids.column, name = 'column',
+            min = -16, max = 16, default = column,
+            action = function(v) 
+                column = v; update_volts()
+
+                crops.dirty.grid = true 
+            end
+        }
+        params:add{
+            type = 'number', id = param_ids.row, name = 'row',
+            min = -16, max = 16, default = row,
+            action = function(v) 
+                row = v; update_volts()
+
+                crops.dirty.grid = true 
+            end
+        }
+    end
+
+    Crow_outs[i].norns.page = function()
+        -- local _time = { enc = Enc.control }        
+
+        return function()
+        end
     end
 end
 
-return crow_outs
+return crow_outs, Crow_outs

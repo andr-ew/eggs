@@ -45,12 +45,130 @@ Arqueggiator = include 'lib/arqueggiator/ui'
 
 --script files
 
-crow_outs = include 'lib/crow_outs'
+Components = include 'lib/ui/components'
+
+crow_outs, Crow_outs = include 'lib/crow_outs'
 midi_outs = include 'lib/midi_outs'
 
-midi_outs.init({ 1, 2 })
+midi_outs.init(2)
 
-eggs = include 'lib/globals'
+--global variables
+
+eggs = {}
+
+eggs.track_count = 4
+eggs.track_focus = 1
+
+eggs.outs = {
+    midi_outs[1],
+    midi_outs[2],
+    crow_outs[1],
+    crow_outs[2]
+}
+
+eggs.NORMAL, eggs.SCALE, eggs.KEY = 1, 2, 3
+eggs.view_focus = eggs.NORMAL
+
+local tune_count = 8
+eggs.tunes = {}
+
+for i = 1,tune_count do
+    eggs.tunes[i] = tune.new{ 
+        tunings = tunings, id = i,
+        scale_groups = scale_groups,
+        add_param_separator = false,
+        add_param_group = true,
+        visibility_condition = function() 
+            local visible = false
+
+            for track = 1,eggs.track_count do
+                if params:get(eggs.outs[track].param_ids.tuning_preset) == i then
+                    visible = true
+                    break
+                end
+            end
+
+            return visible
+        end,
+        action = function() 
+            crops.dirty.grid = true 
+            crops.dirty.screen = true
+        end
+    }
+end
+
+local pat_count = 4
+eggs.pattern_groups = {}
+eggs.mute_groups = {}
+
+for i = 1,eggs.track_count do
+    eggs.pattern_groups[i] = { manual = {}, arq = {} }
+    for k,_ in pairs(eggs.pattern_groups[i]) do
+        for ii = 1,pat_count do
+            eggs.pattern_groups[i][k][ii] = pattern_time.new()
+        end
+    end
+
+    eggs.mute_groups[i] = {
+        manual = mute_group.new(eggs.pattern_groups[i].manual),
+        arq = mute_group.new(eggs.pattern_groups[i].arq),
+    }
+end
+
+eggs.keymap_size = 128-16-16
+eggs.keymap_wrap = 16
+
+eggs.NORMAL, eggs.LATCH, eggs.ARQ = 1, 2, 3
+eggs.mode_names = { 'normal', 'latch', 'arq' }
+    
+eggs.keymaps = {
+    [1] = keymap.poly.new{
+        action_on = midi_outs[1].note_on,
+        action_off = midi_outs[1].note_off,
+        pattern = eggs.mute_groups[1].manual,
+        size = eggs.keymap_size,
+    },
+    [2] = keymap.poly.new{
+        action_on = midi_outs[2].note_on,
+        action_off = midi_outs[2].note_off,
+        pattern = eggs.mute_groups[2].manual,
+        size = eggs.keymap_size,
+    },
+    [3] = keymap.mono.new{
+        action = crow_outs[1].set_note,
+        pattern = eggs.mute_groups[3].manual,
+        size = eggs.keymap_size,
+    },
+    [4] = keymap.mono.new{
+        action = crow_outs[2].set_note,
+        pattern = eggs.mute_groups[4].manual,
+        size = eggs.keymap_size,
+    }    
+}
+
+eggs.snapshot_count = 4
+    
+eggs.arqs = {}
+eggs.snapshots = {}
+for i = 1,eggs.track_count do
+    local arq = arqueggiator.new(i)
+
+    eggs.arqs[i] = arq
+
+    eggs.snapshots[i] = { manual = {}, arq = {} }
+end
+    
+eggs.arqs[1].action_on = midi_outs[1].note_on
+eggs.arqs[1].action_off = midi_outs[1].note_off
+eggs.arqs[2].action_on = midi_outs[2].note_on
+eggs.arqs[2].action_off = midi_outs[2].note_off
+eggs.arqs[3].action_on = function(idx) crow_outs[1].set_note(idx, 1) end
+eggs.arqs[3].action_off = function(idx) crow_outs[1].set_note(idx, 0) end
+eggs.arqs[4].action_on = function(idx) crow_outs[2].set_note(idx, 1) end
+eggs.arqs[4].action_off = function(idx) crow_outs[2].set_note(idx, 0) end
+
+--more script files
+
 include 'lib/params'
 App = {}
 App.grid = include 'lib/ui/grid'                    --grid UI

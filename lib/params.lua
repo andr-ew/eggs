@@ -1,5 +1,6 @@
 params:add_separator('midi')
-for _,midi_out in ipairs(midi_outs) do
+for i,midi_out in ipairs(midi_outs) do
+    params:add_group('midi_outs_'..i, midi_out.name, midi_out.params_count)
     midi_out.add_params()
 end
 
@@ -12,7 +13,7 @@ end
 
 params:add_separator('keymap')
 for i = 1,eggs.track_count do
-    params:add_group('keymap_track_'..i, 'track '..i, 4)
+    params:add_group('keymap_track_'..i, 'track '..i, 1)
 
     params:add{
         type = 'option', id = 'mode_'..i, name = 'mode',
@@ -32,21 +33,6 @@ for i = 1,eggs.track_count do
             
             crops.dirty.grid = true 
         end
-    }
-    params:add{
-        type = 'number', id = 'oct_'..i, name = 'oct',
-        min = -5, max = 5, default = 0,
-        action = function() crops.dirty.grid = true end
-    }
-    params:add{
-        type = 'number', id = 'column_'..i, name = 'column',
-        min = -16, max = 16, default = 0,
-        action = function() crops.dirty.grid = true end
-    }
-    params:add{
-        type = 'number', id = 'row_'..i, name = 'row',
-        min = -16, max = 16, default = -2,
-        action = function() crops.dirty.grid = true end
     }
 end
 
@@ -70,15 +56,8 @@ do
         crops.dirty.grid = true
     end)
     
-    for i = 1,eggs.track_count do
-        params:add{
-            type = 'number', id = 'tuning_preset_'..i, name = 'track '..i..' preset',
-            min = 1, max = presets, default = i, 
-            action = function() for _,t in ipairs(eggs.tunes) do
-                t:update_tuning()
-            end end,
-        }
-    end
+    -- for i = 1,eggs.track_count do
+    -- end
 
     for i,t in ipairs(eggs.tunes) do
         t:add_params('preset '..i)
@@ -88,7 +67,7 @@ do
             crops.dirty.screen = true
 
             for track = 1,eggs.track_count do
-                if params:get('tuning_preset_'..track) == i then
+                if params:get(eggs.outs[track].param_ids.tuning_preset) == i then
                     local arq = eggs.arqs[track]
                     local pat = eggs.mute_groups[track].manual:get_playing_pattern()
 
@@ -134,3 +113,66 @@ do
     }
 end
 
+local function action_read(file, name, slot)
+    print('pset action read', file, name, slot)
+
+    local name = 'pset-'..string.format("%02d", slot)
+    local fname = norns.state.data..name..'.data'
+    local data, err = tab.load(fname)
+
+    if err then print('ERROR pset action read: '..err) end
+    if data then
+        eggs.snapshots = data.snapshots or {}
+        
+        for i = 1,eggs.track_count do
+            eggs.arqs[i].sequence = data.sequences[i] or {}
+
+            for k,_ in pairs(data.pattern_groups[i]) do
+                for ii,_ in ipairs(data.pattern_groups[i][k]) do
+                    eggs.pattern_groups[i][k][ii]:import(data.pattern_groups[i][k][ii], true)
+                end
+            end
+        end
+    else
+        print('pset action read: no data file found at '..fname)
+    end
+
+    params:bang()
+end
+local function action_write(file, name, slot)
+    print('pset action write', file, name, slot)
+
+    local name = 'pset-'..string.format("%02d", slot)
+    local fname = norns.state.data..name..'.data'
+
+    local data = {
+        sequences = {},
+        snapshots = eggs.snapshots,
+        pattern_groups = {},
+    }
+
+    for i = 1,eggs.track_count do
+        data.sequences[i] = eggs.arqs[i].sequence
+
+        data.pattern_groups[i] = {}
+        for k,_ in pairs(eggs.pattern_groups[i]) do
+            data.pattern_groups[i][k] = {}
+            for ii, pattern in ipairs(eggs.pattern_groups[i][k]) do
+                data.pattern_groups[i][k][ii] = pattern:export()
+            end
+        end
+    end
+
+    local err = tab.save(data, fname)
+
+    if err then print('ERROR pset action write: '..err) end
+end
+local function action_delete(file, name, slot)
+    print('pset action delete', file, name, slot)
+
+    --TODO: delete files
+end
+
+params.action_read = action_read
+params.action_write = action_write
+params.action_delete = action_delete

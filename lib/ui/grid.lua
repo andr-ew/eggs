@@ -6,7 +6,7 @@ local function Arq(args)
     local mute_group = args.mute_group
     local pattern_group = args.pattern_group
     local snapshot_count = args.snapshot_count
-
+    local out = args.out
     --TODO: mulipattern alongside div & reverse (?)
     local function process_arq(new)
         arq:set_sequence(new)
@@ -37,6 +37,7 @@ local function Arq(args)
 
     return function(props)
         local ss = props.snapshots
+        local tune = props.tune
 
         if eggs.view_focus == eggs.NORMAL then
             for i,_patrec in ipairs(_patrecs) do
@@ -92,10 +93,10 @@ local function Arq(args)
             x = 1, y = 8, size = eggs.keymap_size, wrap = eggs.keymap_wrap,
             flow = 'right', flow_wrap = 'up',
             levels = { 0, 1 },
-            tune = eggs.get_tune(props.track),
-            toct = params:get('oct_'..props.track),
-            column_offset = params:get('column_'..props.track),
-            row_offset = params:get('row_'..props.track),
+            tune = tune,
+            toct = params:get(out.param_ids.oct),
+            column_offset = params:get(out.param_ids.column),
+            row_offset = params:get(out.param_ids.row),
         }
         _keymap{
             x = 1, y = 8, size = eggs.keymap_size, wrap = eggs.keymap_wrap,
@@ -162,6 +163,8 @@ end
 
 local function Page(args)
     local track = args.track
+    local out = eggs.outs[track]
+    local voicing = out.voicing
     
     local _view_scale = Grid.momentary()
     local _view_key = Grid.momentary()
@@ -189,13 +192,14 @@ local function Page(args)
         pattern_group = eggs.pattern_groups[track].arq,
         mute_group = eggs.mute_groups[track].arq,
         snapshot_count = eggs.snapshot_count,
+        out = out
     }
     
     local _column = Produce.grid.integer_trigger()
     local _row = Produce.grid.integer_trigger()
 
     local _frets = Tune.grid.fretboard()
-    local _keymap = Keymap.grid[args.voicing]()
+    local _keymap = Keymap.grid[voicing]()
 
     local _tonic = Tune.grid.tonic()
     
@@ -206,6 +210,8 @@ local function Page(args)
     end
 
     return function()
+        local tune = eggs.tunes[params:get(out.param_ids.tuning_preset)]
+
         _view_scale{
             x = 15, y = 1, levels = { 1, 15 },
             state = crops.of_variable(
@@ -253,7 +259,7 @@ local function Page(args)
         end
 
         if mode==eggs.ARQ then
-            _arq{ track = track, snapshots = eggs.snapshots[track].arq }
+            _arq{ track = track, snapshots = eggs.snapshots[track].arq, tune = tune }
         else
             if eggs.view_focus == eggs.NORMAL then
                 local ss = eggs.snapshots[track].manual
@@ -314,10 +320,10 @@ local function Page(args)
                 x = 1, y = 8, size = eggs.keymap_size, wrap = eggs.keymap_wrap,
                 flow = 'right', flow_wrap = 'up',
                 levels = { 0, 4 },
-                tune = eggs.get_tune(track),
-                toct = params:get('oct_'..track),
-                column_offset = params:get('column_'..track),
-                row_offset = params:get('row_'..track),
+                tune = tune,
+                toct = params:get(out.param_ids.oct),
+                column_offset = params:get(out.param_ids.column),
+                row_offset = params:get(out.param_ids.row),
             }
             _keymap{
                 x = 1, y = 8, size = eggs.keymap_size, wrap = eggs.keymap_wrap,
@@ -328,24 +334,30 @@ local function Page(args)
             }
         end
             
-        _row{
-            x_next = 16, y_next = 1,
-            x_prev = 16, y_prev = 2,
-            levels = { 4, 15 }, wrap = false,
-            min = params:lookup_param('row_'..track).min,
-            max = params:lookup_param('row_'..track).max,
-            state = crops.of_param('row_'..track)
-        }
+        do
+            local id = out.param_ids.row
+            _row{
+                x_next = 16, y_next = 1,
+                x_prev = 16, y_prev = 2,
+                levels = { 4, 15 }, wrap = false,
+                min = params:lookup_param(id).min,
+                max = params:lookup_param(id).max,
+                state = crops.of_param(id)
+            }
+        end
 
         if eggs.view_focus == eggs.NORMAL then 
+            do
+                local id = out.param_ids.column
                 _column{
-                x_next = 14, y_next = 1,
-                x_prev = 13, y_prev = 1,
-                levels = { 4, 15 }, wrap = false,
-                min = params:lookup_param('column_'..track).min,
-                max = params:lookup_param('column_'..track).max,
-                state = crops.of_param('column_'..track)
-            } 
+                    x_next = 14, y_next = 1,
+                    x_prev = 13, y_prev = 1,
+                    levels = { 4, 15 }, wrap = false,
+                    min = params:lookup_param(id).min,
+                    max = params:lookup_param(id).max,
+                    state = crops.of_param(id)
+                } 
+            end
         elseif eggs.view_focus == eggs.SCALE then
             _degs_bg{
                 left = 3, top = 1, level = 4,
@@ -355,10 +367,10 @@ local function Page(args)
             for i,_deg in ipairs(_degs) do
                 _deg{
                     left = 3, top = 1, levels = { 8, 15 },
-                    tune = eggs.get_tune(track), degree = i, 
+                    tune = tune, degree = i, 
                     -- width = 7, nudge = 6, -- 8x8 sizing
                     width = 12, nudge = 3,
-                    state = Tune.of_param(eggs.get_tune(track), 'enable_'..i),
+                    state = Tune.of_param(tune, 'enable_'..i),
                 }
             end
         elseif eggs.view_focus == eggs.KEY then
@@ -368,59 +380,35 @@ local function Page(args)
                 width = 12, nudge = 3,
                 -- state = Tune.of_param(eggs.get_tune(track), 'tonic'), 
                 state = crops.of_variable(
-                    params:get(eggs.get_tune(track):get_param_id('tonic')), 
+                    params:get(tune:get_param_id('tonic')), 
                     function(v)
-                        params:set(eggs.get_tune(track):get_param_id('tonic'), v, true) 
-                        params:lookup_param(eggs.get_tune(track):get_param_id('tonic')):bang()
+                        params:set(tune:get_param_id('tonic'), v, true) 
+                        params:lookup_param(tune:get_param_id('tonic')):bang()
                     end
                 ),
-                tune = eggs.get_tune(track),
+                tune = tune,
             }
         end
     end
 end
 
--- function Grid_tuning()
---     local _tonic = Tune.grid.tonic()
-    
---     local _degs_bg = Tune.grid.scale_degrees_background()
---     local _degs = {}
---     for i = 1, 12 do 
---         _degs[i] = Tune.grid.scale_degree()
---     end
-
---     return function(props)
---         local track = props.track
-
---         _tonic{
---             left = 1, top = 7, levels = { 4, 15 },
---             state = Tune.of_param(eggs.get_tune(track), 'tonic'), tune = eggs.get_tune(track),
---         }
---         _degs_bg{
---             left = 1, top = 4, level = 4
---         }
---         for i,_deg in ipairs(_degs) do
---             _deg{
---                 left = 1, top = 4, levels = { 8, 15 },
---                 tune = eggs.get_tune(track),
---                 degree = i, state = Tune.of_param(eggs.get_tune(track), 'enable_'..i),
---             }
---         end
---     end
--- end
-
-local function App()
+local function App(tracks)
     local _track = Grid.integer()
     
     -- local _column = Produce.grid.integer_trigger()
     -- local _row = Produce.grid.integer_trigger()
 
-    local _pages = {
-        [1] = Page{ track = 1, voicing = 'poly' },
-        [2] = Page{ track = 2, voicing = 'poly' },
-        [3] = Page{ track = 3, voicing = 'mono' },
-        [4] = Page{ track = 4, voicing = 'mono' },
-    }
+    -- local _pages = {
+    --     [1] = Page{ track = 1 },
+    --     [2] = Page{ track = 2 },
+    --     [3] = Page{ track = 3 },
+    --     [4] = Page{ track = 4 },
+    -- }
+
+    local _pages = {}
+    for track = 1,eggs.track_count do
+        _pages[track] = Page{ track = track }
+    end
 
     -- local _tuning = Grid_tuning()
     

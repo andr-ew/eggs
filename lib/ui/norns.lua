@@ -20,16 +20,18 @@ local function Tuning()
     return function(props)
         local track = props.track
         local view = props.view
+        local out = eggs.outs[track]
+        local tune = eggs.tunes[params:get(out.param_ids.tuning_preset)]
 
         _degs{
-            x = x[1], y = y[1.5], tune = eggs.get_tune(track),
+            x = x[1], y = y[1.5], tune = tune,
             -- width = 7, nudge = 6, -- 8x8 sizing
             width = 12, nudge = 3,
         }
 
         if view == eggs.SCALE then
             do
-                local id = eggs.get_tune(track):get_scale_param_id()
+                local id = tune:get_scale_param_id()
                 _scale.enc{
                     n = 1, max = #params:lookup_param(id).options,
                     state = crops.of_param(id)
@@ -40,7 +42,7 @@ local function Tuning()
                 }
             end
             do
-                local id = eggs.get_tune(track):get_param_id('row_tuning')
+                local id = tune:get_param_id('row_tuning')
                 _rows.enc{
                     n = 2, max = params:lookup_param(id).max,
                     state = crops.of_param(id)
@@ -51,7 +53,7 @@ local function Tuning()
                 }
             end
             do
-                local fret_id = eggs.get_tune(props.track):get_param_id('fret_marks')
+                local fret_id = tune:get_param_id('fret_marks')
                 local fret_opts = params:lookup_param(fret_id).options
                 local frets_text = { 'frets' }
                 for _,v in ipairs(fret_opts) do table.insert(frets_text, v) end
@@ -67,7 +69,7 @@ local function Tuning()
             end
         elseif view == eggs.KEY then
             do
-                local id = eggs.get_tune(track):get_param_id('tuning')
+                local id = tune:get_param_id('tuning')
                 _tuning.enc{
                     n = 1, max = #params:lookup_param(id).options,
                     state = crops.of_param(id)
