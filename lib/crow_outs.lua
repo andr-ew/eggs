@@ -25,21 +25,23 @@ for i = 1,2 do
     local column = 0
     local row = -2
     local index = 0
-    local volts = 0
+    local volts = { cv = 0, gate = 0 }
     
-    local function update_volts()
+    local function update_volts_cv()
         local x = (index-1)%eggs.keymap_wrap + 1 + column 
         local y = (index-1)//eggs.keymap_wrap + 1 + row 
 
-        volts = eggs.tunes[preset]:volts(x, y, nil, oct) 
-        crow.output[outs.cv].volts = volts
+        local cv = math.max(0, eggs.tunes[preset]:volts(x, y, nil, oct))
+        crow.output[outs.cv].volts = cv
+                
+        crops.dirty.screen = true
     end
 
     crow_outs[i].voicing = 'mono'
 
     crow_outs[i].set_note = function(idx, gate)
         if gate > 0 then
-            index = idx; update_volts()
+            index = idx; update_volts_cv()
         end
 
         if mode == SUSTAIN then
@@ -203,7 +205,7 @@ for i = 1,2 do
             type = 'number', id = param_ids.oct, name = 'oct',
             min = -5, max = 5, default = oct,
             action = function(v) 
-                oct = v; update_volts()
+                oct = v; update_volts_cv()
 
                 crops.dirty.grid = true 
             end
@@ -212,7 +214,7 @@ for i = 1,2 do
             type = 'number', id = param_ids.column, name = 'column',
             min = -16, max = 16, default = column,
             action = function(v) 
-                column = v; update_volts()
+                column = v; update_volts_cv()
 
                 crops.dirty.grid = true 
             end
@@ -221,12 +223,26 @@ for i = 1,2 do
             type = 'number', id = param_ids.row, name = 'row',
             min = -16, max = 16, default = row,
             action = function(v) 
-                row = v; update_volts()
+                row = v; update_volts_cv()
 
                 crops.dirty.grid = true 
             end
         }
     end
+
+    for k,out in pairs(outs) do
+        crow.output[out].receive = function(v)
+            volts[k] = v
+            crops.dirty.screen = true
+        end
+    end
+
+    local fps = 40
+    clock.run(function() while true do
+        crow.output[outs.cv].query()
+        crow.output[outs.gate].query()
+        clock.sleep(1/fps)
+    end end)
 
     crow_outs[i].Components = { norns = {} }
 
@@ -243,6 +259,16 @@ for i = 1,2 do
             _e3{ id = param_ids.ramp, n = 3 }
             
             _k2{ id = param_ids.mode, id_hold = param_ids.retrigger, n = 2 }
+
+            if crops.device == 'screen' and crops.mode == 'redraw' then
+                for ii,k in ipairs{ 'cv', 'gate' } do
+                    screen.level(8)
+                    screen.move(eggs.x[1], eggs.e[1].y + 2 + (ii + (i - 1)*2)*6)
+                    screen.line_width(1)
+                    screen.line_rel(volts[k] * eggs.w * (1/10) * 1 + 1, 0)
+                    screen.stroke()
+                end
+            end
         end
     end
 end

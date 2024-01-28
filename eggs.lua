@@ -55,7 +55,7 @@ do
     local mul = { x = (right - left) / 2, y = (bottom - top) / 2 }
     local x = { left, left + mul.x*5/4, [1.5] = 24  }
     local y = { top, bottom - 22, bottom, [1.5] = 20, }
-    eggs.x, eggs.y = x, y
+    eggs.x, eggs.y, eggs.w, eggs.h = x, y, w, h
 
     eggs.e = {
         { x = x[1], y = y[1] },
