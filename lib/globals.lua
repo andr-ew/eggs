@@ -151,13 +151,6 @@ eggs.snapshots = {}
 for i = 1,eggs.track_count do
     local arq = arqueggiator.new(i)
 
-    params:add_separator('arqueggiator '..i)
-    arq:params()
-    arq:start()
-
-    params:set_action(arq:pfix('division'), function() crops.dirty.grid = true end)
-    params:set_action(arq:pfix('reverse'), function() crops.dirty.grid = true end)
-
     eggs.arqs[i] = arq
 
     eggs.snapshots[i] = { manual = {}, arq = {} }

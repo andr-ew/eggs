@@ -46,6 +46,7 @@ Arqueggiator = include 'lib/arqueggiator/ui'
 --script files
 
 eggs = include 'lib/globals'
+crow_outs = include 'lib/crow_outs'
 include 'lib/params'
 App = {}
 App.grid = include 'lib/ui/grid'                    --grid UI
@@ -68,6 +69,10 @@ function init()
     params:read()
     params:set('hzlag', 0)
     params:bang()
+
+    for i = 1,eggs.track_count do
+        local arq = eggs.arqs[i]:start()
+    end
 
     crops.connect_grid(_app.grid, g, 240)
 end

@@ -1,13 +1,17 @@
+params:add_separator('destinations')
 for i = 1,eggs.track_count do
-    params:add_separator('track '..i)
-
     params:add{
-        type = 'option', id = 'target_'..i, name = 'destination',
+        type = 'option', id = 'target_'..i, name = 'destination '..i,
         options = eggs.device_names, default = tab.key(eggs.device_names, 'engine'),
         action = function()
             crops.dirty.screen = true
         end
     }
+end
+
+params:add_separator('keymap')
+for i = 1,eggs.track_count do
+    params:add_group('keymap_track_'..i, 'track '..i, 4)
 
     params:add{
         type = 'option', id = 'mode_'..i, name = 'mode',
@@ -43,6 +47,26 @@ for i = 1,eggs.track_count do
         min = -16, max = 16, default = -2,
         action = function() crops.dirty.grid = true end
     }
+end
+
+params:add_separator('crow outputs')
+for i = 1,eggs.track_count do
+    params:add_group('crow_outs_pair_'..i, crow_outs[i].name, crow_outs[i].params_count)
+    
+    crow_outs[i].add_params()
+end
+
+
+params:add_separator('arquencer')
+for i = 1,eggs.track_count do
+    local arq = eggs.arqs[i]
+
+    params:add_group('arqueggiator_track_'..i, 'track '..i, arqueggiator.params_count)
+    arq:params()
+    -- arq:start()
+
+    params:set_action(arq:pfix('division'), function() crops.dirty.grid = true end)
+    params:set_action(arq:pfix('reverse'), function() crops.dirty.grid = true end)
 end
 
 do
