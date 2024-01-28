@@ -47,6 +47,7 @@ function midi_outs.init(count)
         midi_outs[i].params_count = 5
     
         local param_ids = {
+            target = 'target_midi_outs_'..i,
             tuning_preset = 'tuning_preset_midi_outs_'..i,
             oct = 'oct_midi_outs_'..i,
             row = 'row_midi_outs_'..i,
@@ -58,7 +59,7 @@ function midi_outs.init(count)
 
         midi_outs[i].add_params = function()
             params:add{
-                type = 'option', id = 'target_'..i, name = 'destination',
+                type = 'option', id = param_ids.target, name = 'destination',
                 options = midi_outs.device_names, default = target,
                 action = function(v)
                     target = v
@@ -103,6 +104,16 @@ function midi_outs.init(count)
                     crops.dirty.grid = true 
                 end
             }
+        end
+
+        midi_outs[i].Components = { norns = {} }
+
+        midi_outs[i].Components.norns.page = function()
+            local _target = Components.enc_screen.param()
+
+            return function()
+                _target{ id = param_ids.target, n = 1 }
+            end
         end
     end
 end

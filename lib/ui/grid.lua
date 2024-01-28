@@ -394,44 +394,28 @@ end
 
 local function App(tracks)
     local _track = Grid.integer()
-    
-    -- local _column = Produce.grid.integer_trigger()
-    -- local _row = Produce.grid.integer_trigger()
-
-    -- local _pages = {
-    --     [1] = Page{ track = 1 },
-    --     [2] = Page{ track = 2 },
-    --     [3] = Page{ track = 3 },
-    --     [4] = Page{ track = 4 },
-    -- }
 
     local _pages = {}
     for track = 1,eggs.track_count do
         _pages[track] = Page{ track = track }
     end
 
-    -- local _tuning = Grid_tuning()
-    
     return function()
-        -- if not k1 then
-            _track{
-                x = 1, y = 1, size = #_pages, levels = { 0, 15 },
-                wrap = 2,
-                state = { 
-                    eggs.track_focus, 
-                    function(v) 
-                        eggs.track_focus = v
+        _track{
+            x = 1, y = 1, size = #_pages, levels = { 0, 15 },
+            wrap = 2,
+            state = { 
+                eggs.track_focus, 
+                function(v) 
+                    eggs.track_focus = v
 
-                        crops.dirty.grid = true 
-                        crops.dirty.screen = true 
-                    end
-                }
+                    crops.dirty.grid = true 
+                    crops.dirty.screen = true 
+                end
             }
-        
-            _pages[eggs.track_focus]()
-        -- else
-        --     _tuning{ track = eggs.track_focus }
-        -- end
+        }
+    
+        _pages[eggs.track_focus]()
     end
 end
     

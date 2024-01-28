@@ -1,11 +1,4 @@
-local x, y
-do
-    local top, bottom = 8, 64-2
-    local left, right = 2, 128-2
-    local mul = { x = (right - left) / 2, y = (bottom - top) / 2 }
-    x = { left, left + mul.x*5/4, [1.5] = 24  }
-    y = { top, bottom - 22, bottom, [1.5] = 20, }
-end
+local x, y, e, k = eggs.x, eggs.y, eggs.e, eggs.k
 
 local function Tuning()
     local _degs = Tune.screen.scale_degrees()    
@@ -99,9 +92,14 @@ local function App()
     local _tuning = Tuning()
     local _dest = { enc = Enc.integer(), screen = Screen.list() }
 
+    local _pages = {}
+    for track = 1,eggs.track_count do
+        _pages[track] = eggs.outs[track].Components.norns.page()
+    end
+
     return function()
         if eggs.view_focus == eggs.NORMAL then 
-            _text{ x = x[1], y = y[1], text = 'this is eggs' }
+            -- _text{ x = x[1], y = y[1], text = 'this is eggs' }
             
             -- do
             --     local id = 'target_'..eggs.track_focus
@@ -114,6 +112,8 @@ local function App()
             --         text = { ['destination'] = params:string(id) },
             --     }
             -- end
+
+            _pages[eggs.track_focus]()
         else
             _tuning{ track = eggs.track_focus, view = eggs.view_focus }
         end

@@ -43,21 +43,47 @@ Tune = include 'lib/tune/ui'
 arqueggiator = include 'lib/arqueggiator/arqueggiator'      --arqueggiation (arquencing) lib
 Arqueggiator = include 'lib/arqueggiator/ui'
 
+--global variables
+
+eggs = {}
+do
+    local mar = { left = 2, top = 7, right = 2, bottom = 2 }
+    local top, bottom = mar.top, 64-mar.bottom
+    local left, right = mar.left, 128-mar.right
+    local w = 128 - mar.left - mar.right
+    local h = 64 - mar.top - mar.bottom
+    local mul = { x = (right - left) / 2, y = (bottom - top) / 2 }
+    local x = { left, left + mul.x*5/4, [1.5] = 24  }
+    local y = { top, bottom - 22, bottom, [1.5] = 20, }
+    eggs.x, eggs.y = x, y
+
+    eggs.e = {
+        { x = x[1], y = y[1] },
+        { x = x[1], y = mar.top + h*(5.5/8) },
+        { x = x[2], y = mar.top + h*(5.5/8) },
+    }
+    eggs.k = {
+        {},
+        { x = x[1], y = mar.top + h*(7/8) },
+        { x = x[2], y = mar.top + h*(7/8) },
+    }
+end
+
 --script files
 
 Components = include 'lib/ui/components'
 
-crow_outs, Crow_outs = include 'lib/crow_outs'
+crow_outs = include 'lib/crow_outs'
 midi_outs = include 'lib/midi_outs'
 
 midi_outs.init(2)
 
---global variables
-
-eggs = {}
+--more global variables
 
 eggs.track_count = 4
 eggs.track_focus = 1
+
+eggs.mapping = false
 
 eggs.outs = {
     midi_outs[1],
@@ -166,6 +192,7 @@ eggs.arqs[3].action_on = function(idx) crow_outs[1].set_note(idx, 1) end
 eggs.arqs[3].action_off = function(idx) crow_outs[1].set_note(idx, 0) end
 eggs.arqs[4].action_on = function(idx) crow_outs[2].set_note(idx, 1) end
 eggs.arqs[4].action_off = function(idx) crow_outs[2].set_note(idx, 0) end
+
 
 --more script files
 

@@ -1,5 +1,4 @@
 local crow_outs = { {}, {} }
-local Crow_outs = { { norns = {} }, { norns = {} } }
 
 local TRANSIENT, SUSTAIN, CYCLE = 1,2,3
 local mode_names = { 'transient', 'sustain', 'cycle' }
@@ -119,6 +118,12 @@ for i = 1,2 do
         oct = 'oct_crow_outs_'..i,
         row = 'row_crow_outs_'..i,
         column = 'column_crow_outs_'..i,
+        shape = 'shape_crow_outs_'..i,
+        mode = 'mode_crow_outs_'..i,
+        retrigger = 'retrigger_crow_outs_'..i,
+        time = 'time_crow_outs_'..i,
+        ramp = 'ramp_crow_outs_'..i,
+        level = 'level_crow_outs_'..i,
     }
     crow_outs[i].param_ids = param_ids
 
@@ -126,7 +131,7 @@ for i = 1,2 do
         params:add_separator('function generator')
 
         params:add{
-            id = 'shape '..i, name = 'shape',
+            id = param_ids.shape, name = 'shape',
             type = 'option', options = shape_names, default = shape,
             action = function(v)
                 shape = v; update_asl()
@@ -135,7 +140,7 @@ for i = 1,2 do
             end,
         }
         params:add{
-            id = 'mode '..i, name = 'mode',
+            id = param_ids.mode, name = 'mode',
             type = 'option', options = mode_names, default = mode,
             action = function(v)
                 mode = v; update_asl()
@@ -144,7 +149,7 @@ for i = 1,2 do
             end,
         }
         params:add{
-            id = 'retrigger '..i, name = 'retrigger',
+            id = param_ids.retrigger, name = 'retrigger',
             type = 'binary', 
             behavior = 'toggle', default = retrigger,
             action = function(v)
@@ -154,7 +159,7 @@ for i = 1,2 do
             end,
         }
         params:add{
-            id = 'time '..i, name = 'time', type = 'control',
+            id = param_ids.time, name = 'time', type = 'control',
             controlspec = cs.new(0.001, 16, 'exp', 0, time, "s"),
             action = function(v)
                 time = v; update_dyn()
@@ -163,7 +168,7 @@ for i = 1,2 do
             end,
         }
         params:add{
-            id = 'ramp '..i, name = 'ramp', type = 'control',
+            id = param_ids.ramp, name = 'ramp', type = 'control',
             controlspec = cs.def { min = -1, max = 1, default = ramp },
             action = function(v)
                 ramp = v; update_dyn()
@@ -172,7 +177,7 @@ for i = 1,2 do
             end,
         }
         params:add{
-            id = 'level '..i, name = 'level', type = 'control',
+            id = param_ids.level, name = 'level', type = 'control',
             controlspec = cs.def{ min = 0, max = 10, default = level },
             action = function(v)
                 level = v; update_dyn()
@@ -223,12 +228,23 @@ for i = 1,2 do
         }
     end
 
-    Crow_outs[i].norns.page = function()
-        -- local _time = { enc = Enc.control }        
+    crow_outs[i].Components = { norns = {} }
+
+    crow_outs[i].Components.norns.page = function()
+        local _e1 = Components.enc_screen.param()
+        local _e2 = Components.enc_screen.param()
+        local _e3 = Components.enc_screen.param()
+
+        local _k2 = Components.key_screen.param()
 
         return function()
+            _e1{ id = param_ids.time, n = 1 }
+            _e2{ id = param_ids.shape, n = 2 }
+            _e3{ id = param_ids.ramp, n = 3 }
+            
+            _k2{ id = param_ids.mode, id_hold = param_ids.retrigger, n = 2 }
         end
     end
 end
 
-return crow_outs, Crow_outs
+return crow_outs
