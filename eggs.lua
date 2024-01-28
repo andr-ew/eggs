@@ -45,8 +45,12 @@ Arqueggiator = include 'lib/arqueggiator/ui'
 
 --script files
 
-eggs = include 'lib/globals'
 crow_outs = include 'lib/crow_outs'
+midi_outs = include 'lib/midi_outs'
+
+midi_outs.init({ 1, 2 })
+
+eggs = include 'lib/globals'
 include 'lib/params'
 App = {}
 App.grid = include 'lib/ui/grid'                    --grid UI

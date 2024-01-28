@@ -18,26 +18,29 @@ for track = 1,2 do
     local off = track==2 and 2 or 0
     local outs = { cv = 1+off, gate = 2+off }
     
-    local mode = TRANSIENT
+    local mode = SUSTAIN
+    local volts = 0
 
-    crow_outs[track].set_gate = function(v)
+    crow_outs[track].set_note = function(idx, gate)
+        if gate > 0 then
+            local column = (idx-1)%eggs.keymap_wrap + 1 + params:get('column_'..track)
+            local row = (idx-1)//eggs.keymap_wrap + 1 + params:get('row_'..track)
+            local oct = params:get('oct_'..track)
+
+            volts = eggs.get_tune(track):volts(column, row, nil, oct) 
+            crow.output[outs.cv].volts = volts
+        end
+
         if mode == SUSTAIN then
-            crow.output[outs.gate](v > 0)
+            crow.output[outs.gate](gate > 0)
         else
-            if v > 0 then crow.output[out]() end
+            if gate > 0 then crow.output[outs.gate]() end
         end
     end
-
-    local cv = 0
-
-    crow_outs[track].set_cv = function(v)
-        cv = v
-        crow.output[outs.cv].volts = v
-    end
     
-    crow_outs[track].set_slew = function(v)
-        crow.output[outs.cv].slew = v
-    end
+    -- crow_outs[track].set_slew = function(v)
+    --     crow.output[outs.cv].slew = v
+    -- end
 
     local time = 0.04
     local ramp = 0

@@ -1,6 +1,6 @@
 local eggs = {}
 
-eggs.track_count = 2
+eggs.track_count = 4
 
 eggs.track_focus = 1
 
@@ -60,44 +60,6 @@ end
 eggs.keymap_size = 128-16-16
 eggs.keymap_wrap = 16
 
-eggs.midi_devices = {}
-eggs.device_names = { 'engine' }
-local ENGINE = 1
-for i = 1,#midi.vports do
-    eggs.midi_devices[i + 1] = midi.connect(i)
-    eggs.device_names[i + 1] = util.trim_string_to_width(eggs.midi_devices[i+1].name,80)
-end
-
-function eggs.note_on_poly(track, idx)
-    local target = params:get('target_'..track)
-
-    local column = (idx-1)%eggs.keymap_wrap + 1 + params:get('column_'..track)
-    local row = (idx-1)//eggs.keymap_wrap + 1 + params:get('row_'..track)
-    local oct = params:get('oct_'..track)
-
-    if target == ENGINE then
-        local hz = eggs.get_tune(track):hz(column, row, nil, oct) * 55
-        engine.start(idx, hz)
-    else
-        local note = eggs.get_tune(track):midi(column, row, nil, oct) + 33
-        eggs.midi_devices[target]:note_on(note)
-    end
-end
-function eggs.note_off_poly(track, idx) 
-    local target = params:get('target_'..track)
-
-    if target == ENGINE then
-        engine.stop(idx) 
-    else
-        local column = (idx-1)%eggs.keymap_wrap + 1 + params:get('column_'..track)
-        local row = (idx-1)//eggs.keymap_wrap + 1 + params:get('row_'..track)
-        local oct = params:get('oct_'..track)
-
-        local note = eggs.get_tune(track):midi(column, row, nil, oct) + 33
-        eggs.midi_devices[target]:note_off(note)
-    end
-end
-    
 -- local function note_mono(track, idx, gate)
 --     local target = params:get('target_'..track)
 
@@ -130,16 +92,25 @@ eggs.mode_names = { 'normal', 'latch', 'arq' }
     
 eggs.keymaps = {
     [1] = keymap.poly.new{
-        action_on = function(idx) eggs.note_on_poly(1, idx) end,
-        action_off = function(idx) eggs.note_off_poly(1, idx) end,
+        action_on = midi_outs[1].note_on,
+        action_off = midi_outs[1].note_off,
         pattern = eggs.mute_groups[1].manual,
         size = eggs.keymap_size,
     },
     [2] = keymap.poly.new{
-        -- action = function(idx, gate) note_mono(2, idx, gate) end,
-        action_on = function(idx) eggs.note_on_poly(2, idx) end,
-        action_off = function(idx) eggs.note_off_poly(2, idx) end,
+        action_on = midi_outs[2].note_on,
+        action_off = midi_outs[2].note_off,
         pattern = eggs.mute_groups[2].manual,
+        size = eggs.keymap_size,
+    },
+    [3] = keymap.mono.new{
+        action = crow_outs[1].set_note,
+        pattern = eggs.mute_groups[3].manual,
+        size = eggs.keymap_size,
+    },
+    [4] = keymap.mono.new{
+        action = crow_outs[2].set_note,
+        pattern = eggs.mute_groups[4].manual,
         size = eggs.keymap_size,
     }    
 }
@@ -156,12 +127,14 @@ for i = 1,eggs.track_count do
     eggs.snapshots[i] = { manual = {}, arq = {} }
 end
     
-eggs.arqs[1].action_on = function(idx) eggs.note_on_poly(1, idx) end
-eggs.arqs[1].action_off = function(idx) eggs.note_off_poly(1, idx) end
--- eggs.arqs[2].action_on = function(idx) note_mono(2, idx, 1) end
--- eggs.arqs[2].action_off = function(idx) note_mono(2, idx, 0) end
-eggs.arqs[2].action_on = function(idx) eggs.note_on_poly(2, idx) end
-eggs.arqs[2].action_off = function(idx) eggs.note_off_poly(2, idx) end
+eggs.arqs[1].action_on = midi_outs[1].note_on
+eggs.arqs[1].action_off = midi_outs[1].note_off
+eggs.arqs[2].action_on = midi_outs[2].note_on
+eggs.arqs[2].action_off = midi_outs[2].note_off
+eggs.arqs[3].action_on = function(idx) crow_outs[1].set_note(idx, 1) end
+eggs.arqs[3].action_off = function(idx) crow_outs[1].set_note(idx, 0) end
+eggs.arqs[4].action_on = function(idx) crow_outs[2].set_note(idx, 1) end
+eggs.arqs[4].action_off = function(idx) crow_outs[2].set_note(idx, 0) end
 
 local function action_read(file, name, slot)
     print('pset action read', file, name, slot)

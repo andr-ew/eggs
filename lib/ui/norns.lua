@@ -101,17 +101,17 @@ local function App()
         if eggs.view_focus == eggs.NORMAL then 
             _text{ x = x[1], y = y[1], text = 'this is eggs' }
             
-            do
-                local id = 'target_'..eggs.track_focus
-                _dest.enc{
-                    n = 2, state = crops.of_param(id),
-                    max = #params:lookup_param(id).options,
-                }
-                _dest.screen{
-                    x = x[1], y = y[2], flow = 'down',
-                    text = { ['destination'] = params:string(id) },
-                }
-            end
+            -- do
+            --     local id = 'target_'..eggs.track_focus
+            --     _dest.enc{
+            --         n = 2, state = crops.of_param(id),
+            --         max = #params:lookup_param(id).options,
+            --     }
+            --     _dest.screen{
+            --         x = x[1], y = y[2], flow = 'down',
+            --         text = { ['destination'] = params:string(id) },
+            --     }
+            -- end
         else
             _tuning{ track = eggs.track_focus, view = eggs.view_focus }
         end

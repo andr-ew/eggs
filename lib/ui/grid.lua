@@ -418,6 +418,8 @@ local function App()
     local _pages = {
         [1] = Page{ track = 1, voicing = 'poly' },
         [2] = Page{ track = 2, voicing = 'poly' },
+        [3] = Page{ track = 3, voicing = 'mono' },
+        [4] = Page{ track = 4, voicing = 'mono' },
     }
 
     -- local _tuning = Grid_tuning()
@@ -426,6 +428,7 @@ local function App()
         -- if not k1 then
             _track{
                 x = 1, y = 1, size = #_pages, levels = { 0, 15 },
+                wrap = 2,
                 state = { 
                     eggs.track_focus, 
                     function(v) 

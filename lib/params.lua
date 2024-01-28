@@ -1,12 +1,13 @@
-params:add_separator('destinations')
-for i = 1,eggs.track_count do
-    params:add{
-        type = 'option', id = 'target_'..i, name = 'destination '..i,
-        options = eggs.device_names, default = tab.key(eggs.device_names, 'engine'),
-        action = function()
-            crops.dirty.screen = true
-        end
-    }
+params:add_separator('midi')
+for _,midi_out in ipairs(midi_outs) do
+    midi_out.add_params()
+end
+
+params:add_separator('crow outputs')
+for i,crow_out in ipairs(crow_outs) do
+    params:add_group('crow_outs_pair_'..i, crow_out.name, crow_out.params_count)
+    
+    crow_out.add_params()
 end
 
 params:add_separator('keymap')
@@ -48,14 +49,6 @@ for i = 1,eggs.track_count do
         action = function() crops.dirty.grid = true end
     }
 end
-
-params:add_separator('crow outputs')
-for i = 1,eggs.track_count do
-    params:add_group('crow_outs_pair_'..i, crow_outs[i].name, crow_outs[i].params_count)
-    
-    crow_outs[i].add_params()
-end
-
 
 params:add_separator('arquencer')
 for i = 1,eggs.track_count do
@@ -110,7 +103,7 @@ do
     end
 end
 
-params:add_separator('')
+params:add_separator('polysub')
 polysub:params()
 
 --add pset params
