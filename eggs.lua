@@ -124,9 +124,14 @@ for i = 1,tune_count do
     }
 end
 
+local function process_param(id, v) 
+    params:set(id, v) 
+end
+
 local pat_count = 4
 eggs.pattern_groups = {}
 eggs.mute_groups = {}
+eggs.pattern_shims = {}
 
 for i = 1,eggs.track_count do
     eggs.pattern_groups[i] = { manual = {}, arq = {} }
@@ -140,6 +145,41 @@ for i = 1,eggs.track_count do
         manual = mute_group.new(eggs.pattern_groups[i].manual),
         arq = mute_group.new(eggs.pattern_groups[i].arq),
     }
+
+    eggs.pattern_shims[i] = {}
+    for k,mute_group in pairs(eggs.mute_groups[i]) do
+        local shim = {}
+        setmetatable(shim, { __index = mute_group })
+
+        shim.watch = function(shim, value)
+            mute_group:watch({ 'keymap', value })
+        end
+
+        mute_group.process = function(t)
+            if t[1] == 'param' then process_param(t[2], t[3])
+            elseif t[1] == 'keymap' then shim.process(t[2]) end
+        end
+
+        eggs.pattern_shims[i][k] = shim
+    end
+end
+
+eggs.set_param = function(id, v)
+    local t = { 'param', id, v }
+    process_param(id, v)
+
+    for i,mute_groups in ipairs(eggs.mute_groups) do
+        for k,mute_group in pairs(mute_groups) do
+            mute_group:watch(t)
+        end
+    end
+end
+
+function eggs.of_param(id, is_dest)
+    return {
+        params:get(id),
+        eggs.set_param, id,
+    }
 end
 
 eggs.keymap_size = 128-16-16
@@ -152,23 +192,23 @@ eggs.keymaps = {
     [1] = keymap.poly.new{
         action_on = midi_outs[1].note_on,
         action_off = midi_outs[1].note_off,
-        pattern = eggs.mute_groups[1].manual,
+        pattern = eggs.pattern_shims[1].manual,
         size = eggs.keymap_size,
     },
     [2] = keymap.poly.new{
         action_on = jf_out.note_on,
         action_off = jf_out.note_off,
-        pattern = eggs.mute_groups[2].manual,
+        pattern = eggs.pattern_shims[2].manual,
         size = eggs.keymap_size,
     },
     [3] = keymap.mono.new{
         action = crow_outs[1].set_note,
-        pattern = eggs.mute_groups[3].manual,
+        pattern = eggs.pattern_shims[3].manual,
         size = eggs.keymap_size,
     },
     [4] = keymap.mono.new{
         action = crow_outs[2].set_note,
-        pattern = eggs.mute_groups[4].manual,
+        pattern = eggs.pattern_shims[4].manual,
         size = eggs.keymap_size,
     }    
 }
