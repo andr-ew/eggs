@@ -194,6 +194,12 @@ eggs.arqs[3].action_off = function(idx) crow_outs[1].set_note(idx, 0) end
 eggs.arqs[4].action_on = function(idx) crow_outs[2].set_note(idx, 1) end
 eggs.arqs[4].action_off = function(idx) crow_outs[2].set_note(idx, 0) end
 
+norns.crow.add = function()
+    for _,out in ipairs(crow_outs) do
+        out.add()
+    end
+end
+
 --more script files
 
 include 'lib/params'

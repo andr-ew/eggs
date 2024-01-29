@@ -116,6 +116,12 @@ for i = 1,2 do
         update_dyn()
     end
 
+    crow_outs[i].add = function()
+        update_asl()
+        update_slew()
+        update_volts_cv()
+    end
+
     crow_outs[i].params_count = 14
 
     crow_outs[i].name = 'output '..outs.cv..' + '..outs.gate
