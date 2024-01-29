@@ -73,10 +73,11 @@ end
 
 Components = include 'lib/ui/components'
 
-crow_outs = include 'lib/crow_outs'
+jf_out = include 'lib/jf_out'
 midi_outs = include 'lib/midi_outs'
+crow_outs = include 'lib/crow_outs'
 
-midi_outs.init(2)
+midi_outs.init(1)
 
 --more global variables
 
@@ -87,7 +88,7 @@ eggs.mapping = false
 
 eggs.outs = {
     midi_outs[1],
-    midi_outs[2],
+    jf_out,
     crow_outs[1],
     crow_outs[2]
 }
@@ -155,8 +156,8 @@ eggs.keymaps = {
         size = eggs.keymap_size,
     },
     [2] = keymap.poly.new{
-        action_on = midi_outs[2].note_on,
-        action_off = midi_outs[2].note_off,
+        action_on = jf_out.note_on,
+        action_off = jf_out.note_off,
         pattern = eggs.mute_groups[2].manual,
         size = eggs.keymap_size,
     },
@@ -186,13 +187,12 @@ end
     
 eggs.arqs[1].action_on = midi_outs[1].note_on
 eggs.arqs[1].action_off = midi_outs[1].note_off
-eggs.arqs[2].action_on = midi_outs[2].note_on
-eggs.arqs[2].action_off = midi_outs[2].note_off
+eggs.arqs[2].action_on = jf_out.note_on
+eggs.arqs[2].action_off = jf_out.note_off
 eggs.arqs[3].action_on = function(idx) crow_outs[1].set_note(idx, 1) end
 eggs.arqs[3].action_off = function(idx) crow_outs[1].set_note(idx, 0) end
 eggs.arqs[4].action_on = function(idx) crow_outs[2].set_note(idx, 1) end
 eggs.arqs[4].action_off = function(idx) crow_outs[2].set_note(idx, 0) end
-
 
 --more script files
 

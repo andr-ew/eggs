@@ -4,6 +4,10 @@ for i,midi_out in ipairs(midi_outs) do
     midi_out.add_params()
 end
 
+params:add_separator('just friends')
+params:add_group('jf_out', jf_out.name, jf_out.params_count)
+jf_out.add_params()
+
 params:add_separator('crow outputs')
 for i,crow_out in ipairs(crow_outs) do
     params:add_group('crow_outs_pair_'..i, crow_out.name, crow_out.params_count)

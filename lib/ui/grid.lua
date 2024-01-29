@@ -285,7 +285,7 @@ local function Page(args)
                 end
                 
                 if out.param_ids.slew_enable and params:get(out.param_ids.slew_enable) > 0 then
-                    local id = out.param_ids.slew_time
+                    local id = out.param_ids.slew_enable
                     _slew_time{
                         x = 4, y = 2, size = #params:lookup_param(id).options, min = 1,
                         state = crops.of_param(id),
