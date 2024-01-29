@@ -73,18 +73,18 @@ local function Arq(args)
             if #arq.sequence > 0 then
                 _reverse{
                     x = 4, y = 2, levels = { 4, 15 },
-                    state = crops.of_param(arq:pfix('reverse'))
+                    state = eggs.of_param(arq:pfix('reverse'))
                 }
                 _rate_mark{
                     x = 8, y = 2, level = 4,
                 }
                 _rate{
                     x = 5, y = 2, size = 7,
-                    state = crops.of_param(arq:pfix('division'))
+                    state = eggs.of_param(arq:pfix('division'))
                 }
                 _loop{
                     x = 12, y = 2, levels = { 4, 15 },
-                    state = crops.of_param(arq:pfix('loop'))
+                    state = eggs.of_param(arq:pfix('loop'))
                 }
             end
         end
@@ -196,7 +196,7 @@ local function Page(args)
     local _arq = Arq{
         arq = eggs.arqs[track],
         pattern_group = eggs.pattern_groups[track].arq,
-        mute_group = eggs.mute_groups[track].arq,
+        mute_group = eggs.pattern_shims[track].arq,
         snapshot_count = eggs.snapshot_count,
         out = out
     }
@@ -271,7 +271,7 @@ local function Page(args)
                 if _slew_enable then
                     _slew_enable{
                         x = 3, y = 2, levels = { 4, 15 },
-                        state = crops.of_param(out.param_ids.slew_enable)
+                        state = eggs.of_param(out.param_ids.slew_enable)
                     }
                 end
                     
@@ -285,10 +285,10 @@ local function Page(args)
                 end
                 
                 if out.param_ids.slew_enable and params:get(out.param_ids.slew_enable) > 0 then
-                    local id = out.param_ids.slew_enable
+                    local id = out.param_ids.slew_time
                     _slew_time{
                         x = 4, y = 2, size = #params:lookup_param(id).options, min = 1,
-                        state = crops.of_param(id),
+                        state = eggs.of_param(id),
                     }
                 else
                     _rate_rev{
@@ -364,7 +364,7 @@ local function Page(args)
                 levels = { 4, 15 }, wrap = false,
                 min = params:lookup_param(id).min,
                 max = params:lookup_param(id).max,
-                state = crops.of_param(id)
+                state = eggs.of_param(id)
             }
         end
 
@@ -377,7 +377,7 @@ local function Page(args)
                     levels = { 4, 15 }, wrap = false,
                     min = params:lookup_param(id).min,
                     max = params:lookup_param(id).max,
-                    state = crops.of_param(id)
+                    state = eggs.of_param(id)
                 } 
             end
         elseif eggs.view_focus == eggs.SCALE then
@@ -392,10 +392,11 @@ local function Page(args)
                     tune = tune, degree = i, 
                     -- width = 7, nudge = 6, -- 8x8 sizing
                     width = 12, nudge = 3,
-                    state = Tune.of_param(tune, 'enable_'..i),
+                    state = eggs.of_param(tune:get_param_id('enable_'..i)),
                 }
             end
         elseif eggs.view_focus == eggs.KEY then
+            --TODO: support pattern recording & retriggers as I did in ndls
             _tonic{
                 left = 3, top = 1, levels = { 4, 15 },
                 -- width = 7, nudge = 6, -- 8x8 sizing

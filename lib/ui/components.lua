@@ -25,13 +25,13 @@ do
                     _control{
                         n = props.n,
                         controlspec = spec,
-                        state = crops.of_param(props.id),
+                        state = eggs.of_param(props.id),
                     }
                 else
                     _integer{
                         n = props.n, 
                         min = p.min or 1, max = p.max or #options,
-                        state = crops.of_param(props.id),
+                        state = eggs.of_param(props.id),
                     }
                 end
             else
@@ -133,13 +133,13 @@ do
                                     --TODO: trigger needs a different state
                                     _binary[behavior]{
                                         n = props.n, edge = 'falling',
-                                        state = crops.of_param(props.id),
+                                        state = eggs.of_param(props.id),
                                     }
                                 else
                                     _integer{
                                         n_next = props.n, edge = 'falling',
                                         min = p.min or 1, max = p.max or #options,
-                                        state = crops.of_param(props.id),
+                                        state = eggs.of_param(props.id),
                                     }
                                 end
                             end
