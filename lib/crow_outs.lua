@@ -26,7 +26,7 @@ for i = 1,2 do
     local row = -2
     local index = 0
     local volts = { cv = 0, gate = 0 }
-    
+
     local function update_volts_cv()
         local x = (index-1)%eggs.keymap_wrap + 1 + column 
         local y = (index-1)//eggs.keymap_wrap + 1 + row 
@@ -35,6 +35,15 @@ for i = 1,2 do
         crow.output[outs.cv].volts = cv
                 
         crops.dirty.screen = true
+    end
+    
+    local slew_times = { 0.05, 0.07, 0.1, 0.2, 0.3, 0.4, 0.5, 1 }
+
+    local slew_enable = 0
+    local slew_time = slew_times[1]
+
+    local function update_slew()
+        crow.output[outs.cv].slew = slew_enable * slew_time
     end
 
     crow_outs[i].voicing = 'mono'
@@ -51,10 +60,6 @@ for i = 1,2 do
         end
     end
     
-    -- crow_outs[i].set_slew = function(v)
-    --     crow.output[outs.cv].slew = v
-    -- end
-
     local time = 0.04
     local ramp = 0
     local level = 7
@@ -111,7 +116,7 @@ for i = 1,2 do
         update_dyn()
     end
 
-    crow_outs[i].params_count = 12
+    crow_outs[i].params_count = 14
 
     crow_outs[i].name = 'output '..outs.cv..' + '..outs.gate
 
@@ -126,6 +131,8 @@ for i = 1,2 do
         time = 'time_crow_outs_'..i,
         ramp = 'ramp_crow_outs_'..i,
         level = 'level_crow_outs_'..i,
+        slew_enable = 'slew_enable_crow_outs_'..i,
+        slew_time = 'slew_time_crow_outs_'..i,
     }
     crow_outs[i].param_ids = param_ids
 
@@ -226,6 +233,24 @@ for i = 1,2 do
                 row = v; update_volts_cv()
 
                 crops.dirty.grid = true 
+            end
+        }
+        params:add{
+            id = param_ids.slew_enable, name = 'slew enable',
+            type = 'binary', behavior = 'momentary', default = slew_enable,
+            action = function(v)
+                slew_enable = v; update_slew()
+
+                crops.dirty.grid = true
+            end,
+        }
+        params:add{
+            type = 'option', id = param_ids.slew_time, name = 'slew time',
+            options = slew_times,
+            action = function(v)
+                slew_time = slew_times[v]; update_slew()
+
+                crops.dirty.grid = true
             end
         }
     end

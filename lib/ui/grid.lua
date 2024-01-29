@@ -172,6 +172,12 @@ local function Page(args)
     local _mode_arq = Grid.toggle()
     local _mode_latch = Grid.toggle()
 
+    local _slew_enable, _slew_time
+    if out.param_ids.slew_enable then
+        _slew_enable = Grid.momentary()
+        _slew_time = Grid.integer()
+    end
+
     local _patrecs = {}
     for i = 1, #eggs.pattern_groups[track].manual do
         _patrecs[i] = Produce.grid.pattern_recorder()
@@ -262,6 +268,13 @@ local function Page(args)
             _arq{ track = track, snapshots = eggs.snapshots[track].arq, tune = tune }
         else
             if eggs.view_focus == eggs.NORMAL then
+                if _slew_enable then
+                    _slew_enable{
+                        x = 3, y = 2, levels = { 4, 15 },
+                        state = crops.of_param(out.param_ids.slew_enable)
+                    }
+                end
+                    
                 local ss = eggs.snapshots[track].manual
 
                 for i,_patrec in ipairs(_patrecs) do
@@ -270,9 +283,18 @@ local function Page(args)
                         pattern = eggs.pattern_groups[track].manual[i],
                     }
                 end
-                _rate_rev{
-                    mute_group = eggs.mute_groups[track].manual,
-                }
+                
+                if out.param_ids.slew_enable and params:get(out.param_ids.slew_enable) > 0 then
+                    local id = out.param_ids.slew_time
+                    _slew_time{
+                        x = 4, y = 2, size = #params:lookup_param(id).options, min = 1,
+                        state = crops.of_param(id),
+                    }
+                else
+                    _rate_rev{
+                        mute_group = eggs.mute_groups[track].manual,
+                    }
+                end
 
                 for i,_snapshot in ipairs(_snapshots) do
                     local filled = (ss[i] and next(ss[i]))
