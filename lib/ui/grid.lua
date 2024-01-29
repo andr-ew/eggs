@@ -196,7 +196,7 @@ local function Page(args)
     local _arq = Arq{
         arq = eggs.arqs[track],
         pattern_group = eggs.pattern_groups[track].arq,
-        mute_group = eggs.mute_groups[track].arq,
+        mute_group = eggs.pattern_shims[track].arq,
         snapshot_count = eggs.snapshot_count,
         out = out
     }

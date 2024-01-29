@@ -149,10 +149,15 @@ for i = 1,eggs.track_count do
     eggs.pattern_shims[i] = {}
     for k,mute_group in pairs(eggs.mute_groups[i]) do
         local shim = {}
-        setmetatable(shim, { __index = mute_group })
 
         shim.watch = function(shim, value)
             mute_group:watch({ 'keymap', value })
+        end
+        shim.set_all_hooks = function(shim, ...)
+            mute_group:set_all_hooks(...)
+        end
+        shim.stop = function(shim, ...)
+            mute_group:stop(...)
         end
 
         mute_group.process = function(t)
