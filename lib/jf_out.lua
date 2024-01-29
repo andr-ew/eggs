@@ -15,9 +15,9 @@ local note_mode = NOTE
 jf_out.voicing = 'poly'
 
 jf_out.note_on = function(idx)
-    local x = (idx-1)%eggs.keymap_wrap + 1
-    local y = (idx-1)//eggs.keymap_wrap + 1
-    local volts = eggs.tunes[preset]:volts(x, y, nil, 0) - 3/12
+    local x = (idx-1)%eggs.keymap_wrap + 1 + column 
+    local y = (idx-1)//eggs.keymap_wrap + 1 + row 
+    local volts = eggs.tunes[preset]:volts(x, y, nil, oct - 2) - 3/12
     local vel = math.random()*0.2 + 0.85
 
     if note_mode == NOTE then
@@ -28,16 +28,15 @@ jf_out.note_on = function(idx)
     end
 end
 jf_out.note_off = function(idx) 
-    local x = (idx-1)%eggs.keymap_wrap + 1
-    local y = (idx-1)//eggs.keymap_wrap + 1
-    local volts = eggs.tunes[preset]:volts(x, y, nil, 0) - 3/12
+    local x = (idx-1)%eggs.keymap_wrap + 1 + column 
+    local y = (idx-1)//eggs.keymap_wrap + 1 + row 
+    local volts = eggs.tunes[preset]:volts(x, y, nil, oct - 2) - 3/12
 
     crow.ii.jf.play_note(volts, 0)
 end
 
 local function update_transpose()
-    local volts = eggs.tunes[preset]:volts(column, row, nil, oct - 2) + shift
-    crow.ii.jf.transpose(volts)
+    crow.ii.jf.transpose(shift)
 end
 
 -- local function setup()
@@ -148,7 +147,7 @@ jf_out.add_params = function()
         type = 'number', id = param_ids.oct, name = 'oct',
         min = -5, max = 5, default = oct,
         action = function(v) 
-            oct = v; update_transpose()
+            oct = v
 
             crops.dirty.grid = true 
         end
@@ -157,7 +156,7 @@ jf_out.add_params = function()
         type = 'number', id = param_ids.column, name = 'column',
         min = -16, max = 16, default = column,
         action = function(v) 
-            column = v; update_transpose()
+            column = v
 
             crops.dirty.grid = true 
         end
@@ -166,7 +165,7 @@ jf_out.add_params = function()
         type = 'number', id = param_ids.row, name = 'row',
         min = -16, max = 16, default = row,
         action = function(v) 
-            row = v; update_transpose()
+            row = v
 
             crops.dirty.grid = true 
         end
