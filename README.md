@@ -82,9 +82,7 @@ in the maiden [REPL](https://monome.org/docs/norns/image/wifi_maiden-images/inst
 
 **view:** normal
 - **track 1: midi**
-  - **E1-3:** midi CC out
-  - **K2:** note echo
-  - **K3:** panic
+  - **E1:** midi destination
 - **track 2: jf**
   - **E1:** shift (linear pitch offset, map for vibrato)
   - **E2:** note level
