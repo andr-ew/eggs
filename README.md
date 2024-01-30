@@ -97,6 +97,7 @@ in **eggs/midi-only**, all tracks are midi
   - **E3:** function generator - ramp
   - **K2:** function generator - transient/sustain/cycle. hold: retrigger
 - **K1 (hold):** set mod source
+  - currently most params on the crow / jf screens can be mapped to either input of crow. select source using the encoders & keys
 
 **view:** scale
 - **E1:** scale
