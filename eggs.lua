@@ -13,6 +13,8 @@
 
 g = grid.connect()
 
+local wide = g and g.device and g.device.cols >= 16 or false
+
 --system libs
 
 polysub = require 'engine/polysub'
@@ -121,7 +123,7 @@ App.norns = include 'lib/ui/norns'                          --norns UI
 --create, connect UI components
 
 _app = {
-    grid = App.grid(), 
+    grid = App.grid({ wide = wide }), 
     norns = App.norns()
 }
 

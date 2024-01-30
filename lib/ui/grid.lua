@@ -32,42 +32,46 @@ local function Arq(args)
     
     local _rate_mark = Grid.fill()
     local _rate = Grid.integer()
+    local _rate_small = Produce.grid.integer_trigger()
     local _reverse = Grid.toggle()
     local _loop = Grid.toggle()
 
     return function(props)
         local ss = props.snapshots
         local tune = props.tune
+        local wide = props.wide
 
         if eggs.view_focus == eggs.NORMAL then
-            for i,_patrec in ipairs(_patrecs) do
-                _patrec{
+            for i = 1, wide and #pattern_group or 1 do
+                _patrecs[i]{
                     x = 4 + i - 1, y = 1,
                     pattern = pattern_group[i],
                 }
             end
 
-            for i,_snapshot in ipairs(_snapshots) do
-                local filled = (ss[i] and #ss[i] > 0)
+            if wide or props.view_scroll == 0 then
+                for i = 1, wide and eggs.snapshot_count or 2 do
+                    local filled = (ss[i] and #ss[i] > 0)
 
-                local function snapshot()
-                    ss[i] = arq.sequence
-                end
-                local function clear_snapshot()
-                    ss[i] = {}
-                    -- arq.sequence = {}
-                end
-                local function recall()
-                    if #(ss[i] or {}) > 0 then 
-                        set_arq(ss[i])
+                    local function snapshot()
+                        ss[i] = arq.sequence
                     end
+                    local function clear_snapshot()
+                        ss[i] = {}
+                        -- arq.sequence = {}
+                    end
+                    local function recall()
+                        if #(ss[i] or {}) > 0 then 
+                            set_arq(ss[i])
+                        end
+                    end
+                    _snapshots[i]{
+                        x = (wide and 9 or 6) + i - 1, y = 1,
+                        levels = { filled and 4 or 0, filled and 15 or 8 },
+                        action_tap = filled and recall or snapshot,
+                        action_hold = clear_snapshot,
+                    }
                 end
-                _snapshot{
-                    x = 9 + i - 1, y = 1,
-                    levels = { filled and 4 or 0, filled and 15 or 8 },
-                    action_tap = filled and recall or snapshot,
-                    action_hold = clear_snapshot,
-                }
             end
             
             if #arq.sequence > 0 then
@@ -75,17 +79,27 @@ local function Arq(args)
                     x = 4, y = 2, levels = { 4, 15 },
                     state = eggs.of_param(arq:pfix('reverse'))
                 }
-                _rate_mark{
-                    x = 8, y = 2, level = 4,
-                }
-                _rate{
-                    x = 5, y = 2, size = 7,
-                    state = eggs.of_param(arq:pfix('division'))
-                }
-                _loop{
-                    x = 12, y = 2, levels = { 4, 15 },
-                    state = eggs.of_param(arq:pfix('loop'))
-                }
+                if wide then
+                    _rate_mark{
+                        x = 8, y = 2, level = 4,
+                    }
+                    _rate{
+                        x = 5, y = 2, size = 7,
+                        state = eggs.of_param(arq:pfix('division'))
+                    }
+                    _loop{
+                        x = 12, y = 2, levels = { 4, 15 },
+                        state = eggs.of_param(arq:pfix('loop'))
+                    }
+                else
+                    _rate_small{
+                        x_next = 6, y_next = 2,
+                        x_prev = 5, y_prev = 2,
+                        levels = { 0, 15 }, wrap = false,
+                        min = 1, max = 7,
+                        state = eggs.of_param(arq:pfix('division'))
+                    }
+                end
             end
         end
 
@@ -113,9 +127,11 @@ local function Rate_reverse()
     local _rate_mark = Grid.fill()
     local _rate = Grid.integer()
     local _loop = Grid.toggle()
+    local _rate_small = Produce.grid.integer_trigger()
 
     return function(props)
         local pattern = props.mute_group:get_playing_pattern()
+        local wide = props.wide
 
         if pattern then
             _reverse{
@@ -129,34 +145,46 @@ local function Rate_reverse()
                     end
                 }
             }
-            _rate_mark{
-                x = 8, y = 2, level = 4,
-            }
             do
                 local tf = pattern.time_factor
-                _rate{
-                    x = 5, y = 2, size = 7, min = -3,
-                    state = {
-                        (tf < 1) and ((1/tf) - 1) or ((-tf) + 1),
-                        function(v)
-                            pattern.time_factor = (v >= 0) and (1/(v + 1)) or (-(v - 1))
-
-                            crops.dirty.grid = true
-                        end
-                    }
-                }
-            end
-            _loop{
-                x = 12, y = 2, levels = { 4, 15 },
-                state = {
-                    pattern.loop and 1 or 0,
+                local state_rate = {
+                    (tf < 1) and ((1/tf) - 1) or ((-tf) + 1),
                     function(v)
-                        pattern:set_loop(v == 1)
+                        pattern.time_factor = (v >= 0) and (1/(v + 1)) or (-(v - 1))
 
                         crops.dirty.grid = true
                     end
                 }
-            }
+
+                if wide then
+                    _rate_mark{
+                        x = 8, y = 2, level = 4,
+                    }
+                    _rate{
+                        x = 5, y = 2, size = 7, min = -3,
+                        state = state_rate
+                    }
+                    _loop{
+                        x = 12, y = 2, levels = { 4, 15 },
+                        state = {
+                            pattern.loop and 1 or 0,
+                            function(v)
+                                pattern:set_loop(v == 1)
+
+                                crops.dirty.grid = true
+                            end
+                        }
+                    }
+                else
+                    _rate_small{
+                        x_next = 6, y_next = 2,
+                        x_prev = 5, y_prev = 2,
+                        levels = { 0, 15 }, wrap = false,
+                        min = -8, max = 8,
+                        state = state_rate,
+                    }
+                end
+            end
         end
     end
 end
@@ -165,7 +193,6 @@ local function Page(args)
     local track = args.track
     local out = eggs.outs[track]
     local voicing = out.voicing
-    
     local _view_scale = Grid.momentary()
     local _view_key = Grid.momentary()
     
@@ -200,6 +227,9 @@ local function Page(args)
         snapshot_count = eggs.snapshot_count,
         out = out
     }
+
+    local view_scroll = 0
+    local _view_scroll = Grid.momentary()
     
     local _column = Produce.grid.integer_trigger()
     local _row = Produce.grid.integer_trigger()
@@ -215,31 +245,34 @@ local function Page(args)
         _degs[i] = Tune.grid.scale_degree()
     end
 
-    return function()
+    return function(props)
         local tune = eggs.tunes[params:get(out.param_ids.tuning_preset)]
+        local wide = props.wide
 
-        _view_scale{
-            x = 15, y = 1, levels = { 1, 15 },
-            state = crops.of_variable(
-                eggs.view_focus==eggs.SCALE and 1 or 0,
-                function(v)
-                    eggs.view_focus = v>0 and eggs.SCALE or eggs.NORMAL
-                    crops.dirty.grid = true
-                    crops.dirty.screen = true
-                end
-            )
-        }
-        _view_key{
-            x = 15, y = 2, levels = { 1, 15 },
-            state = crops.of_variable(
-                eggs.view_focus==eggs.KEY and 1 or 0,
-                function(v)
-                    eggs.view_focus = v>0 and eggs.KEY or eggs.NORMAL
-                    crops.dirty.grid = true
-                    crops.dirty.screen = true
-                end
-            )
-        }
+        if wide or view_scroll == 0 then
+            _view_scale{
+                x = wide and 15 or 8, y = 1, levels = { 2, 15 },
+                state = crops.of_variable(
+                    eggs.view_focus==eggs.SCALE and 1 or 0,
+                    function(v)
+                        eggs.view_focus = v>0 and eggs.SCALE or eggs.NORMAL
+                        crops.dirty.grid = true
+                        crops.dirty.screen = true
+                    end
+                )
+            }
+            _view_key{
+                x = wide and 15 or 8, y = 2, levels = { 2, 15 },
+                state = crops.of_variable(
+                    eggs.view_focus==eggs.KEY and 1 or 0,
+                    function(v)
+                        eggs.view_focus = v>0 and eggs.KEY or eggs.NORMAL
+                        crops.dirty.grid = true
+                        crops.dirty.screen = true
+                    end
+                )
+            }
+        end
 
         local mode = params:get('mode_'..track)
 
@@ -254,7 +287,7 @@ local function Page(args)
                 )
             }
             _mode_latch{
-                x = 8, y = 1, levels = { 4, 15 },
+                x = wide and 8 or 5, y = 1, levels = { 4, 15 },
                 state = crops.of_variable(
                     mode==eggs.LATCH and 1 or 0,
                     function(v)
@@ -265,7 +298,10 @@ local function Page(args)
         end
 
         if mode==eggs.ARQ then
-            _arq{ track = track, snapshots = eggs.snapshots[track].arq, tune = tune }
+            _arq{ 
+                track = track, snapshots = eggs.snapshots[track].arq, tune = tune, 
+                wide = wide, view_scroll = view_scroll,
+            }
         else
             if eggs.view_focus == eggs.NORMAL then
                 if _slew_enable then
@@ -277,8 +313,8 @@ local function Page(args)
                     
                 local ss = eggs.snapshots[track].manual
 
-                for i,_patrec in ipairs(_patrecs) do
-                    _patrec{
+                for i = 1, wide and #eggs.pattern_groups[track].manual or 1 do
+                    _patrecs[i]{
                         x = 4 + i - 1, y = 1,
                         pattern = eggs.pattern_groups[track].manual[i],
                     }
@@ -287,53 +323,60 @@ local function Page(args)
                 if out.param_ids.slew_enable and params:get(out.param_ids.slew_enable) > 0 then
                     local id = out.param_ids.slew_time
                     _slew_time{
-                        x = 4, y = 2, size = #params:lookup_param(id).options, min = 1,
-                        state = eggs.of_param(id),
+                        x = 4, y = 2, size = wide and 8 or 4, min = 1,
+                        state = wide and eggs.of_param(id) or crops.of_variable(
+                            params:get(id) // 2,
+                            function(v)
+                                params:set((v*2 - 1))
+                            end
+                        ),
                     }
                 else
                     _rate_rev{
-                        mute_group = eggs.mute_groups[track].manual,
+                        mute_group = eggs.mute_groups[track].manual, wide = wide,
                     }
                 end
 
-                for i,_snapshot in ipairs(_snapshots) do
-                    local filled = (ss[i] and next(ss[i]))
+                if wide or view_scroll == 0 then
+                    for i = 1, wide and eggs.snapshot_count or 2 do
+                        local filled = (ss[i] and next(ss[i]))
 
-                    local function snapshot()
-                        ss[i] = eggs.keymaps[track]:get()
-                    end
-                    local function clear_snapshot()
-                        ss[i] = {}
-                        -- eggs.keymaps[track]:clear()
-                    end
-                    local function recall()
-                        eggs.keymaps[track]:set(ss[i] or {})
-                    end
-                    
-                    if mode==eggs.LATCH then
-                        _snapshot.latch{
-                            x = 9 + i - 1, y = 1,
-                            levels = { filled and 4 or 0, filled and 15 or 8 },
-                            action_tap = filled and recall or snapshot,
-                            action_hold = clear_snapshot,
-                        }
-                    else
-                        _snapshot.normal{
-                            x = 9 + i - 1, y = 1,
-                            levels = { filled and 4 or 0, filled and 15 or 8 },
-                            state = crops.of_variable(snapshots_normal_held[i], function(v)
-                                snapshots_normal_held[i] = v
+                        local function snapshot()
+                            ss[i] = eggs.keymaps[track]:get()
+                        end
+                        local function clear_snapshot()
+                            ss[i] = {}
+                            -- eggs.keymaps[track]:clear()
+                        end
+                        local function recall()
+                            eggs.keymaps[track]:set(ss[i] or {})
+                        end
+                        
+                        if mode==eggs.LATCH then
+                            _snapshots[i].latch{
+                                x = (wide and 9 or 6) + i - 1, y = 1,
+                                levels = { filled and 4 or 0, filled and 15 or 8 },
+                                action_tap = filled and recall or snapshot,
+                                action_hold = clear_snapshot,
+                            }
+                        else
+                            _snapshots[i].normal{
+                                x = (wide and 9 or 6) + i - 1, y = 1,
+                                levels = { filled and 4 or 0, filled and 15 or 8 },
+                                state = crops.of_variable(snapshots_normal_held[i], function(v)
+                                    snapshots_normal_held[i] = v
 
-                                if v > 0 then
-                                    if filled then recall() 
-                                    elseif next(eggs.keymaps[track]:get()) then snapshot() end
-                                else
-                                    eggs.keymaps[track]:set({})
-                                end
+                                    if v > 0 then
+                                        if filled then recall() 
+                                        elseif next(eggs.keymaps[track]:get()) then snapshot() end
+                                    else
+                                        eggs.keymaps[track]:set({})
+                                    end
 
-                                crops.dirty.grid = true
-                            end)
-                        }
+                                    crops.dirty.grid = true
+                                end)
+                            }
+                        end
                     end
                 end
             end
@@ -355,12 +398,22 @@ local function Page(args)
                 mode = eggs.mode_names[mode]
             }
         end
+
+        if not wide then
+            _view_scroll{
+                x = 7, y = 2, levels = { 4, 15 },
+                state = crops.of_variable(view_scroll, function(v) 
+                    view_scroll = v
+                    crops.dirty.grid = true
+                end)
+            }
+        end
             
-        do
+        if wide or view_scroll > 0 then
             local id = out.param_ids.row
             _row{
-                x_next = 16, y_next = 1,
-                x_prev = 16, y_prev = 2,
+                x_next = wide and 16 or 8, y_next = 1,
+                x_prev = wide and 16 or 8, y_prev = 2,
                 levels = { 4, 15 }, wrap = false,
                 min = params:lookup_param(id).min,
                 max = params:lookup_param(id).max,
@@ -369,11 +422,11 @@ local function Page(args)
         end
 
         if eggs.view_focus == eggs.NORMAL then 
-            do
+            if (wide or view_scroll > 0) then
                 local id = out.param_ids.column
                 _column{
-                    x_next = 14, y_next = 1,
-                    x_prev = 13, y_prev = 1,
+                    x_next = wide and 14 or 7, y_next = 1,
+                    x_prev = wide and 13 or 6, y_prev = 1,
                     levels = { 4, 15 }, wrap = false,
                     min = params:lookup_param(id).min,
                     max = params:lookup_param(id).max,
@@ -382,25 +435,25 @@ local function Page(args)
             end
         elseif eggs.view_focus == eggs.SCALE then
             _degs_bg{
-                left = 3, top = 1, level = 4,
+                left = wide and 3 or 1, top = 1, level = 4,
                 -- width = 7, nudge = 6, -- 8x8 sizing
-                width = 12, nudge = 3,
+                width = wide and 12 or 7, nudge = wide and 3 or 6,
             }
             for i,_deg in ipairs(_degs) do
                 _deg{
-                    left = 3, top = 1, levels = { 8, 15 },
+                    left = wide and 3 or 1, top = 1, levels = { 8, 15 },
                     tune = tune, degree = i, 
                     -- width = 7, nudge = 6, -- 8x8 sizing
-                    width = 12, nudge = 3,
+                    width = wide and 12 or 7, nudge = wide and 3 or 6,
                     state = eggs.of_param(tune:get_param_id('enable_'..i)),
                 }
             end
         elseif eggs.view_focus == eggs.KEY then
             --TODO: support pattern recording & retriggers as I did in ndls
             _tonic{
-                left = 3, top = 1, levels = { 4, 15 },
+                left = wide and 3 or 1, top = 1, levels = { 4, 15 },
                 -- width = 7, nudge = 6, -- 8x8 sizing
-                width = 12, nudge = 3,
+                width = wide and 12 or 7, nudge = wide and 3 or 6,
                 -- state = Tune.of_param(eggs.get_tune(track), 'tonic'), 
                 state = crops.of_variable(
                     params:get(tune:get_param_id('tonic')), 
@@ -415,7 +468,7 @@ local function Page(args)
     end
 end
 
-local function App(tracks)
+local function App(args)
     local _track = Grid.integer()
 
     local _pages = {}
@@ -424,21 +477,23 @@ local function App(tracks)
     end
 
     return function()
-        _track{
-            x = 1, y = 1, size = #_pages, levels = { 0, 15 },
-            wrap = 2,
-            state = { 
-                eggs.track_focus, 
-                function(v) 
-                    eggs.track_focus = v
+        if wide or eggs.view_focus == eggs.NORMAL then 
+            _track{
+                x = 1, y = 1, size = #_pages, levels = { 0, 15 },
+                wrap = 2,
+                state = { 
+                    eggs.track_focus, 
+                    function(v) 
+                        eggs.track_focus = v
 
-                    crops.dirty.grid = true 
-                    crops.dirty.screen = true 
-                end
+                        crops.dirty.grid = true 
+                        crops.dirty.screen = true 
+                    end
+                }
             }
-        }
+        end
     
-        _pages[eggs.track_focus]()
+        _pages[eggs.track_focus]{ wide = args.wide }
     end
 end
     
