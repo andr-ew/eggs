@@ -34,6 +34,8 @@ in the maiden [REPL](https://monome.org/docs/norns/image/wifi_maiden-images/inst
 | midi | just friends |
 | crow 1 + 2 | crow 3 + 4 |
 
+in **eggs/midi-only**, all tracks are midi
+
 **keymap:** grid keyboard. edit the tuning using **scale** & **key**
 
 **slew:** hold to enable pitch slew. 8 keys to the right select slew time
