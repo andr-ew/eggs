@@ -67,7 +67,6 @@ do
                 } or {
                     props.name or p.name, 
                     options_ass[v_ass]
-                    -- mod.sources[props.mod_id][src]
                 },
                 levels = { 4, 15 },
             }
@@ -103,6 +102,14 @@ do
             local p_hold = props.id_hold and params:lookup_param(props.id_hold)
             local options_hold = p_hold and p_hold.options
             local behavior_hold = p_hold and p_hold.behavior
+            
+            local id_ass, options_ass, v_ass
+
+            if props.is_dest ~= false then               
+                id_ass = patcher.get_assignment_param_id(props.id)
+                options_ass = params:lookup_param(id_ass).options
+                v_ass = params:get(id_ass)
+            end
 
             if crops.device == 'key' and crops.mode == 'input' then
                 if not eggs.mapping then
@@ -151,17 +158,20 @@ do
                             downtime = nil
                         end
                     end
-                else
+                elseif props.is_dest ~= false then
                     _map{
-                        ---
+                        n = props.n, max = #options_ass,
+                        state = crops.of_variable(v_ass, params.set, params, id_ass)
                     }
                 end
             end
+            
+            local src = (props.is_dest ~= false) and v_ass or 1
 
             _list{
                 x = k[props.n].x, y = k[props.n].y, margin = 3,
                 focus = 1,
-                text = (not eggs.mapping) and {
+                text = ((not eggs.mapping) or (not (props.is_dest ~= false))) and {
                     blink and (
                         (props.name_hold or p_hold.name)..': '..(
                             behavior_hold and (
@@ -188,10 +198,11 @@ do
                             string.format(props.format or '%i', params:get(props.id))
                         )
                     ),
-                    -- (src > 1) and '+' or nil,
-                    -- (src > 1) and string.format('%.3f', mod.get(props.mod_id)) or nil
+                    (src > 1) and '+' or nil,
+                    (src > 1) and string.format('%.3f', patcher.get_mod_value(props.id)) or nil
                 } or {
-                    -- mod.sources[props.mod_id][src]
+                    props.name or p.name, 
+                    options_ass[v_ass]
                 },
                 --TODO: trigger needs a different state
                 levels = { 

@@ -121,7 +121,7 @@ jf_out.add_params = function()
             crops.dirty.screen = true
         end
     }
-    patcher.add_destination_and_param{
+    params:add{
         id = param_ids.mode, name = 'synth',
         type = 'binary', 
         behavior = 'toggle', default = 1,
@@ -139,7 +139,7 @@ jf_out.add_params = function()
             crops.dirty.screen = true
         end
     }
-    patcher.add_destination_and_param{
+    params:add{
         id = param_ids.note_mode, name = 'note mode',
         type = 'option', options = note_mode_names, default = NOTE,
         action = function(v)
@@ -203,8 +203,8 @@ jf_out.Components.norns.page = function()
         _e2{ id = param_ids.level, n = 2 }
         _e3{ id = param_ids.run, n = 3 }
         
-        _k2{ id = param_ids.mode, id_hold = param_ids.run_mode, n = 2 }
-        _k3{ id = param_ids.note_mode, id_hold = param_ids.god_mode, n = 3 }
+        _k2{ id = param_ids.mode, id_hold = param_ids.run_mode, n = 2, is_dest = false }
+        _k3{ id = param_ids.note_mode, id_hold = param_ids.god_mode, n = 3, is_dest = false }
     end
 end
 
