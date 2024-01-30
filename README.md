@@ -1,20 +1,18 @@
 # eggs (0.2.0)
 
-pitch gesture looper for norns + grid
+pitch gesture looper for norns, grid, and crow
 
 ## hardware
 
 **required**
 
 - [norns](https://github.com/p3r7/awesome-monome-norns) (220321 or later)
-- [grid](https://monome.org/docs/grid/) (128)
-  - other grid sizes forthcoming
+- [grid](https://monome.org/docs/grid/) (128 or 64)
+- crow (main variant only)
 
 **also supported**
 
 - midi
-
-note that the last version supported crow & jf. they're coming back later. u better beleive it
 
 ## install
 
@@ -26,9 +24,19 @@ in the maiden [REPL](https://monome.org/docs/norns/image/wifi_maiden-images/inst
 
 ## grid UI
 
-![diagram of the grid interface. text description forthcoming](/lib/doc/eggs_grid.png)
+![diagram of the grid interface. text description forthcoming](/lib/doc/eggs.png)
+![diagram of the 64 grid interface. text description forthcoming](/lib/doc/eggs_64.png)
+
+**track focus:** in the main variant, tracks are as follows:
+
+| | |
+| -- | -- |
+| midi | just friends |
+| crow 1 + 2 | crow 3 + 4 |
 
 **keymap:** grid keyboard. edit the tuning using **scale** & **key**
+
+**slew:** hold to enable pitch slew. 8 keys to the right select slew time
 
 **latch:** make it drone
 
@@ -73,10 +81,30 @@ in the maiden [REPL](https://monome.org/docs/norns/image/wifi_maiden-images/inst
 ## norns UI
 
 **view:** normal
-- **K2:** select between engine & midi output destinations
- 
+- **track 1: midi**
+  - **E1-3:** midi CC out
+  - **K2:** note echo
+  - **K3:** panic
+- **track 2: jf**
+  - **E1:** shift (linear pitch offset, map for vibrato)
+  - **E2:** note level
+  - **E3:** run voltage
+  - **K2:** synth mode. hold: run mode
+  - **K3:** panic. hold: god mode
+- **tracks 3 + 4: crow**
+  - **E1:** function generator - time
+  - **E2:** function generator - shape
+  - **E3:** function generator - ramp
+  - **K2:** function generator - transient/sustain/cycle
+- **K1 (hold):** set mod source
+
 **view:** scale
-- other stuff
+- **E1:** scale
+- **E2:** row tuning
+- **E3:** midi in
+- **K2-3:** fret marks
 
 **view:** key
-- other stuff
+- **E1:** tuning system
+- **E2:** base key
+- **E3:** 0v pitch 
