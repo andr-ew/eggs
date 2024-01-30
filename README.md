@@ -1,4 +1,4 @@
-# eggs (0.2.0)
+# eggs (beta)
 
 pitch gesture looper for norns, grid, and crow
 
