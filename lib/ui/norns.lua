@@ -88,9 +88,9 @@ local function Tuning()
 end
 
 local function App()
-    local _text = Screen.text()
+    local _map = Key.momentary()
+    
     local _tuning = Tuning()
-    local _dest = { enc = Enc.integer(), screen = Screen.list() }
 
     local _pages = {}
     for track = 1,eggs.track_count do
@@ -99,6 +99,14 @@ local function App()
 
     return function()
         if eggs.view_focus == eggs.NORMAL then 
+            _map{
+                n = 1, state = crops.of_variable(eggs.mapping, function(v) 
+                    eggs.mapping = v>0
+                    crops.dirty.screen = true
+                    crops.dirty.grid = true
+                end)
+            }
+
             _pages[eggs.track_focus]()
         else
             _tuning{ track = eggs.track_focus, view = eggs.view_focus }

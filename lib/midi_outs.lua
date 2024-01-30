@@ -112,7 +112,7 @@ function midi_outs.init(count)
             local _target = Components.enc_screen.param()
 
             return function()
-                _target{ id = param_ids.target, n = 1 }
+                _target{ id = param_ids.target, n = 1, is_dest = false }
             end
         end
     end

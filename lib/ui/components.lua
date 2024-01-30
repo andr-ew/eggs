@@ -18,6 +18,13 @@ do
             local p = params:lookup_param(props.id)
             local options = p.options
             local spec = p.controlspec 
+            local id_ass, options_ass, v_ass
+
+            if props.is_dest ~= false then               
+                id_ass = patcher.get_assignment_param_id(props.id)
+                options_ass = params:lookup_param(id_ass).options
+                v_ass = params:get(id_ass)
+            end
 
             if not eggs.mapping then
                 if spec then
@@ -33,24 +40,18 @@ do
                         state = eggs.of_param(props.id),
                     }
                 end
-            else
+            elseif props.is_dest ~= false then
                 _map{
-                    -- n = props.n, max = #mod.sources[props.mod_id],
-                    -- state = {
-                    --     params:get('mod '..props.mod_id), 
-                    --     params.set, params, 'mod '..props.mod_id,
-                    -- },
-                    -- state_remainder = {
-                    --     remainder_source, function(v) remainder_source = v end
-                    -- }
+                    n = props.n, max = #options_ass,
+                    state = crops.of_variable(v_ass, params.set, params, id_ass)
                 }
             end
 
-            -- local src = params:get('mod '..props.mod_id)
+            local src = (props.is_dest ~= false) and v_ass or 1
 
             _list{
                 x = e[props.n].x, y = e[props.n].y, margin = 3,
-                text = (not eggs.mapping) and {
+                text = ((not eggs.mapping) or (not (props.is_dest ~= false))) and {
                     props.name or p.name, 
                     options and (
                         options[params:get(props.id)]
@@ -61,10 +62,11 @@ do
                         )
                         -- ..' '..(spec.units or '')
                     ),
-                    -- (src > 1) and '+' or nil,
-                    -- (src > 1) and string.format('%.3f', mod.get(props.mod_id)) or nil
+                    (src > 1) and '+' or nil,
+                    (src > 1) and string.format('%.3f', patcher.get_mod_value(props.id)) or nil
                 } or {
-                    -- props.name,
+                    props.name or p.name, 
+                    options_ass[v_ass]
                     -- mod.sources[props.mod_id][src]
                 },
                 levels = { 4, 15 },
