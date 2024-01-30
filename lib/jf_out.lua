@@ -74,6 +74,7 @@ local param_ids = {
     run_mode = 'run_mode_jf_out',
     god_mode = 'god_mode_jf_out',
     note_mode = 'note_mode_jf_out',
+    panic = 'panic_jf_out',
 }
 jf_out.param_ids = param_ids
         
@@ -136,6 +137,15 @@ jf_out.add_params = function()
         behavior = 'toggle', default = 0,
         action = function(v)
             crow.ii.jf.god_mode(v)
+            crops.dirty.screen = true
+        end
+    }
+    params:add{
+        id = param_ids.panic, name = 'panic !',
+        type = 'binary', behavior = 'trigger',
+        action = function()
+            for i = 1,6 do crow.ii.jf.trigger(i, 0) end
+
             crops.dirty.screen = true
         end
     }
@@ -204,7 +214,7 @@ jf_out.Components.norns.page = function()
         _e3{ id = param_ids.run, n = 3 }
         
         _k2{ id = param_ids.mode, id_hold = param_ids.run_mode, n = 2, is_dest = false }
-        _k3{ id = param_ids.note_mode, id_hold = param_ids.god_mode, n = 3, is_dest = false }
+        _k3{ id = param_ids.panic, id_hold = param_ids.god_mode, n = 3, is_dest = false }
     end
 end
 
