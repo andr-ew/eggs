@@ -6,7 +6,6 @@
 -- version 0.3.0 @andrew
 --
 -- required: grid (any size)
---           crow
 --
 -- documentation:
 -- github.com/andr-ew/eggs
@@ -61,60 +60,27 @@ jf_out = include 'lib/jf_out'                               --just friends outpu
 midi_outs = include 'lib/midi_outs'                         --midi output
 crow_outs = include 'lib/crow_outs'                         --crow output
 
-midi_outs.init(1)
+midi_outs.init(4)
 
 --setup pages
 
-eggs.outs = {
-    midi_outs[1],
-    jf_out,
-    crow_outs[1],
-    crow_outs[2]
-}
+eggs.outs = {}
+eggs.keymaps = {}
 
-eggs.keymaps = {
-    [1] = keymap.poly.new{
-        action_on = midi_outs[1].note_on,
-        action_off = midi_outs[1].note_off,
-        pattern = eggs.pattern_shims[1].manual,
-        size = eggs.keymap_size,
-    },
-    [2] = keymap.poly.new{
-        action_on = jf_out.note_on,
-        action_off = jf_out.note_off,
-        pattern = eggs.pattern_shims[2].manual,
-        size = eggs.keymap_size,
-    },
-    [3] = keymap.mono.new{
-        action = crow_outs[1].set_note,
-        pattern = eggs.pattern_shims[3].manual,
-        size = eggs.keymap_size,
-    },
-    [4] = keymap.mono.new{
-        action = crow_outs[2].set_note,
-        pattern = eggs.pattern_shims[4].manual,
-        size = eggs.keymap_size,
-    }    
-}
-    
-eggs.arqs[1].action_on = midi_outs[1].note_on
-eggs.arqs[1].action_off = midi_outs[1].note_off
-eggs.arqs[2].action_on = jf_out.note_on
-eggs.arqs[2].action_off = jf_out.note_off
-eggs.arqs[3].action_on = function(idx) crow_outs[1].set_note(idx, 1) end
-eggs.arqs[3].action_off = function(idx) crow_outs[1].set_note(idx, 0) end
-eggs.arqs[4].action_on = function(idx) crow_outs[2].set_note(idx, 1) end
-eggs.arqs[4].action_off = function(idx) crow_outs[2].set_note(idx, 0) end
+for i = 1,4 do
+    eggs.outs[i] = midi_outs[i]
 
-local function crow_add()
-    for _,out in ipairs(crow_outs) do
-        out.add()
-    end
+    eggs.keymaps[i] = keymap.poly.new{
+        action_on = midi_outs[i].note_on,
+        action_off = midi_outs[i].note_off,
+        pattern = eggs.pattern_shims[i].manual,
+        size = eggs.keymap_size,
+    }
 
-    mod_sources.crow.add()
+    eggs.arqs[i].action_on = midi_outs[i].note_on
+    eggs.arqs[i].action_off = midi_outs[i].note_off
 end
-norns.crow.add = crow_add
-
+    
 --more script files
 
 include 'lib/params'                                        --add params
@@ -143,8 +109,6 @@ function init()
     params:set('hzlag', 0)
     params:bang()
     
-    crow_add()
-
     for i = 1,eggs.track_count do
         local arq = eggs.arqs[i]:start()
     end
