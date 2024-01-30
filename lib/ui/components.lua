@@ -17,10 +17,9 @@ do
         return function(props)
             local p = params:lookup_param(props.id)
             local options = p.options
+            local spec = p.controlspec 
 
             if not eggs.mapping then
-                local spec = p.controlspec 
-
                 if spec then
                     _control{
                         n = props.n,
@@ -57,7 +56,10 @@ do
                         options[params:get(props.id)]
                     )
                     or (
-                        string.format(props.format or '%.2f', params:get(props.id))
+                        string.format(
+                            props.format or '%.2f', params:get(props.id)
+                        )
+                        -- ..' '..(spec.units or '')
                     ),
                     -- (src > 1) and '+' or nil,
                     -- (src > 1) and string.format('%.3f', mod.get(props.mod_id)) or nil

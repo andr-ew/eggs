@@ -86,6 +86,29 @@ do
     end
 end
 
+--LFO params
+-- for i = 1,2 do
+--     params:add_separator('lfo '..i)
+--     mod_sources.lfos[i]:add_params('lfo_'..i)
+-- end
+
+--modulation params
+do
+    params:add_separator('patcher')
+
+    params:add_group('assignments', #patcher.destinations)
+
+    local function action(dest, v)
+        mod_sources.crow.update()
+
+        crops.dirty.grid = true
+        crops.dirty.screen = true
+        crops.dirty.arc = true
+    end
+
+    patcher.add_assignment_params(action)
+end
+
 params:add_separator('polysub')
 polysub:params()
 
@@ -99,6 +122,8 @@ do
             for _,p in ipairs(params.params) do if p.save then
                 params:set(p.id, p.default or (p.controlspec and p.controlspec.default) or 0, true)
             end end
+
+            -- mod_sources.lfos.reset_params()
     
             params:bang()
         end

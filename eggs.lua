@@ -18,6 +18,7 @@ g = grid.connect()
 polysub = require 'engine/polysub'
 engine.name = 'PolySub'
 cs = require 'controlspec'
+-- lfos = require 'lfo'
 
 --git submodule libs
 
@@ -43,48 +44,22 @@ Tune = include 'lib/tune/ui'
 arqueggiator = include 'lib/arqueggiator/arqueggiator'      --arqueggiation (arquencing) lib
 Arqueggiator = include 'lib/arqueggiator/ui'
 
---global variables
-
-eggs = {}
-do
-    local mar = { left = 2, top = 7, right = 2, bottom = 2 }
-    local top, bottom = mar.top, 64-mar.bottom
-    local left, right = mar.left, 128-mar.right
-    local w = 128 - mar.left - mar.right
-    local h = 64 - mar.top - mar.bottom
-    local mul = { x = (right - left) / 2, y = (bottom - top) / 2 }
-    local x = { left, left + mul.x*5/4, [1.5] = 24  }
-    local y = { top, bottom - 22, bottom, [1.5] = 20, }
-    eggs.x, eggs.y, eggs.w, eggs.h = x, y, w, h
-
-    eggs.e = {
-        { x = x[1], y = y[1] },
-        { x = x[1], y = mar.top + h*(5.5/8) },
-        { x = x[2], y = mar.top + h*(5.5/8) },
-    }
-    eggs.k = {
-        {},
-        { x = x[1], y = mar.top + h*(7/8) },
-        { x = x[2], y = mar.top + h*(7/8) },
-    }
-end
+patcher = include 'lib/patcher/patcher'                     --modulation maxtrix
 
 --script files
 
-Components = include 'lib/ui/components'
+eggs = include 'lib/globals'                                --global variables & objects
 
-jf_out = include 'lib/jf_out'
-midi_outs = include 'lib/midi_outs'
-crow_outs = include 'lib/crow_outs'
+Components = include 'lib/ui/components'                    --ui components
+mod_sources = include 'lib/modulation_sources'              --add modulation sources (crow ins)
+
+jf_out = include 'lib/jf_out'                               --just friends output
+midi_outs = include 'lib/midi_outs'                         --midi output
+crow_outs = include 'lib/crow_outs'                         --crow output
 
 midi_outs.init(1)
 
---more global variables
-
-eggs.track_count = 4
-eggs.track_focus = 1
-
-eggs.mapping = false
+--setup pages
 
 eggs.outs = {
     midi_outs[1],
@@ -93,106 +68,6 @@ eggs.outs = {
     crow_outs[2]
 }
 
-eggs.NORMAL, eggs.SCALE, eggs.KEY = 1, 2, 3
-eggs.view_focus = eggs.NORMAL
-
-local tune_count = 8
-eggs.tunes = {}
-
-for i = 1,tune_count do
-    eggs.tunes[i] = tune.new{ 
-        tunings = tunings, id = i,
-        scale_groups = scale_groups,
-        add_param_separator = false,
-        add_param_group = true,
-        visibility_condition = function() 
-            local visible = false
-
-            for track = 1,eggs.track_count do
-                if params:get(eggs.outs[track].param_ids.tuning_preset) == i then
-                    visible = true
-                    break
-                end
-            end
-
-            return visible
-        end,
-        action = function() 
-            crops.dirty.grid = true 
-            crops.dirty.screen = true
-        end
-    }
-end
-
-local function process_param(id, v) 
-    params:set(id, v) 
-end
-
-local pat_count = 4
-eggs.pattern_groups = {}
-eggs.mute_groups = {}
-eggs.pattern_shims = {}
-
-for i = 1,eggs.track_count do
-    eggs.pattern_groups[i] = { manual = {}, arq = {} }
-    for k,_ in pairs(eggs.pattern_groups[i]) do
-        for ii = 1,pat_count do
-            eggs.pattern_groups[i][k][ii] = pattern_time.new()
-        end
-    end
-
-    eggs.mute_groups[i] = {
-        manual = mute_group.new(eggs.pattern_groups[i].manual),
-        arq = mute_group.new(eggs.pattern_groups[i].arq),
-    }
-
-    eggs.pattern_shims[i] = {}
-    for k,mute_group in pairs(eggs.mute_groups[i]) do
-        local shim = {}
-
-        shim.watch = function(shim, value)
-            mute_group:watch({ 'keymap', value })
-        end
-        shim.set_all_hooks = function(shim, ...)
-            mute_group:set_all_hooks(...)
-        end
-        shim.stop = function(shim, ...)
-            mute_group:stop(...)
-        end
-
-        mute_group.process = function(t)
-            if t[1] == 'param' then process_param(t[2], t[3])
-            elseif t[1] == 'keymap' then shim.process(t[2]) end
-        end
-
-        eggs.pattern_shims[i][k] = shim
-    end
-end
-
-eggs.set_param = function(id, v)
-    local t = { 'param', id, v }
-    process_param(id, v)
-
-    for i,mute_groups in ipairs(eggs.mute_groups) do
-        for k,mute_group in pairs(mute_groups) do
-            mute_group:watch(t)
-        end
-    end
-end
-
-function eggs.of_param(id, is_dest)
-    return {
-        params:get(id),
-        eggs.set_param, id,
-    }
-end
-
-eggs.keymap_size = 128-16-16
-eggs.keymap_wrap = 16
-
-eggs.NORMAL, eggs.LATCH, eggs.ARQ = 1, 2, 3
-eggs.mode_names = { 'normal', 'latch', 'arq' }
-    
 eggs.keymaps = {
     [1] = keymap.poly.new{
         action_on = midi_outs[1].note_on,
@@ -217,18 +92,6 @@ eggs.keymaps = {
         size = eggs.keymap_size,
     }    
 }
-
-eggs.snapshot_count = 4
-    
-eggs.arqs = {}
-eggs.snapshots = {}
-for i = 1,eggs.track_count do
-    local arq = arqueggiator.new(i)
-
-    eggs.arqs[i] = arq
-
-    eggs.snapshots[i] = { manual = {}, arq = {} }
-end
     
 eggs.arqs[1].action_on = midi_outs[1].note_on
 eggs.arqs[1].action_off = midi_outs[1].note_off
@@ -239,18 +102,21 @@ eggs.arqs[3].action_off = function(idx) crow_outs[1].set_note(idx, 0) end
 eggs.arqs[4].action_on = function(idx) crow_outs[2].set_note(idx, 1) end
 eggs.arqs[4].action_off = function(idx) crow_outs[2].set_note(idx, 0) end
 
-norns.crow.add = function()
+local function crow_add()
     for _,out in ipairs(crow_outs) do
         out.add()
     end
+
+    mod_sources.crow.add()
 end
+norns.crow.add = crow_add
 
 --more script files
 
-include 'lib/params'
+include 'lib/params'                                        --add params
 App = {}
-App.grid = include 'lib/ui/grid'                    --grid UI
-App.norns = include 'lib/ui/norns'                  --norns UI
+App.grid = include 'lib/ui/grid'                            --grid UI
+App.norns = include 'lib/ui/norns'                          --norns UI
 
 --create, connect UI components
 
@@ -266,9 +132,14 @@ crops.connect_screen(_app.norns)
 --init/cleanup
 
 function init()
+    -- mod_sources.lfos.reset_params()
+    -- for i = 1,2 do mod_sources.lfos[i]:start() end
+
     params:read()
     params:set('hzlag', 0)
     params:bang()
+    
+    crow_add()
 
     for i = 1,eggs.track_count do
         local arq = eggs.arqs[i]:start()

@@ -13,6 +13,17 @@ local shape_names = {
     'under',
     'rebound',
 }
+local shape_nicknames = {
+    'lin',
+    'sine',
+    'log',
+    'exp',
+    'now',
+    'wait',
+    'over',
+    'under',
+    'rebound',
+}
 
 for i = 1,2 do
     local off = i==2 and 2 or 0
@@ -143,18 +154,46 @@ for i = 1,2 do
     crow_outs[i].param_ids = param_ids
 
     crow_outs[i].add_params = function()
-        params:add_separator('function generator')
+        params:add_separator('crow_fg_'..i, 'function generator')
 
-        params:add{
-            id = param_ids.shape, name = 'shape',
-            type = 'option', options = shape_names, default = shape,
+        patcher.add_destination_and_param{
+            id = param_ids.time, name = 'time', type = 'control',
+            -- controlspec = cs.new(0.001, 16, 'exp', 0, time, "s"),
+            controlspec = cs.def{ min = 0, max = 15, default = 4, quantum = 1/100/16*2, units = 'v' },
+            action = function(v)
+                time = 1/(2^(v - 12) * 440); update_dyn()
+
+                crops.dirty.screen = true
+            end,
+        }
+        patcher.add_destination_and_param{
+            id = param_ids.shape, name = 'shp',
+            type = 'option', options = shape_nicknames, default = shape,
             action = function(v)
                 shape = v; update_asl()
 
                 crops.dirty.screen = true
             end,
         }
-        params:add{
+        patcher.add_destination_and_param{
+            id = param_ids.ramp, name = 'rmp', type = 'control',
+            controlspec = cs.def { min = -5, max = 5, default = ramp, units = 'v' },
+            action = function(v)
+                ramp = v/5; update_dyn()
+
+                crops.dirty.screen = true
+            end,
+        }
+        patcher.add_destination_and_param{
+            id = param_ids.level, name = 'level', type = 'control',
+            controlspec = cs.def{ min = 0, max = 10, default = level },
+            action = function(v)
+                level = v; update_dyn()
+
+                crops.dirty.screen = true
+            end,
+        }
+        patcher.add_destination_and_param{
             id = param_ids.mode, name = 'mode',
             type = 'option', options = mode_names, default = mode,
             action = function(v)
@@ -163,7 +202,7 @@ for i = 1,2 do
                 crops.dirty.screen = true
             end,
         }
-        params:add{
+        patcher.add_destination_and_param{
             id = param_ids.retrigger, name = 'retrigger',
             type = 'binary', 
             behavior = 'toggle', default = retrigger,
@@ -173,35 +212,8 @@ for i = 1,2 do
                 crops.dirty.screen = true
             end,
         }
-        params:add{
-            id = param_ids.time, name = 'time', type = 'control',
-            controlspec = cs.new(0.001, 16, 'exp', 0, time, "s"),
-            action = function(v)
-                time = v; update_dyn()
 
-                crops.dirty.screen = true
-            end,
-        }
-        params:add{
-            id = param_ids.ramp, name = 'ramp', type = 'control',
-            controlspec = cs.def { min = -1, max = 1, default = ramp },
-            action = function(v)
-                ramp = v; update_dyn()
-
-                crops.dirty.screen = true
-            end,
-        }
-        params:add{
-            id = param_ids.level, name = 'level', type = 'control',
-            controlspec = cs.def{ min = 0, max = 10, default = level },
-            action = function(v)
-                level = v; update_dyn()
-
-                crops.dirty.screen = true
-            end,
-        }
-
-        params:add_separator('CV')
+        params:add_separator('crow_cv_'..i, 'CV')
 
         params:add{
             type = 'number', id = param_ids.tuning_preset, name = 'tuning preset',
@@ -223,7 +235,7 @@ for i = 1,2 do
                 crops.dirty.grid = true 
             end
         }
-        params:add{
+        patcher.add_destination_and_param{
             type = 'number', id = param_ids.column, name = 'column',
             min = -16, max = 16, default = column,
             action = function(v) 
@@ -232,7 +244,7 @@ for i = 1,2 do
                 crops.dirty.grid = true 
             end
         }
-        params:add{
+        patcher.add_destination_and_param{
             type = 'number', id = param_ids.row, name = 'row',
             min = -16, max = 16, default = row,
             action = function(v) 

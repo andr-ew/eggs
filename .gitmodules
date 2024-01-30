@@ -16,3 +16,6 @@
 [submodule "lib/keymap"]
 	path = lib/keymap
 	url = https://github.com/andr-ew/keymap
+[submodule "lib/patcher"]
+	path = lib/patcher
+	url = https://github.com/andr-ew/patcher

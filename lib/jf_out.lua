@@ -11,16 +11,22 @@ local shift = 0
 local level = 3.5
 local robin = 1
 local note_mode = NOTE
+local held = {}
 
 jf_out.voicing = 'poly'
 
-jf_out.note_on = function(idx)
+local function get_volts(idx)
     local x = (idx-1)%eggs.keymap_wrap + 1 + column 
     local y = (idx-1)//eggs.keymap_wrap + 1 + row 
-    local volts = eggs.tunes[preset]:volts(x, y, nil, oct - 2) - 3/12
+    return eggs.tunes[preset]:volts(x, y, nil, oct - 2) - 3/12
+end
+
+jf_out.note_on = function(idx)
+    local volts = get_volts(idx)
     local vel = math.random()*0.2 + 0.85
 
     if note_mode == NOTE then
+        table.insert(held, { idx = idx, volts = volts, vel = vel })
         crow.ii.jf.play_note(volts, level * vel)
     elseif note_mode == PITCH then
         crow.ii.jf.pitch(robin, volts)
@@ -28,15 +34,24 @@ jf_out.note_on = function(idx)
     end
 end
 jf_out.note_off = function(idx) 
-    local x = (idx-1)%eggs.keymap_wrap + 1 + column 
-    local y = (idx-1)//eggs.keymap_wrap + 1 + row 
-    local volts = eggs.tunes[preset]:volts(x, y, nil, oct - 2) - 3/12
+    local volts = get_volts(idx)
+
+    for i,h in ipairs(held) do if h.volts==volts then
+        table.remove(held, i)
+        break
+    end end
 
     crow.ii.jf.play_note(volts, 0)
 end
 
-local function update_transpose()
-    crow.ii.jf.transpose(shift)
+local function update_notes()
+    for i,h in ipairs(held) do
+        crow.ii.jf.play_note(h.volts, 0)
+
+        local new_volts = get_volts(h.idx)
+        h.volts = new_volts
+        crow.ii.jf.play_note(new_volts, level * h.vel)
+    end
 end
 
 -- local function setup()
@@ -64,22 +79,22 @@ jf_out.param_ids = param_ids
         
 jf_out.name = 'just friends'
 
-jf_out.params_count = 8
+jf_out.params_count = 11
 
 jf_out.add_params = function()
-    params:add{
+    patcher.add_destination_and_param{
         id = param_ids.shift, name = 'shift',
         type = 'control', 
         controlspec = cs.def{ min = -5, max = 5, default = 0 },
         action = function(v)
             shift = math.log(math.max(0.00001, ((v / 5) * 5/12) + 1) * math.exp(1)) - 1
 
-            update_transpose()
+            crow.ii.jf.transpose(shift)
             crops.dirty.screen = true
         end
     }
-    params:add{
-        id = param_ids.level, name = 'level',
+    patcher.add_destination_and_param{
+        id = param_ids.level, name = 'lvl',
         type = 'control', 
         controlspec = cs.def{ min = 0, max = 5, default = level },
         action = function(v)
@@ -87,7 +102,7 @@ jf_out.add_params = function()
             crops.dirty.screen = true
         end
     }
-    params:add{
+    patcher.add_destination_and_param{
         id = param_ids.run, name = 'run',
         type = 'control', 
         controlspec = cs.def{ min = -5, max = 5, default = 0, quantum = 1/100/10 },
@@ -106,7 +121,7 @@ jf_out.add_params = function()
             crops.dirty.screen = true
         end
     }
-    params:add{
+    patcher.add_destination_and_param{
         id = param_ids.mode, name = 'synth',
         type = 'binary', 
         behavior = 'toggle', default = 1,
@@ -124,7 +139,7 @@ jf_out.add_params = function()
             crops.dirty.screen = true
         end
     }
-    params:add{
+    patcher.add_destination_and_param{
         id = param_ids.note_mode, name = 'note mode',
         type = 'option', options = note_mode_names, default = NOTE,
         action = function(v)
@@ -132,11 +147,12 @@ jf_out.add_params = function()
             crops.dirty.screen = true
         end,
     }
+    
     params:add{
         type = 'number', id = param_ids.tuning_preset, name = 'tuning preset',
         min = 1, max = presets, default = preset, 
         action = function(v) 
-            preset = v
+            preset = v; update_notes()
 
             for _,t in ipairs(eggs.tunes) do
                 t:update_tuning()
@@ -147,25 +163,25 @@ jf_out.add_params = function()
         type = 'number', id = param_ids.oct, name = 'oct',
         min = -5, max = 5, default = oct,
         action = function(v) 
-            oct = v
+            oct = v; update_notes()
 
             crops.dirty.grid = true 
         end
     }
-    params:add{
+    patcher.add_destination_and_param{
         type = 'number', id = param_ids.column, name = 'column',
         min = -16, max = 16, default = column,
         action = function(v) 
-            column = v
+            column = v; update_notes()
 
             crops.dirty.grid = true 
         end
     }
-    params:add{
+    patcher.add_destination_and_param{
         type = 'number', id = param_ids.row, name = 'row',
         min = -16, max = 16, default = row,
         action = function(v) 
-            row = v
+            row = v; update_notes()
 
             crops.dirty.grid = true 
         end
