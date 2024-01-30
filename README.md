@@ -1,7 +1,7 @@
 # eggs (beta)
 
-pitch gesture looper for norns, grid, and crow
-
+multi-track pitch gesture looper for norns, grid, and crow (beta)
+ 
 ## hardware
 
 **required**
