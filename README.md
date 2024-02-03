@@ -1,7 +1,11 @@
 # eggs (beta)
 
-multi-track pitch gesture looper for norns, grid, and crow (beta)
- 
+multi-track gesture sequencer for norns, grid, and crow (beta)
+
+four tracks of manual, droning, or arquenced pitch; many tunings; just friends communication & function generators for crow
+
+a spiritual successor to [synecdoche](https://github.com/andr-ew/prosody?tab=readme-ov-file#synecdoche)
+
 ## hardware
 
 **required**
