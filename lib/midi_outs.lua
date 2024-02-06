@@ -23,23 +23,23 @@ function midi_outs.init(count)
         midi_outs[i].note_on = function(idx)
             local x = (idx-1)%eggs.keymap_wrap + 1 + column 
             local y = (idx-1)//eggs.keymap_wrap + 1 + row 
+            local hz = eggs.tunes[preset]:hz(x, y, nil, oct) * 55
+            local note = eggs.tunes[preset]:midi(x, y, nil, oct) + 33
 
             if target == ENGINE then
-                local hz = eggs.tunes[preset]:hz(x, y, nil, oct) * 55
-                engine.start(idx, hz)
+                eggs.noteOn(note, hz)
             else
-                local note = eggs.tunes[preset]:midi(x, y, nil, oct) + 33
                 midi_outs.devices[target]:note_on(note)
             end
         end
         midi_outs[i].note_off = function(idx) 
-            if target == ENGINE then
-                engine.stop(idx) 
-            else
-                local x = (idx-1)%eggs.keymap_wrap + 1 + column 
-                local y = (idx-1)//eggs.keymap_wrap + 1 + row 
+            local x = (idx-1)%eggs.keymap_wrap + 1 + column 
+            local y = (idx-1)//eggs.keymap_wrap + 1 + row 
+            local note = eggs.tunes[preset]:midi(x, y, nil, oct) + 33
 
-                local note = eggs.tunes[preset]:midi(x, y, nil, oct) + 33
+            if target == ENGINE then
+                eggs.noteOff(note)
+            else
                 midi_outs.devices[target]:note_off(note)
             end
         end

@@ -19,7 +19,6 @@ local wide = g and g.device and g.device.cols >= 16 or false
 --system libs
 
 polysub = require 'engine/polysub'
-engine.name = 'PolySub'
 cs = require 'controlspec'
 -- lfos = require 'lfo'
 
@@ -61,6 +60,17 @@ midi_outs = include 'lib/midi_outs'                         --midi output
 crow_outs = include 'lib/crow_outs'                         --crow output
 
 midi_outs.init(4)
+
+--engine commands, edit to change engine
+
+engine.name = 'PolySub'
+
+function eggs.noteOn(note_number, hz)
+    engine.start(note_number, hz)
+end
+function eggs.noteOff(note_number)
+    engine.stop(note_number) 
+end
 
 --setup pages
 
