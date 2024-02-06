@@ -325,9 +325,9 @@ local function Page(args)
                     _slew_time{
                         x = 4, y = 2, size = wide and 8 or 4, min = 1,
                         state = wide and eggs.of_param(id) or crops.of_variable(
-                            params:get(id) // 2,
+                            params:get(id) // 2 + 1,
                             function(v)
-                                params:set((v*2 - 1))
+                                params:set(id, (v*2 - 1))
                             end
                         ),
                     }
@@ -335,6 +335,15 @@ local function Page(args)
                     _rate_rev{
                         mute_group = eggs.mute_groups[track].manual, wide = wide,
                     }
+                    if not wide then
+                        _view_scroll{
+                            x = 7, y = 2, levels = { 4, 15 },
+                            state = crops.of_variable(view_scroll, function(v) 
+                                view_scroll = v
+                                crops.dirty.grid = true
+                            end)
+                        }
+                    end
                 end
 
                 if wide or view_scroll == 0 then
@@ -399,16 +408,6 @@ local function Page(args)
             }
         end
 
-        if not wide then
-            _view_scroll{
-                x = 7, y = 2, levels = { 4, 15 },
-                state = crops.of_variable(view_scroll, function(v) 
-                    view_scroll = v
-                    crops.dirty.grid = true
-                end)
-            }
-        end
-            
         if wide or view_scroll > 0 then
             local id = out.param_ids.row
             _row{
