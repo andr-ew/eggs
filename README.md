@@ -17,6 +17,7 @@ a spiritual successor to [synecdoche](https://github.com/andr-ew/prosody?tab=rea
 **also supported**
 
 - midi
+- [just friends](https://www.whimsicalraps.com/products/just-friends)
 
 ## install
 
