@@ -109,9 +109,6 @@ do
     patcher.add_assignment_params(action)
 end
 
-params:add_separator('polysub')
-polysub:params()
-
 --add pset params
 do
     params:add_separator('pset')
