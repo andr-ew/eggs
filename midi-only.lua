@@ -6,6 +6,7 @@
 -- version 0.3.0 @andrew
 --
 -- required: grid (any size)
+--           crow
 --
 -- documentation:
 -- github.com/andr-ew/eggs
@@ -18,7 +19,6 @@ local wide = g and g.device and g.device.cols >= 16 or false
 
 --system libs
 
-polysub = require 'engine/polysub'
 cs = require 'controlspec'
 -- lfos = require 'lfo'
 
@@ -61,17 +61,6 @@ crow_outs = include 'lib/crow_outs'                         --crow output
 
 midi_outs.init(4)
 
---engine commands, edit to change engine
-
-engine.name = 'PolySub'
-
-function eggs.noteOn(note_number, hz)
-    engine.start(note_number, hz)
-end
-function eggs.noteOff(note_number)
-    engine.stop(note_number) 
-end
-
 --setup pages
 
 eggs.outs = {}
@@ -90,13 +79,54 @@ for i = 1,4 do
     eggs.arqs[i].action_on = midi_outs[i].note_on
     eggs.arqs[i].action_off = midi_outs[i].note_off
 end
-    
+
+--setup modulation
+
+local function crow_add()
+    for _,out in ipairs(crow_outs) do
+        out.add()
+    end
+
+    mod_sources.crow.add()
+end
+norns.crow.add = crow_add
+
 --more script files
 
-include 'lib/params'                                        --add params
+eggs.params = include 'lib/params'                          --script params
 App = {}
 App.grid = include 'lib/ui/grid'                            --grid UI
 App.norns = include 'lib/ui/norns'                          --norns UI
+
+
+--add params
+
+eggs.params.add_destination_params()
+eggs.params.add_keymap_params()
+eggs.params.add_modulation_params()
+
+params:add_separator('engine')
+----------------------------------------- EDIT ENGINE HERE ----------------------------------------
+
+engine.name = 'PolySub'               -- STEP 1: set engine.name to the proper name of your engine
+                                      --         (must be installed on your norns)
+
+polysub = require 'engine/polysub'    -- STEP 2: include or require any files needed for params/etc
+polysub:params()                      -- STEP 3: call the function to add the params
+
+function eggs.noteOn(note_number, hz)   
+    engine.start(note_number, hz)     -- STEP 4: call the note on function here
+end
+function eggs.noteOff(note_number)
+    engine.stop(note_number)          -- STEP 5: call the note off function here
+end
+---------------------------------------------------------------------------------------------------
+
+eggs.params.add_pset_params()
+
+params.action_read = eggs.params.action_read
+params.action_write = eggs.params.action_write
+params.action_delete = eggs.params.action_delete
 
 --create, connect UI components
 
@@ -116,9 +146,11 @@ function init()
     -- for i = 1,2 do mod_sources.lfos[i]:start() end
 
     params:read()
-    params:set('hzlag', 0)
+    -- params:set('hzlag', 0)
     params:bang()
     
+    crow_add()
+
     for i = 1,eggs.track_count do
         local arq = eggs.arqs[i]:start()
     end

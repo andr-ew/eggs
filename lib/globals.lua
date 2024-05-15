@@ -140,4 +140,7 @@ for i = 1,eggs.track_count do
     eggs.snapshots[i] = { manual = {}, arq = {} }
 end
 
+function eggs.noteOn(note_number, hz) end
+function eggs.noteOff(note_number) end
+
 return eggs
