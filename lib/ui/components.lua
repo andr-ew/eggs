@@ -115,9 +115,29 @@ do
                 if not eggs.mapping then
                     local n, z = table.unpack(crops.args) 
 
+                    local _comp, comp_props
+                    if behavior then
+                        --TODO: trigger needs a different state
+                        _comp = _binary[behavior]
+                        comp_props = {
+                            n = props.n, edge = 'falling',
+                            state = eggs.of_param(props.id),
+                        }
+                    else
+                        _comp = _integer
+                        comp_props = {
+                            n_next = props.n, edge = 'falling',
+                            min = p.min or 1, max = p.max or #options,
+                            state = eggs.of_param(props.id),
+                        }
+                    end
+
+
                     if n == props.n then
                         if z==1 then
                             downtime = util.time()
+
+                            _comp(comp_props)
                         elseif z==0 then
                             if p_hold and downtime and ((util.time() - downtime) > 0.25) then 
                                 blink = true
@@ -139,20 +159,10 @@ do
                                     blink = false
                                     crops.dirty.screen = true
                                 end)
+
+                                if behavior == 'momentary' then _comp(comp_props) end
                             else
-                                if behavior then
-                                    --TODO: trigger needs a different state
-                                    _binary[behavior]{
-                                        n = props.n, edge = 'falling',
-                                        state = eggs.of_param(props.id),
-                                    }
-                                else
-                                    _integer{
-                                        n_next = props.n, edge = 'falling',
-                                        min = p.min or 1, max = p.max or #options,
-                                        state = eggs.of_param(props.id),
-                                    }
-                                end
+                                _comp(comp_props)
                             end
                             
                             downtime = nil
@@ -160,7 +170,7 @@ do
                     end
                 elseif props.is_dest ~= false then
                     _map{
-                        n = props.n, max = #options_ass,
+                        n_next = props.n, max = #options_ass,
                         state = crops.of_variable(v_ass, params.set, params, id_ass)
                     }
                 end

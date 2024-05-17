@@ -37,6 +37,9 @@ for i = 1,2 do
     local row = -2
     local index = 0
     local volts = { cv = 0, gate = 0 }
+    local patched = 1
+    local keyboard_gate = 0
+    local manual_gate = 0
 
     local function update_volts_cv()
         local x = (index-1)%eggs.keymap_wrap + 1 + column 
@@ -46,6 +49,16 @@ for i = 1,2 do
         crow.output[outs.cv].volts = cv
                 
         crops.dirty.screen = true
+    end
+
+    local function update_gate()
+        local gate = (keyboard_gate & patched) | manual_gate
+
+        if mode == SUSTAIN then
+            crow.output[outs.gate](gate > 0)
+        else
+            if gate > 0 then crow.output[outs.gate]() end
+        end
     end
     
     local slew_times = { 0.05, 0.07, 0.1, 0.2, 0.3, 0.4, 0.5, 1 }
@@ -64,11 +77,7 @@ for i = 1,2 do
             index = idx; update_volts_cv()
         end
 
-        if mode == SUSTAIN then
-            crow.output[outs.gate](gate > 0)
-        else
-            if gate > 0 then crow.output[outs.gate]() end
-        end
+        keyboard_gate = gate; update_gate()
     end
     
     local time = 0.04
@@ -133,8 +142,6 @@ for i = 1,2 do
         update_volts_cv()
     end
 
-    crow_outs[i].params_count = 14
-
     crow_outs[i].name = 'output '..outs.cv..' + '..outs.gate
 
     local param_ids = {
@@ -150,8 +157,12 @@ for i = 1,2 do
         level = 'level_crow_outs_'..i,
         slew_enable = 'slew_enable_crow_outs_'..i,
         slew_time = 'slew_time_crow_outs_'..i,
+        trigger = 'trigger_'..i,
+        patched = 'patched_'..i,
     }
     crow_outs[i].param_ids = param_ids
+    
+    crow_outs[i].params_count = 2 + tab.count(param_ids)
 
     crow_outs[i].add_params = function()
         params:add_separator('crow_fg_'..i, 'function generator')
@@ -208,6 +219,29 @@ for i = 1,2 do
             behavior = 'toggle', default = retrigger,
             action = function(v)
                 retrigger = v; update_asl()
+
+                crops.dirty.screen = true
+            end,
+        }
+        patcher.add_destination_and_param{
+            id = param_ids.trigger, name = 'trigger',
+            type = 'binary', 
+            behavior = 'momentary', default = manual_gate,
+            action = function(v)
+                manual_gate = v; update_gate()
+
+                crops.dirty.screen = true
+            end,
+        }
+        patcher.add_destination_and_param{
+            id = param_ids.patched, name = 'patched',
+            type = 'binary', 
+            behavior = 'toggle', default = patched,
+            action = function(v)
+                patched = v
+
+                params:set(param_ids.trigger, 0)
+                update_gate()
 
                 crops.dirty.screen = true
             end,
@@ -295,6 +329,7 @@ for i = 1,2 do
         local _e3 = Components.enc_screen.param()
 
         local _k2 = Components.key_screen.param()
+        local _k3 = Components.key_screen.param()
 
         return function()
             _e1{ id = param_ids.time, n = 1 }
@@ -302,6 +337,7 @@ for i = 1,2 do
             _e3{ id = param_ids.ramp, n = 3 }
             
             _k2{ id = param_ids.mode, id_hold = param_ids.retrigger, n = 2 }
+            _k3{ id = param_ids.trigger, id_hold = param_ids.patched, n = 3 }
 
             if crops.device == 'screen' and crops.mode == 'redraw' then
                 for ii,k in ipairs{ 'cv', 'gate' } do
