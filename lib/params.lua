@@ -53,8 +53,18 @@ function p.add_keymap_params()
         arq:params()
         -- arq:start()
 
-        params:set_action(arq:pfix('division'), function() crops.dirty.grid = true end)
-        params:set_action(arq:pfix('reverse'), function() crops.dirty.grid = true end)
+        -- params:set_action(arq:pfix('division'), function() crops.dirty.grid = true end)
+        -- params:set_action(arq:pfix('reverse'), function() crops.dirty.grid = true end)
+
+        for _,k in ipairs({ 'division', 'reverse', 'loop' }) do
+            local id = arq:pfix(k)
+            local action = params:lookup_param(id).action
+
+            params:set_action(id, function(v) 
+                action(v)
+                crops.dirty.grid = true 
+            end)
+        end
     end
 
     do

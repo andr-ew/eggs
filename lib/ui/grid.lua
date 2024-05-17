@@ -35,6 +35,7 @@ local function Arq(args)
     local _rate_small = Produce.grid.integer_trigger()
     local _reverse = Grid.toggle()
     local _loop = Grid.toggle()
+    local _pulse = Grid.trigger()
 
     return function(props)
         local ss = props.snapshots
@@ -75,6 +76,13 @@ local function Arq(args)
             end
             
             if #arq.sequence > 0 then
+                _pulse{
+                    x = 3, y = 2, levels = { 4, 15 },
+                    input = function()
+                        local id = arq:pfix('pulse')
+                        eggs.set_param(id, params:get(id) ~ 1)
+                    end
+                }
                 _reverse{
                     x = 4, y = 2, levels = { 4, 15 },
                     state = eggs.of_param(arq:pfix('reverse'))
@@ -83,8 +91,9 @@ local function Arq(args)
                     _rate_mark{
                         x = 8, y = 2, level = 4,
                     }
+                    local stopped = params:get(arq:pfix('division')) == 1
                     _rate{
-                        x = 5, y = 2, size = 7,
+                        x = 5, y = 2, size = 7, levels = { 0, stopped and 4 or 15 },
                         state = eggs.of_param(arq:pfix('division'))
                     }
                     _loop{
