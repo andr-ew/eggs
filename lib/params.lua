@@ -116,8 +116,6 @@ function p.add_modulation_params()
         params:add_group('assignments', #patcher.destinations)
 
         local function action(dest, v)
-            mod_sources.crow.update()
-
             crops.dirty.grid = true
             crops.dirty.screen = true
             crops.dirty.arc = true
