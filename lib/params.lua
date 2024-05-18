@@ -51,20 +51,35 @@ function p.add_keymap_params()
 
         params:add_group('arqueggiator_track_'..i, 'track '..i, arqueggiator.params_count)
         arq:params()
+        
+        for _,k in ipairs(arqueggiator.param_ids) do
+            local id = arq:pfix(k)
+            local p = params:lookup_param(id)
+            local action = p.action
+            local action_dirty = function(v) 
+                action(v)
+                crops.dirty.grid = true 
+            end
+            local action_patcher = patcher.add_destination{
+                type = p.t,
+                behavior = p.behavior,
+                id = p.id,
+                name = 'arq '..i..' '..p.name,
+                action = action_dirty,
+                controlspec = p.controlspec,
+                default = p.default,
+                min = p.min,
+                max = p.max,
+                options = p.options
+            }
+
+            params:set_action(id, action_patcher)
+        end
+
         -- arq:start()
 
         -- params:set_action(arq:pfix('division'), function() crops.dirty.grid = true end)
         -- params:set_action(arq:pfix('reverse'), function() crops.dirty.grid = true end)
-
-        for _,k in ipairs({ 'division', 'reverse', 'loop' }) do
-            local id = arq:pfix(k)
-            local action = params:lookup_param(id).action
-
-            params:set_action(id, function(v) 
-                action(v)
-                crops.dirty.grid = true 
-            end)
-        end
     end
 
     do
