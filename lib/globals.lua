@@ -115,9 +115,9 @@ eggs.set_param = function(id, v)
     end
 end
 
-function eggs.of_param(id, is_dest)
+function eggs.of_param(id, sum_dest)
     return {
-        params:get(id),
+        sum_dest and patcher.get_value(id) or params:get(id),
         eggs.set_param, id,
     }
 end

@@ -85,7 +85,7 @@ local function Arq(args)
                 }
                 _reverse{
                     x = 4, y = 2, levels = { 4, 15 },
-                    state = eggs.of_param(arq:pfix('reverse'))
+                    state = eggs.of_param(arq:pfix('reverse'), true)
                 }
                 if wide then
                     _rate_mark{
@@ -94,11 +94,11 @@ local function Arq(args)
                     local stopped = params:get(arq:pfix('division')) == 1
                     _rate{
                         x = 5, y = 2, size = 7, levels = { 0, stopped and 4 or 15 },
-                        state = eggs.of_param(arq:pfix('division'))
+                        state = eggs.of_param(arq:pfix('division'), true)
                     }
                     _loop{
                         x = 12, y = 2, levels = { 4, 15 },
-                        state = eggs.of_param(arq:pfix('loop'))
+                        state = eggs.of_param(arq:pfix('loop'), true)
                     }
                 else
                     _rate_small{
@@ -106,7 +106,7 @@ local function Arq(args)
                         x_prev = 5, y_prev = 2,
                         levels = { 0, 15 }, wrap = false,
                         min = 1, max = 7,
-                        state = eggs.of_param(arq:pfix('division'))
+                        state = eggs.of_param(arq:pfix('division'), true)
                     }
                 end
             end
