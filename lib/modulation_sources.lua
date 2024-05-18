@@ -1,11 +1,12 @@
 local src = {}
 
+--TODO: update to latest patcher
 do
     src.crow = {}
 
     local streams = {}
     for i = 1,2 do
-        streams[i] = patcher.add_source('crow '..i, 0)
+        streams[i] = patcher.add_source('crow_'..i, 'crow '..i, 0)
     end
     -- src.crow.streams = streams
 
@@ -23,7 +24,7 @@ do
         local mapped = { false, false }
 
         for i = 1,2 do
-            if #patcher.get_assignments_source('crow '..i) > 0 then mapped[i] = true end
+            if #patcher.get_assignments_source('crow_'..i) > 0 then mapped[i] = true end
         end
         
         for i, map in ipairs(mapped) do 
