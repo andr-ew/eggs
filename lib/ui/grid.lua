@@ -118,7 +118,7 @@ local function Arq(args)
             levels = { 0, 1 },
             tune = tune,
             toct = params:get(out.param_ids.oct),
-            column_offset = params:get(out.param_ids.column),
+            column_offset = params:get(out.param_ids.column) // eggs.volts_per_column,
             row_offset = params:get(out.param_ids.row),
         }
         _keymap{
@@ -405,7 +405,7 @@ local function Page(args)
                 levels = { 0, 4 },
                 tune = tune,
                 toct = params:get(out.param_ids.oct),
-                column_offset = params:get(out.param_ids.column),
+                column_offset = params:get(out.param_ids.column) // eggs.volts_per_column,
                 row_offset = params:get(out.param_ids.row),
             }
             _keymap{

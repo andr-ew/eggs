@@ -269,15 +269,21 @@ for i = 1,2 do
                 crops.dirty.grid = true 
             end
         }
-        patcher.add_destination_and_param{
-            type = 'number', id = param_ids.column, name = 'column',
-            min = -16, max = 16, default = column,
-            action = function(v) 
-                column = v; update_volts_cv()
+        do
+            local min, max = -12, 12
+            patcher.add_destination_and_param{
+                type = 'control', id = param_ids.column, name = 'column',
+                controlspec = cs.def{ 
+                    min = min, max = max, default = column * eggs.volts_per_column, 
+                    quantum = (1/(max - min)) * eggs.volts_per_column, units = 'v',
+                },
+                action = function(v) 
+                    column = v // eggs.volts_per_column; update_volts_cv()
 
-                crops.dirty.grid = true 
-            end
-        }
+                    crops.dirty.grid = true 
+                end
+            }
+        end
         patcher.add_destination_and_param{
             type = 'number', id = param_ids.row, name = 'row',
             min = -16, max = 16, default = row,
