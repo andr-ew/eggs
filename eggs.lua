@@ -1,5 +1,3 @@
--- eggs
---
 -- pitch gesture looper 
 -- for norns + grid
 --
@@ -53,7 +51,6 @@ patcher = include 'lib/patcher/patcher'                     --modulation maxtrix
 eggs = include 'lib/globals'                                --global variables & objects
 
 Components = include 'lib/ui/components'                    --ui components
-mod_sources = include 'lib/modulation_sources'              --add modulation sources (crow ins)
 
 jf_out = include 'lib/jf_out'                               --just friends output
 midi_outs = include 'lib/midi_outs'                         --midi output
@@ -104,14 +101,19 @@ eggs.arqs[3].action_off = function(idx) crow_outs[1].set_note(idx, 0) end
 eggs.arqs[4].action_on = function(idx) crow_outs[2].set_note(idx, 1) end
 eggs.arqs[4].action_off = function(idx) crow_outs[2].set_note(idx, 0) end
 
---setup modulation
+--set up crow
+
+local add_actions = {}
+
+for i = 1,2 do
+    add_actions[i] = patcher.crow.add_source(i)
+end
 
 local function crow_add()
     for _,out in ipairs(crow_outs) do
         out.add()
     end
-
-    mod_sources.crow.add()
+    for _,action in ipairs(add_actions) do action() end
 end
 norns.crow.add = crow_add
 

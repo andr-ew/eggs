@@ -53,7 +53,6 @@ patcher = include 'lib/patcher/patcher'                     --modulation maxtrix
 eggs = include 'lib/globals'                                --global variables & objects
 
 Components = include 'lib/ui/components'                    --ui components
-mod_sources = include 'lib/modulation_sources'              --add modulation sources (crow ins)
 
 jf_out = include 'lib/jf_out'                               --just friends output
 midi_outs = include 'lib/midi_outs'                         --midi output
@@ -61,7 +60,7 @@ crow_outs = include 'lib/crow_outs'                         --crow output
 
 midi_outs.init(4)
 
---setup pages
+--set up pages
 
 eggs.outs = {}
 eggs.keymaps = {}
@@ -79,17 +78,6 @@ for i = 1,4 do
     eggs.arqs[i].action_on = midi_outs[i].note_on
     eggs.arqs[i].action_off = midi_outs[i].note_off
 end
-
---setup modulation
-
-local function crow_add()
-    for _,out in ipairs(crow_outs) do
-        out.add()
-    end
-
-    mod_sources.crow.add()
-end
-norns.crow.add = crow_add
 
 --more script files
 
