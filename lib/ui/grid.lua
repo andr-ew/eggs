@@ -117,9 +117,9 @@ local function Arq(args)
             flow = 'right', flow_wrap = 'up',
             levels = { 0, 1 },
             tune = tune,
-            toct = params:get(out.param_ids.oct),
-            column_offset = params:get(out.param_ids.column) // eggs.volts_per_column,
-            row_offset = params:get(out.param_ids.row),
+            toct = 0, --?
+            column_offset = out.column,
+            row_offset = out.row,
         }
         _keymap{
             x = 1, y = 8, size = eggs.keymap_size, wrap = eggs.keymap_wrap,
@@ -404,8 +404,8 @@ local function Page(args)
                 flow = 'right', flow_wrap = 'up',
                 levels = { 0, 4 },
                 tune = tune,
-                toct = params:get(out.param_ids.oct),
-                column_offset = params:get(out.param_ids.column) // eggs.volts_per_column,
+                toct = 0, --?
+                column_offset = out.column,
                 row_offset = params:get(out.param_ids.row),
             }
             _keymap{
@@ -436,8 +436,9 @@ local function Page(args)
                     x_next = wide and 14 or 7, y_next = 1,
                     x_prev = wide and 13 or 6, y_prev = 1,
                     levels = { 4, 15 }, wrap = false,
-                    min = params:lookup_param(id).min,
-                    max = params:lookup_param(id).max,
+                    min = params:lookup_param(id).controlspec.minval,
+                    max = params:lookup_param(id).controlspec.maxval,
+                    step = eggs.volts_per_column,
                     state = eggs.of_param(id)
                 } 
             end

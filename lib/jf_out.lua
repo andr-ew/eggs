@@ -1,27 +1,28 @@
-local jf_out = {}
+local out = {}
         
 local NOTE, PITCH = 1, 2
 local note_mode_names = { 'note', 'pitch' }
 
-local preset = 2
-local oct = 0
-local column = 0
-local row = -2
+out.preset = 2
+out.oct = 0
+out.column = 0
+out.row = -2
+
 local shift = 0
 local level = 3.5
 local robin = 1
 local note_mode = NOTE
 local held = {}
 
-jf_out.voicing = 'poly'
+out.voicing = 'poly'
 
 local function get_volts(idx)
-    local x = (idx-1)%eggs.keymap_wrap + 1 + column 
-    local y = (idx-1)//eggs.keymap_wrap + 1 + row 
-    return eggs.tunes[preset]:volts(x, y, nil, oct - 2) - 3/12
+    local x = (idx-1)%eggs.keymap_wrap + 1 + out.column 
+    local y = (idx-1)//eggs.keymap_wrap + 1 + out.row 
+    return eggs.tunes[out.preset]:volts(x, y, nil, out.oct - 2) - 3/12
 end
 
-jf_out.note_on = function(idx)
+out.note_on = function(idx)
     local volts = get_volts(idx)
     local vel = math.random()*0.2 + 0.85
 
@@ -33,7 +34,7 @@ jf_out.note_on = function(idx)
         robin = robin%6 + 1
     end
 end
-jf_out.note_off = function(idx) 
+out.note_off = function(idx) 
     local volts = get_volts(idx)
 
     for i,h in ipairs(held) do if h.volts==volts then
@@ -76,13 +77,13 @@ local param_ids = {
     note_mode = 'note_mode_jf_out',
     panic = 'panic_jf_out',
 }
-jf_out.param_ids = param_ids
+out.param_ids = param_ids
         
-jf_out.name = 'just friends'
+out.name = 'just friends'
 
-jf_out.params_count = 11
+out.params_count = 11
 
-jf_out.add_params = function()
+out.add_params = function()
     patcher.add_destination_and_param{
         id = param_ids.shift, name = 'shift',
         type = 'control', 
@@ -160,9 +161,9 @@ jf_out.add_params = function()
     
     params:add{
         type = 'number', id = param_ids.tuning_preset, name = 'tuning preset',
-        min = 1, max = presets, default = preset, 
+        min = 1, max = #eggs.tunes, default = out.preset, 
         action = function(v) 
-            preset = v; update_notes()
+            out.preset = v; update_notes()
 
             for _,t in ipairs(eggs.tunes) do
                 t:update_tuning()
@@ -171,36 +172,45 @@ jf_out.add_params = function()
     }
     params:add{
         type = 'number', id = param_ids.oct, name = 'oct',
-        min = -5, max = 5, default = oct,
+        min = -5, max = 5, default = out.oct,
         action = function(v) 
-            oct = v; update_notes()
+            out.oct = v; update_notes()
 
             crops.dirty.grid = true 
         end
     }
-    patcher.add_destination_and_param{
-        type = 'number', id = param_ids.column, name = 'column',
-        min = -16, max = 16, default = column,
-        action = function(v) 
-            column = v; update_notes()
+    do
+        local min, max = -12, 12
+        patcher.add_destination_and_param{
+            type = 'control', id = param_ids.column, name = 'column',
+            controlspec = cs.def{ 
+                min = min, max = max, default = out.column * eggs.volts_per_column, 
+                quantum = (1/(max - min)) * eggs.volts_per_column, units = 'v',
+            },
+            action = function(v) 
+                local last = out.column
+                out.column = v // eggs.volts_per_column
 
-            crops.dirty.grid = true 
-        end
-    }
+                if last ~= out.column then  update_notes() end
+
+                crops.dirty.grid = true 
+            end
+        }
+    end
     patcher.add_destination_and_param{
         type = 'number', id = param_ids.row, name = 'row',
-        min = -16, max = 16, default = row,
+        min = -16, max = 16, default = out.row,
         action = function(v) 
-            row = v; update_notes()
+            out.row = v; update_notes()
 
             crops.dirty.grid = true 
         end
     }
 end
         
-jf_out.Components = { norns = {} }
+out.Components = { norns = {} }
 
-jf_out.Components.norns.page = function()
+out.Components.norns.page = function()
     local _e1 = Components.enc_screen.param()
     local _e2 = Components.enc_screen.param()
     local _e3 = Components.enc_screen.param()
@@ -218,4 +228,4 @@ jf_out.Components.norns.page = function()
     end
 end
 
-return jf_out
+return out
