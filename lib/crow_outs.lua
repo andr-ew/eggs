@@ -304,7 +304,7 @@ for i = 1,2 do
                 crops.dirty.grid = true
             end,
         }
-        params:add{
+        patcher.add_destination_and_param{
             type = 'option', id = param_ids.slew_time, name = 'slew time',
             options = slew_times,
             action = function(v)
