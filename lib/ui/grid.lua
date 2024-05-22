@@ -31,7 +31,7 @@ local function Arq(args)
     end
     
     local _rate_mark = Patcher.grid.destination(Grid.fill())
-    local _rate = Patcher.grid.destination(Grid.integer())
+    local _rate = Patcher.grid.destination(Grid.integer(), { levels = { nil, { 4, 8 } } })
     local _rate_small = Patcher.grid.destination(Produce.grid.integer_trigger())
     local _reverse = Patcher.grid.destination(Grid.toggle())
     local _loop = Patcher.grid.destination(Grid.toggle())
@@ -114,8 +114,7 @@ local function Arq(args)
                 else
                     local id = arq:pfix('division')
                     _rate_small(id, eggs.mapping, {
-                        x_next = 6, y_next = 2,
-                        x_prev = 5, y_prev = 2,
+                        x = 5, y = 2, size = 2,
                         levels = { 0, 15 }, wrap = false,
                         min = 1, max = 7,
                         state = eggs.of_param(id, true)
@@ -198,8 +197,7 @@ local function Rate_reverse()
                     })
                 else
                     _rate_small(nil, eggs.mapping, {
-                        x_next = 6, y_next = 2,
-                        x_prev = 5, y_prev = 2,
+                        x = 5, y = 2, size = 2,
                         levels = { 0, 15 }, wrap = false,
                         min = -8, max = 8,
                         state = state_rate,
@@ -432,8 +430,7 @@ local function Page(args)
         if wide or view_scroll > 0 then
             local id = out.param_ids.row
             _row(id, eggs.mapping, {
-                x_next = wide and 16 or 8, y_next = 1,
-                x_prev = wide and 16 or 8, y_prev = 2,
+                x = wide and 16 or 8, y = 2, flow = 'up', size = 2,
                 levels = { 4, 15 }, wrap = false,
                 min = params:lookup_param(id).min,
                 max = params:lookup_param(id).max,
@@ -445,8 +442,7 @@ local function Page(args)
             if (wide or view_scroll > 0) then
                 local id = out.param_ids.column
                 _column(id, eggs.mapping, {
-                    x_next = wide and 14 or 7, y_next = 1,
-                    x_prev = wide and 13 or 6, y_prev = 1,
+                    x = wide and 13 or 6, y = 1, size = 2,
                     levels = { 4, 15 }, wrap = false,
                     min = params:lookup_param(id).controlspec.minval,
                     max = params:lookup_param(id).controlspec.maxval,
