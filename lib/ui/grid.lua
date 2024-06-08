@@ -224,9 +224,12 @@ local function Page(args)
         _slew_time = Patcher.grid.destination(Grid.integer())
     end
 
-    local _patrecs = {}
+    local _patrecs = { manual = {}, aux = {} }
     for i = 1, #eggs.pattern_groups[track].manual do
-        _patrecs[i] = Patcher.grid.destination(Produce.grid.pattern_recorder())
+        _patrecs.manual[i] = Patcher.grid.destination(Produce.grid.pattern_recorder())
+    end
+    for i = 1, #eggs.pattern_groups[track].aux do
+        _patrecs.aux[i] = Patcher.grid.destination(Produce.grid.pattern_recorder())
     end
     
     local _snapshots = {}
@@ -333,7 +336,7 @@ local function Page(args)
                 local ss = eggs.snapshots[track].manual
 
                 for i = 1, wide and #eggs.pattern_groups[track].manual or 1 do
-                    _patrecs[i](nil, eggs.mapping, {
+                    _patrecs.manual[i](nil, eggs.mapping, {
                         x = 4 + i - 1, y = 1,
                         pattern = eggs.pattern_groups[track].manual[i],
                     })
@@ -449,6 +452,14 @@ local function Page(args)
                     step = eggs.volts_per_column,
                     state = eggs.of_param(id)
                 })
+            end
+            if wide then
+                for i = 1, #eggs.pattern_groups[track].aux do
+                    _patrecs.aux[i](nil, eggs.mapping, {
+                        x = 13 + i - 1, y = 2,
+                        pattern = eggs.pattern_groups[track].aux[i],
+                    })
+                end
             end
         elseif eggs.view_focus == eggs.SCALE then
             _degs_bg(nil, eggs.mapping, {

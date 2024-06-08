@@ -68,15 +68,15 @@ local function process_param(id, v)
     params:set(id, v) 
 end
 
-local pat_count = 4
+local pat_count = { manual = 4, arq = 4, aux = 2 }
 eggs.pattern_groups = {}
 eggs.mute_groups = {}
 eggs.pattern_shims = {}
 
 for i = 1,eggs.track_count do
-    eggs.pattern_groups[i] = { manual = {}, arq = {} }
+    eggs.pattern_groups[i] = { manual = {}, arq = {}, aux = {} }
     for k,_ in pairs(eggs.pattern_groups[i]) do
-        for ii = 1,pat_count do
+        for ii = 1,pat_count[k] do
             eggs.pattern_groups[i][k][ii] = pattern_time.new()
         end
     end
@@ -107,15 +107,28 @@ for i = 1,eggs.track_count do
 
         eggs.pattern_shims[i][k] = shim
     end
+
+    for _,pat in ipairs(eggs.pattern_groups[i].aux) do
+        pat.process = function(t)
+            if t[1] == 'param' then process_param(t[2], t[3]) end
+        end
+    end
 end
 
 eggs.set_param = function(id, v)
     local t = { 'param', id, v }
     process_param(id, v)
 
-    for i,mute_groups in ipairs(eggs.mute_groups) do
-        for k,mute_group in pairs(mute_groups) do
-            mute_group:watch(t)
+    -- for i,mute_groups in ipairs(eggs.mute_groups) do
+    --     for k,mute_group in pairs(mute_groups) do
+    --         mute_group:watch(t)
+    --     end
+    -- end
+    for i = 1,eggs.track_count do
+        for k,_ in pairs(eggs.pattern_groups[i]) do
+            for ii,pat in ipairs(eggs.pattern_groups[i][k]) do
+                pat:watch(t)
+            end
         end
     end
 end
