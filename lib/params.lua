@@ -181,13 +181,17 @@ function p.action_read(file, silent, slot)
         local name = 'pset-'..string.format("%02d", slot)
         local fname = norns.state.data..name..'.data'
         local data, err = tab.load(fname)
+        
+        params:bang()
 
         if err then print('ERROR pset action read: '..err) end
         if data then
             eggs.snapshots = data.snapshots or {}
-            
+
             for i = 1,eggs.track_count do
                 eggs.arqs[i].sequence = data.sequences[i] or {}
+
+                eggs.keymaps[i]:set(data.keys[i])
 
                 for k,_ in pairs(data.pattern_groups[i]) do
                     for ii,_ in ipairs(data.pattern_groups[i][k]) do
@@ -198,8 +202,6 @@ function p.action_read(file, silent, slot)
         else
             print('pset action read: no data file found at '..fname)
         end
-
-        params:bang()
     end
 end
 function p.action_write(file, silent, slot)
@@ -212,6 +214,7 @@ function p.action_write(file, silent, slot)
         sequences = {},
         snapshots = eggs.snapshots,
         pattern_groups = {},
+        keys = {},
     }
 
     for i = 1,eggs.track_count do
@@ -224,6 +227,8 @@ function p.action_write(file, silent, slot)
                 data.pattern_groups[i][k][ii] = pattern:export()
             end
         end
+
+        data.keys[i] = eggs.keymaps[i]:get()
     end
 
     local err = tab.save(data, fname)
