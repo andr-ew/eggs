@@ -74,5 +74,30 @@ MollyThePoly.add_params()
 
 now we need to actually tell eggs how to communicate with the engine to trigger notes on & off. each engine is a little bit different so it needs to be defined by us. to do this, we create two functions called `eggs.noteOn` & `eggs.noteOff` (which we've copied & pasted), and inside those functions we call the proper engine functions that perform these tasks.
 
+it _can_ be tricky to find these – it is common for them to be named `noteOn` & `noteOff` (this is the case for molly_the_poly), but they aren't always called that. you can try searching for those names as a starting point, but the more reliable way is to start by finding whatever piece of code interperets midi data, which should ultimately be converting that data to notes and sending those notes to the engine. a little shortcut to finding the relavent code might be searcing for the function `midi.to_msg` – this is a standard system function for reading midi data which may very well get you to the right section of code (if this isn't in the main file, try digging around in the `lib/` directory, perhaps there's another file dedicated to midi communication).
 
+in molly_the_poly's case, I didn't find any engine commands in the same function where midi was being read, but I did find a function called `note_on`, that sounded about right, so I searched for that function to find the original definition, and inside _that_ function I found what I was looking for:
+```
+engine.noteOn(note_id, MusicUtil.note_num_to_freq(note_num), vel)
+```
+I can tell from the values being sent in that this function has three arguments: a note ID, the frequency in hz, and the note velocity level
 
+lo & behold, the arguments that we have access to via the `eggs.noteOn` function match up to the first two: `note_id`, and `hz`:
+```lua
+function eggs.noteOn(note_id, hz)   
+    engine.noteOn(note_id, hz, ???) -- hmm but what about the velocity argument
+end
+```
+the only thing we're missing from eggs is velocity, because, if you haven't heard, monomes don't do velocity. so we'll just set this to a static value. in terms of what value to use ... well honestly this is where things can get a little bit vague, but checking back in that midi-related function, I saw a midi `vel` message getting divided by 127, so that probably means that the engine expects a number in the range 0-1 (this is also, you guessed it, pretty standard) so I'm going to go with 0.8 & we can just test it out & make sure we're not going to explode anyones ears (maybe a good time to test with the headphones off!).
+
+```lua
+function eggs.noteOn(note_id, hz)   
+    engine.noteOn(note_id, hz, 0.8)
+end
+```
+for the `eggs.noteOff` function, it's kind of just a rinse & repeat – usually these only need to accept a `note_id` value. here's what I got:
+```lua
+function eggs.noteOff(note_id)
+    engine.noteOff(note_id)
+end
+```
