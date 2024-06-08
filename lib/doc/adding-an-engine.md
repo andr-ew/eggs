@@ -55,11 +55,11 @@ local name = 'MollyThePoly'
 table.insert(engine_names, name)
 ```
 
-## STEP 3: add the params
-
 the rest of the action happens inside an `init_engine` function that we're defining, which will run when the script is started or restarted
 
-this part can be a bit trickier to find, usually synthesizer-style engines come with some sort of "helper function" that creates all the params that interact with the engine. it'll probably be called something like `my_engine.params()` or `MyEngine:add_params()`. as a guess, I checked molly's `init()` function and I'm pretty sure I've found what I'm looking for – `MollyThePoly.add_params()`. but just to be sure – I searched the script for a table called `MollyThePoly`, found that it was getting pulled in from the file `lib/molly_the_poly_engine.lua`, then searched in that file for a function called `add_params`. as I expected, looks like this function is creating a bunch of `control` params that call different engine commands, like `engine.pwMod` – so that checks out.
+## STEP 3: add the params
+
+so this part can be a bit trickier to find, usually synthesizer-style engines come with some sort of "helper function" that creates all the params that interact with the engine. it'll probably be called something like `my_engine.params()` or `MyEngine:add_params()`. as a guess, I checked molly's `init()` function and I'm pretty sure I've found what I'm looking for – `MollyThePoly.add_params()`. but just to be sure – I searched the script for a table called `MollyThePoly`, found that it was getting pulled in from the file `lib/molly_the_poly_engine.lua`, then searched in that file for a function called `add_params`. as I expected, looks like this function is creating a bunch of `control` params that call different engine commands, like `engine.pwMod` – so that checks out.
 
 to get all these params populating in eggs like they are in molly_the_polly, we'll need to do two things. first, I need to import the function by `include`-ing the `MollyThePoly` table into eggs:
 ```lua
