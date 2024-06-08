@@ -40,7 +40,7 @@ the comments on the chunk should more or less explain what each line does, so we
 ## STEP 2: engines have names
 
 so the first step is that we just assign that `nickname` variable to the name of our engine. this is the name that'll be displayed under the list in the norns menu, so it makes sense to keep it lowercase:
-```
+```lua
 local nickname = 'molly the poly'
 table.insert(engine_names, nickname)     -- no changes needed on this line, but be sure to include it!
 ```
