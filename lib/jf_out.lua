@@ -191,7 +191,7 @@ out.add_params = function()
                 local last = out.column
                 out.column = v // eggs.volts_per_column
 
-                if last ~= out.column then  update_notes() end
+                if last ~= out.column then update_notes() end
 
                 crops.dirty.grid = true 
             end
@@ -201,7 +201,10 @@ out.add_params = function()
         type = 'number', id = param_ids.row, name = 'row',
         min = -16, max = 16, default = out.row,
         action = function(v) 
-            out.row = v; update_notes()
+            local last = out.row
+            out.row = v
+                
+            if last ~= out.row then update_notes() end
 
             crops.dirty.grid = true 
         end

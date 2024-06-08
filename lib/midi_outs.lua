@@ -21,27 +21,54 @@ function midi_outs.init(count)
     
         out.voicing = 'poly'
 
-        out.note_on = function(idx)
+        local held = {}
+
+        local function get_note_hz(idx)
             local x = (idx-1)%eggs.keymap_wrap + 1 + out.column 
             local y = (idx-1)//eggs.keymap_wrap + 1 + out.row 
-            local hz = eggs.tunes[out.preset]:hz(x, y, nil, out.oct) * 55
             local note = eggs.tunes[out.preset]:midi(x, y, nil, out.oct) + 33
+            local hz = eggs.tunes[out.preset]:hz(x, y, nil, out.oct) * 55
 
+            return note, hz
+        end
+        local function note_on(note, hz)
             if target == ENGINE then
                 eggs.noteOn(note, hz)
             else
                 midi_outs.devices[target]:note_on(note)
             end
         end
-        out.note_off = function(idx) 
-            local x = (idx-1)%eggs.keymap_wrap + 1 + out.column 
-            local y = (idx-1)//eggs.keymap_wrap + 1 + out.row 
-            local note = eggs.tunes[out.preset]:midi(x, y, nil, out.oct) + 33
-
+        local function note_off(note)
             if target == ENGINE then
                 eggs.noteOff(note)
             else
                 midi_outs.devices[target]:note_off(note)
+            end
+        end
+
+        out.note_on = function(idx)
+            local note, hz = get_note_hz(idx)
+            note_on(note, hz)
+
+            table.insert(held, { idx = idx, note = note })
+        end
+        out.note_off = function(idx) 
+            local note = get_note_hz(idx)
+            note_off(note)
+
+            for i,h in ipairs(held) do if h.note==note then
+                table.remove(held, i)
+                break
+            end end
+        end
+
+        local function update_notes()
+            for i,h in ipairs(held) do
+                note_off(h.note)
+
+                local new_note, new_hz = get_note_hz(h.idx)
+                h.note = new_note
+                note_on(new_note, new_hz)
             end
         end
 
@@ -71,7 +98,7 @@ function midi_outs.init(count)
                 type = 'number', id = param_ids.tuning_preset, name = 'tuning preset',
                 min = 1, max = #eggs.tunes, default = out.preset, 
                 action = function(v) 
-                    out.preset = v
+                    out.preset = v; update_notes()
 
                     for _,t in ipairs(eggs.tunes) do
                         t:update_tuning()
@@ -82,7 +109,7 @@ function midi_outs.init(count)
                 type = 'number', id = param_ids.oct, name = 'oct',
                 min = -5, max = 5, default = out.oct,
                 action = function(v) 
-                    out.oct = v
+                    out.oct = v; update_notes()
 
                     crops.dirty.grid = true 
                 end
@@ -96,7 +123,10 @@ function midi_outs.init(count)
                         quantum = (1/(max - min)) * eggs.volts_per_column, units = 'v',
                     },
                     action = function(v) 
+                        local last = out.column
                         out.column = v // eggs.volts_per_column
+                
+                        if last ~= out.column then update_notes() end
 
                         crops.dirty.grid = true 
                     end
@@ -106,7 +136,10 @@ function midi_outs.init(count)
                 type = 'number', id = param_ids.row, name = 'row',
                 min = -16, max = 16, default = out.row,
                 action = function(v) 
+                    local last = out.row
                     out.row = v
+            
+                    if last ~= out.row then update_notes() end
 
                     crops.dirty.grid = true 
                 end
