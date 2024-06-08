@@ -35,7 +35,7 @@ end
 
 copy this chunk & plop it at the bottom of the script, **right before** the line that goes `return engine_names, init_engine`
 
-the comments on the chunk should more or less explain what each line does, so we'll focus on the part where we scan through another lua script, to find the relavant bits that go here.
+the comments on the chunk should more or less explain what each line does, so we'll focus on the part where we scan through the lua script for the other engine, to find the relavant bits that go here.
 
 ## STEP 2: engines have names
 
