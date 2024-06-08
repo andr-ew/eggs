@@ -2,7 +2,7 @@
 
 is there an engine missing from the list? it's because you haven't added it yet!
 
-here I'll go through the steps of how I added [molly the poly](https://github.com/markwheeler/molly_the_poly) to eggs, and hopefully that'll help you do the same
+here I'll go through the steps of how I added [molly the poly](https://github.com/markwheeler/molly_the_poly) to eggs, and hopefully that'll help you add something else
 
 ## STEP 1: copy & paste
 
