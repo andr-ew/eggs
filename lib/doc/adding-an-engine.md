@@ -101,3 +101,5 @@ function eggs.noteOff(note_id)
     engine.noteOff(note_id)
 end
 ```
+
+and that's it! time to test/troubleshoot and just if soemthing doesn't work try to figure it out/ask around on the internet/ask chatGPT (ok maybe not that last one).
