@@ -167,12 +167,9 @@ patcher.add_assignment_params(function()
 end)
 
 params:add_separator('sep_engine', 'engine')
-eggs.params.add_engine_params()
+eggs.params.add_engine_selection_param()
 
-print('params:read the first time')
 params:read(nil, true) --read a first time before init to set up the engine
-
-eggs.params.add_pset_params()
 
 --create, connect UI components
 
@@ -188,12 +185,12 @@ crops.connect_screen(_app.norns)
 --init/cleanup
 
 function init()
-    -- eggs.engine_loaded = true
     -- mod_sources.lfos.reset_params()
     -- for i = 1,2 do mod_sources.lfos[i]:start() end
 
-    -- params:set('hzlag', 0)
-    print('params:read the second time')
+    eggs.params.add_engine_params()
+    eggs.params.add_pset_params()
+
     params:read()
     params:bang()
     
@@ -201,10 +198,6 @@ function init()
 
     for i = 1,eggs.track_count do
         local arq = eggs.arqs[i]:start()
-    end
-
-    if eggs.engines.post_init[eggs.current_engine] then
-        eggs.engines.post_init[eggs.current_engine]()
     end
 
     crops.connect_grid(_app.grid, g, 240)

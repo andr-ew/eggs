@@ -117,23 +117,29 @@ function p.add_keymap_params()
     end
 end
 
-function p.add_engine_params()
+function p.add_engine_selection_param()
     params:add{
-        id = 'engine', name = 'engine', type = 'option', options = eggs.engines.names,
+        id = 'engine', name = 'engine', type = 'option', options = eggs.engines.nicknames,
         action = function(v)
-            print('engine action')
             local name = eggs.engines.names[v]
+            local nickname = eggs.engines.nicknames[v]
 
             if not eggs.current_engine then
-                params:add_separator('sep_engine_params', name)
-                eggs.engines.init[name]()
-                eggs.current_engine = name
+                engine.name = name
+
+                eggs.current_engine = nickname
             else
-                eggs.change_engine_modal = (name ~= eggs.current_engine)
+                eggs.change_engine_modal = (nickname ~= eggs.current_engine)
                 crops.dirty.screen = true
             end
         end
     }
+end
+
+function p.add_engine_params()
+    params:add_separator('sep_engine_params', eggs.current_engine)
+
+    eggs.engines.init[eggs.current_engine]()
 end
 
 function p.add_pset_params()
