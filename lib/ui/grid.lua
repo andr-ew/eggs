@@ -30,7 +30,7 @@ local function Arq(args)
         _snapshots[i] = Patcher.grid.destination(Produce.grid.triggerhold())
     end
     
-    local _rate_mark = Patcher.grid.destination(Grid.fill())
+    -- local _rate_mark = Patcher.grid.destination(Grid.fill())
     local _rate = Patcher.grid.destination(Grid.integer(), { levels = { nil, { 4, 8 } } })
     local _rate_small = Patcher.grid.destination(Produce.grid.integer_trigger())
     local _reverse = Patcher.grid.destination(Grid.toggle())
@@ -93,9 +93,9 @@ local function Arq(args)
                     })
                 end
                 if wide then
-                    _rate_mark(nil, eggs.mapping, {
-                        x = 8, y = 2, level = 4,
-                    })
+                    -- _rate_mark(nil, eggs.mapping, {
+                    --     x = 8, y = 2, level = 4,
+                    -- })
                     do
                         local id = arq:pfix('division')
                         local stopped = params:get(id) == 1
@@ -144,7 +144,7 @@ end
 
 local function Rate_reverse()
     local _reverse = Patcher.grid.destination(Grid.toggle())
-    local _rate_mark = Patcher.grid.destination(Grid.fill())
+    -- local _rate_mark = Patcher.grid.destination(Grid.fill())
     local _rate = Patcher.grid.destination(Grid.integer())
     local _loop = Patcher.grid.destination(Grid.toggle())
     local _rate_small = Patcher.grid.destination(Produce.grid.integer_trigger())
@@ -177,9 +177,9 @@ local function Rate_reverse()
                 }
 
                 if wide then
-                    _rate_mark(nil, eggs.mapping, {
-                        x = 8, y = 2, level = 4,
-                    })
+                    -- _rate_mark(nil, eggs.mapping, {
+                    --     x = 8, y = 2, level = 4,
+                    -- })
                     _rate(nil, eggs.mapping, {
                         x = 5, y = 2, size = 7, min = -3,
                         state = state_rate
@@ -266,6 +266,11 @@ local function Page(args)
     for i = 1, 12 do 
         _degs[i] = Patcher.grid.destination(Tune.grid.scale_degree())
     end
+    
+    local _fill = {
+        slew_pulse = Grid.fill(), rev = Grid.fill(),
+        rate_mark = Grid.fill(), loop = Grid.fill()
+    }
 
     return function(props)
         local tune = eggs.tunes[params:get(out.param_ids.tuning_preset)]
@@ -320,6 +325,13 @@ local function Page(args)
         end
 
         if mode==eggs.ARQ then
+            _fill.slew_pulse{ x = 3, y = 2, level = 4 }
+            _fill.rev{ x = 4, y = 2, level = 4 }
+            if wide then
+                _fill.rate_mark{ x = 8, y = 2, level = 4 }
+                _fill.loop{ x = 12, y = 2, level = 4 }
+            end
+
             _arq{ 
                 track = track, snapshots = eggs.snapshots[track].arq, tune = tune, 
                 wide = wide, view_scroll = view_scroll,
@@ -354,6 +366,13 @@ local function Page(args)
                         ),
                     })
                 else
+                    _fill.slew_pulse{ x = 3, y = 2, level = 4 }
+                    _fill.rev{ x = 4, y = 2, level = 4 }
+                    if wide then
+                        _fill.rate_mark{ x = 8, y = 2, level = 4 }
+                        _fill.loop{ x = 12, y = 2, level = 4 }
+                    end
+
                     _rate_rev{
                         mute_group = eggs.mute_groups[track].manual, wide = wide,
                     }
@@ -506,6 +525,11 @@ local function App(args)
         _pages[track] = Page{ track = track }
     end
 
+    -- local _fill = {
+    --     slew_pulse = Grid.fill(), rev = Grid.fill(),
+    --     rate_mark = Grid.fill(), loop = Grid.fill()
+    -- }
+
     return function()
         if wide or eggs.view_focus == eggs.NORMAL then 
             _track{
@@ -522,6 +546,13 @@ local function App(args)
                 }
             }
         end
+
+        -- _fill.slew_pulse{ x = 3, y = 2, level = 4 }
+        -- _fill.rev{ x = 4, y = 2, level = 4 }
+        -- if wide then
+        --     _fill.rate_mark{ x = 8, y = 2, level = 4 }
+        --     _fill.loop{ x = 12, y = 2, level = 4 }
+        -- end
     
         _pages[eggs.track_focus]{ wide = args.wide }
     end
