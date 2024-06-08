@@ -11,23 +11,24 @@ in maiden, pull up the folder for eggs, drop into the `lib/` file and pull up th
 ```lua
 do
     local nickname = 'polysub'               -- first, define a user-facing name for the engine
-    table.insert(engine_names, nickname)     -- then add it to the engine_names list
+    table.insert(engine_nicknames, nickname) -- add it to the engine_nicknames list
+
+    local name = 'PolySub'                   -- define the proper supercollider engine name
+    table.insert(engine_names, name)         -- add it to the engine_names list
 
     init_engine[nickname] = function()       -- then, define a function that will set up the
                                              --     engine on launch, when it is the chosen engine
                                              --     this function should usually do 4 things:
 
-        engine.name = 'PolySub'                   -- 1: set engine.name to the proper engine name
+        local polysub = require 'engine/polysub'  -- 1: include/require any files needed for params
+        polysub:params()                          -- 2: call the function to add the params
 
-        local polysub = require 'engine/polysub'  -- 2: include/require any files needed for params
-        polysub:params()                          -- 3: call the function to add the params
-
-                                                  -- 4: define callbacks for note on/off:
-        function eggs.noteOn(note_number, hz)   
-            engine.start(note_number, hz)          -- call the note on function for the engine here
+                                                  -- 3: define callbacks for note on/off:
+        function eggs.noteOn(note_id, hz)   
+            engine.start(note_id, hz)          -- call the note on function for the engine here
         end
-        function eggs.noteOff(note_number)
-            engine.stop(note_number)               -- call the note off function for the engine here
+        function eggs.noteOff(note_id)
+            engine.stop(note_id)               -- call the note off function for the engine here
         end
     end
 end
@@ -42,22 +43,23 @@ the comments on the chunk should more or less explain what each line does, so we
 so the first step is that we just assign that `nickname` variable to the name of our engine. this is the name that'll be displayed under the list in the norns menu, so it makes sense to keep it lowercase:
 ```lua
 local nickname = 'molly the poly'
-table.insert(engine_names, nickname)     -- no changes needed on this line, but be sure to include it!
+table.insert(engine_nicknames, nickname)
 ```
 (this is a lua [string](https://monome.org/docs/norns/study-1/#numbers-and-strings), so don't forget the air quotes. both `'` and `"` work, but don't mix & match.)
 
-the rest of the action happens inside a function that we're defining, which will run when the script is started or restarted
+next, we need to know the proper supercollider name of the engine – this name is responsible for launching the correct supercollider engine, so we'll need to check the original lua script to make sure we're setting this to the correct name. in a normal script, it gets directly assigned to the variable `engine.name`. so in the case of molly, all I had to do was pull up the main `molly_the_poly.lua`, and Ctrl+F for "engine.name". I found our `engine.name` to be none other than `"MollyThePoly"` (often this name is just the name of the script, but in CamelCase rather than snake_case).
 
-next, we need to know the proper name of the engine to assign to the `engine.name` variable. this line is responsible to launching the correct supercollider engine, so we'll need to check the original lua script to make sure we're setting this to the correct name. in the case of molly, all I had to do was pull up the main `molly_the_poly.lua`, and Ctrl+F for "engine.name". I found our `engine.name` to be none other than `"MollyThePoly"`:
-
+so the next two lines should look like this:
 ```lua
-engine.name = 'MollyThePoly'
+local name = 'MollyThePoly'
+table.insert(engine_names, name)
 ```
-often this name is just the name of the script, but in CamelCase rather than snake_case.
 
 ## STEP 3: add the params
 
-so this can be a bit trickier to find, usually synthesizer-style engines come with some sort of "helper function" that creates all the params that interact with the engine, it'll probably be called something like `my_engine.params()` or `MyEngine:add_params()`. as a guess, I checked molly's `init()` function and I'm pretty sure I've found what I'm looking for – `MollyThePoly.add_params()`. but just to be sure – I searched the script for a table called `MollyThePoly`, found that it was getting pulled in from the file `lib/molly_the_poly_engine.lua`, then searched in that file for a function called `add_params`. as I expected, looks like this function is creating a bunch of `control` params that call different engine commands, like `engine.pwMod` – so that checks out.
+the rest of the action happens inside an `init_engine` function that we're defining, which will run when the script is started or restarted
+
+this part can be a bit trickier to find, usually synthesizer-style engines come with some sort of "helper function" that creates all the params that interact with the engine. it'll probably be called something like `my_engine.params()` or `MyEngine:add_params()`. as a guess, I checked molly's `init()` function and I'm pretty sure I've found what I'm looking for – `MollyThePoly.add_params()`. but just to be sure – I searched the script for a table called `MollyThePoly`, found that it was getting pulled in from the file `lib/molly_the_poly_engine.lua`, then searched in that file for a function called `add_params`. as I expected, looks like this function is creating a bunch of `control` params that call different engine commands, like `engine.pwMod` – so that checks out.
 
 to get all these params populating in eggs like they are in molly_the_polly, we'll need to do two things. first, I need to import the function by `include`-ing the `MollyThePoly` table into eggs:
 ```lua
