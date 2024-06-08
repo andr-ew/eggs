@@ -51,6 +51,8 @@ Patcher = include 'lib/patcher/ui/using_map_key'            --mod matrix patchin
 
 eggs = include 'lib/globals'                                --global variables & objects
 
+eggs.engines = include 'lib/engines'                        --DEFINE NEW ENGINES IN THIS FILE
+
 Components = include 'lib/ui/components'                    --ui components
 
 jf_out = include 'lib/jf_out'                               --just friends output
@@ -102,13 +104,37 @@ eggs.arqs[3].action_off = function(idx) crow_outs[1].set_note(idx, 0) end
 eggs.arqs[4].action_on = function(idx) crow_outs[2].set_note(idx, 1) end
 eggs.arqs[4].action_off = function(idx) crow_outs[2].set_note(idx, 0) end
 
---set up crow
+--set up modulation sources
 
 local add_actions = {}
-
 for i = 1,2 do
     add_actions[i] = patcher.crow.add_source(i)
 end
+
+do
+    local stream = patcher.add_source{ name = 'cv 1', id = 'cv_1' }
+    crow_outs[1].cv_callback = stream
+end
+do
+    local stream, change
+
+    local function assignment_callback(mode)
+        if mode == 'stream' then
+            crow_outs[1].gate_callback = function(state)
+                stream(state and 5 or 0)
+            end
+        elseif mode == 'change' then
+            crow_outs[1].gate_callback = change
+        end
+    end
+
+    stream, change = patcher.add_source{ 
+        name = 'gate 1', id = 'gate_1',
+        assignment_callback = assignment_callback,
+    }
+end
+
+--set up crow
 
 local function crow_add()
     for _,out in ipairs(crow_outs) do
@@ -127,32 +153,26 @@ App.norns = include 'lib/ui/norns'                          --norns UI
 
 --add params
 
-eggs.params.add_destination_params()
-eggs.params.add_keymap_params()
-eggs.params.add_modulation_params()
-
-params:add_separator('engine')
------------------------------------------ EDIT ENGINE HERE ----------------------------------------
-
-engine.name = 'PolySub'               -- STEP 1: set engine.name to the proper name of your engine
-                                      --         (must be installed on your norns)
-
-polysub = require 'engine/polysub'    -- STEP 2: include or require any files needed for params/etc
-polysub:params()                      -- STEP 3: call the function to add the params
-
-function eggs.noteOn(note_number, hz)   
-    engine.start(note_number, hz)     -- STEP 4: call the note on function here
-end
-function eggs.noteOff(note_number)
-    engine.stop(note_number)          -- STEP 5: call the note off function here
-end
----------------------------------------------------------------------------------------------------
-
-eggs.params.add_pset_params()
-
 params.action_read = eggs.params.action_read
 params.action_write = eggs.params.action_write
 params.action_delete = eggs.params.action_delete
+
+eggs.params.add_destination_params()
+eggs.params.add_keymap_params()
+
+params:add_separator('patcher')
+params:add_group('assignments', #patcher.destinations)
+patcher.add_assignment_params(function() 
+    crops.dirty.grid = true; crops.dirty.screen = true
+end)
+
+params:add_separator('sep_engine', 'engine')
+eggs.params.add_engine_params()
+
+print('params:read the first time')
+params:read(nil, true) --read a first time before init to set up the engine
+
+eggs.params.add_pset_params()
 
 --create, connect UI components
 
@@ -164,21 +184,27 @@ _app = {
 crops.connect_enc(_app.norns)
 crops.connect_key(_app.norns)
 crops.connect_screen(_app.norns)
-
+    
 --init/cleanup
 
 function init()
+    -- eggs.engine_loaded = true
     -- mod_sources.lfos.reset_params()
     -- for i = 1,2 do mod_sources.lfos[i]:start() end
 
-    params:read()
     -- params:set('hzlag', 0)
+    print('params:read the second time')
+    params:read()
     params:bang()
     
     crow_add()
 
     for i = 1,eggs.track_count do
         local arq = eggs.arqs[i]:start()
+    end
+
+    if eggs.engines.post_init[eggs.current_engine] then
+        eggs.engines.post_init[eggs.current_engine]()
     end
 
     crops.connect_grid(_app.grid, g, 240)

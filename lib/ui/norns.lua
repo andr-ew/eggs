@@ -87,6 +87,71 @@ local function Tuning()
     end
 end
 
+local function Change_engine_modal()
+    local _l1 = Screen.text()
+    local _l2 = Screen.text()
+    local _l3 = Screen.text()
+
+    local _no = {
+        key = Key.trigger(),
+        screen = Screen.text(),
+    }
+    local _yes = {
+        key = Key.trigger(),
+        screen = Screen.text(),
+    }
+
+    return function(props)
+        local left, right = x[1] + 1, x[3] - 1
+
+        do
+            local yy = y[1] + 5
+            local x, flow, level = left, 'right', 8
+            _l1{
+                x = x, y = yy, --y = 64/2,
+                flow = flow, level = level,
+                text = 'you changed the engine!',
+            } 
+            yy = yy + 8
+
+            _l2{
+                x = x, y = yy, --y = 64/2,
+                flow = flow, level = level,
+                text = 'u gotta restart for that...'
+            } 
+            yy = yy + 8
+            _l3{
+                x = x, y = yy, --y = 64/2,
+                flow = flow, level = level,
+                text = '...restart?'
+            } 
+        end
+
+        _no.key{
+            n = 2, 
+            input = function(z) if z==0 then
+                eggs.change_engine_modal = false
+                crops.dirty.screen = true
+            end end
+        }
+        _no.screen{
+            x = left, y = e[2].y,
+            text = 'uhh no',
+        } 
+        _yes.key{
+            n = 3, 
+            input = function(z) if z==0 then
+                norns.script.load(norns.state.script)
+            end end
+        }
+        _yes.screen{
+            x = right, y = e[3].y,
+            text = 'ok :/',
+            flow = 'left'
+        } 
+    end
+end
+
 local function App()
     local _map = Key.momentary()
     
@@ -97,8 +162,12 @@ local function App()
         _pages[track] = eggs.outs[track].Components.norns.page()
     end
 
+    local _change_engine_modal = Change_engine_modal()
+
     return function()
-        if eggs.view_focus == eggs.NORMAL then 
+        if eggs.change_engine_modal then
+            _change_engine_modal()
+        elseif eggs.view_focus == eggs.NORMAL then 
             _map{
                 n = 1, state = crops.of_variable(eggs.mapping, function(v) 
                     eggs.mapping = v>0

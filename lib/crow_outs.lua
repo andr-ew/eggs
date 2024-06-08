@@ -43,23 +43,29 @@ for i = 1,2 do
     out.keyboard_gate = 0
     out.manual_gate = 0
 
+    out.cv_callback = function(volts) end
+    out.gate_callback = function(state) end
+
     local function update_volts_cv()
         local x = (out.index-1)%eggs.keymap_wrap + 1 + out.column 
         local y = (out.index-1)//eggs.keymap_wrap + 1 + out.row 
 
         local cv = math.max(0, eggs.tunes[out.preset]:volts(x, y, nil, out.oct))
         crow.output[jacks.cv].volts = cv
+        out.cv_callback(cv)
                 
         crops.dirty.screen = true
     end
 
     local function update_gate()
-        local gate = (out.keyboard_gate & out.patched) | out.manual_gate
+        local state = ((out.keyboard_gate & out.patched) | out.manual_gate) > 0
 
         if out.mode == SUSTAIN then
-            crow.output[jacks.gate](gate > 0)
-        else
-            if gate > 0 then crow.output[jacks.gate]() end
+            crow.output[jacks.gate](state)
+            out.gate_callback(state)
+        elseif state then 
+            crow.output[jacks.gate]() 
+            out.gate_callback()
         end
     end
     

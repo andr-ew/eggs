@@ -117,27 +117,23 @@ function p.add_keymap_params()
     end
 end
 
-function p.add_modulation_params()
-    --LFO params
-    -- for i = 1,2 do
-    --     params:add_separator('lfo '..i)
-    --     mod_sources.lfos[i]:add_params('lfo_'..i)
-    -- end
+function p.add_engine_params()
+    params:add{
+        id = 'engine', name = 'engine', type = 'option', options = eggs.engines.names,
+        action = function(v)
+            print('engine action')
+            local name = eggs.engines.names[v]
 
-    --patcher params
-    do
-        params:add_separator('patcher')
-
-        params:add_group('assignments', #patcher.destinations)
-
-        local function action(dest, v)
-            crops.dirty.grid = true
-            crops.dirty.screen = true
-            crops.dirty.arc = true
+            if not eggs.current_engine then
+                params:add_separator('sep_engine_params', name)
+                eggs.engines.init[name]()
+                eggs.current_engine = name
+            else
+                eggs.change_engine_modal = (name ~= eggs.current_engine)
+                crops.dirty.screen = true
+            end
         end
-
-        patcher.add_assignment_params(action)
-    end
+    }
 end
 
 function p.add_pset_params()
@@ -169,34 +165,39 @@ function p.add_pset_params()
     }
 end
 
-function p.action_read(file, name, slot)
-    print('pset action read', file, name, slot)
+function p.action_read(file, silent, slot)
+    print('pset action read', file, silent, slot)
 
-    local name = 'pset-'..string.format("%02d", slot)
-    local fname = norns.state.data..name..'.data'
-    local data, err = tab.load(fname)
+    -- params:bang()
+    params:lookup_param('engine'):bang()
 
-    if err then print('ERROR pset action read: '..err) end
-    if data then
-        eggs.snapshots = data.snapshots or {}
-        
-        for i = 1,eggs.track_count do
-            eggs.arqs[i].sequence = data.sequences[i] or {}
+    if (not eggs.change_engine_modal) and (not silent) then
+        local name = 'pset-'..string.format("%02d", slot)
+        local fname = norns.state.data..name..'.data'
+        local data, err = tab.load(fname)
 
-            for k,_ in pairs(data.pattern_groups[i]) do
-                for ii,_ in ipairs(data.pattern_groups[i][k]) do
-                    eggs.pattern_groups[i][k][ii]:import(data.pattern_groups[i][k][ii], true)
+        if err then print('ERROR pset action read: '..err) end
+        if data then
+            eggs.snapshots = data.snapshots or {}
+            
+            for i = 1,eggs.track_count do
+                eggs.arqs[i].sequence = data.sequences[i] or {}
+
+                for k,_ in pairs(data.pattern_groups[i]) do
+                    for ii,_ in ipairs(data.pattern_groups[i][k]) do
+                        eggs.pattern_groups[i][k][ii]:import(data.pattern_groups[i][k][ii], true)
+                    end
                 end
             end
+        else
+            print('pset action read: no data file found at '..fname)
         end
-    else
-        print('pset action read: no data file found at '..fname)
-    end
 
-    params:bang()
+        params:bang()
+    end
 end
-function p.action_write(file, name, slot)
-    print('pset action write', file, name, slot)
+function p.action_write(file, silent, slot)
+    print('pset action write', file, silent, slot)
 
     local name = 'pset-'..string.format("%02d", slot)
     local fname = norns.state.data..name..'.data'
