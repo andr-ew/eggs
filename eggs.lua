@@ -186,7 +186,8 @@ end)
 params:add_separator('sep_engine', 'engine')
 eggs.params.add_engine_selection_param()
 
-params:read(nil, true) --read a first time before init to set up the engine
+params:read(nil, true) --read a first time before init to check the engine
+params:lookup_param('engine'):bang()
 
 --create, connect UI components
 

@@ -102,8 +102,8 @@ function p.add_engine_selection_param()
     params:add{
         id = 'engine', name = 'engine', type = 'option', options = eggs.engines.nicknames,
         action = function(v)
-            local name = eggs.engines.names[v]
-            local nickname = eggs.engines.nicknames[v]
+            local name = eggs.engines.names[v or 1]
+            local nickname = eggs.engines.nicknames[v or 1]
 
             if not eggs.current_engine then
                 engine.name = name
