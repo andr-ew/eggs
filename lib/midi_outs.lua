@@ -10,7 +10,7 @@ end
 
 function midi_outs.init(count)
     for i = 1,count do
-        out = {}
+        local out = {}
 
         local target = tab.key(midi_outs.device_names, 'engine')
 

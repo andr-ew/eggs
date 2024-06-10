@@ -1,7 +1,9 @@
+-- eggs (midi only)
+--
 -- pitch gesture looper 
 -- for norns + grid
 --
--- version 0.3.1 @andrew
+-- version 0.4.0 @andrew
 --
 -- required: grid (any size)
 --           crow
@@ -157,7 +159,22 @@ params.action_read = eggs.params.action_read
 params.action_write = eggs.params.action_write
 params.action_delete = eggs.params.action_delete
 
-eggs.params.add_destination_params()
+params:add_separator('midi')
+for i,midi_out in ipairs(midi_outs) do
+    params:add_group('midi_outs_'..i, midi_out.name, midi_out.params_count)
+    midi_out.add_params()
+end
+
+params:add_separator('just friends')
+params:add_group('jf_out', jf_out.name, jf_out.params_count)
+jf_out.add_params()
+
+params:add_separator('crow outputs')
+for i,crow_out in ipairs(crow_outs) do
+    params:add_group('crow_outs_pair_'..i, crow_out.name, crow_out.params_count)
+    
+    crow_out.add_params()
+end
 eggs.params.add_keymap_params()
 
 params:add_separator('patcher')
@@ -185,14 +202,10 @@ crops.connect_screen(_app.norns)
 --init/cleanup
 
 function init()
-    -- mod_sources.lfos.reset_params()
-    -- for i = 1,2 do mod_sources.lfos[i]:start() end
-
     eggs.params.add_engine_params()
     eggs.params.add_pset_params()
 
     params:read()
-    -- params:bang()
     
     crow_add()
 

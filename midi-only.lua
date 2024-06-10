@@ -1,12 +1,11 @@
--- eggs
+-- eggs (midi only)
 --
 -- pitch gesture looper 
 -- for norns + grid
 --
--- version 0.3.1 @andrew
+-- version 0.4.0 @andrew
 --
 -- required: grid (any size)
---           crow
 --
 -- documentation:
 -- github.com/andr-ew/eggs
@@ -47,16 +46,17 @@ arqueggiator = include 'lib/arqueggiator/arqueggiator'      --arqueggiation (arq
 Arqueggiator = include 'lib/arqueggiator/ui'
 
 patcher = include 'lib/patcher/patcher'                     --modulation maxtrix
+Patcher = include 'lib/patcher/ui/using_map_key'            --mod matrix patching UI utilities
 
 --script files
 
 eggs = include 'lib/globals'                                --global variables & objects
 
+eggs.engines = include 'lib/engines'                        --DEFINE NEW ENGINES IN THIS FILE
+
 Components = include 'lib/ui/components'                    --ui components
 
-jf_out = include 'lib/jf_out'                               --just friends output
 midi_outs = include 'lib/midi_outs'                         --midi output
-crow_outs = include 'lib/crow_outs'                         --crow output
 
 midi_outs.init(4)
 
@@ -86,35 +86,30 @@ App = {}
 App.grid = include 'lib/ui/grid'                            --grid UI
 App.norns = include 'lib/ui/norns'                          --norns UI
 
-
 --add params
-
-eggs.params.add_destination_params()
-eggs.params.add_keymap_params()
-eggs.params.add_modulation_params()
-
-params:add_separator('engine')
------------------------------------------ EDIT ENGINE HERE ----------------------------------------
-
-engine.name = 'PolySub'               -- STEP 1: set engine.name to the proper name of your engine
-                                      --         (must be installed on your norns)
-
-polysub = require 'engine/polysub'    -- STEP 2: include or require any files needed for params/etc
-polysub:params()                      -- STEP 3: call the function to add the params
-
-function eggs.noteOn(note_number, hz)   
-    engine.start(note_number, hz)     -- STEP 4: call the note on function here
-end
-function eggs.noteOff(note_number)
-    engine.stop(note_number)          -- STEP 5: call the note off function here
-end
----------------------------------------------------------------------------------------------------
-
-eggs.params.add_pset_params()
 
 params.action_read = eggs.params.action_read
 params.action_write = eggs.params.action_write
 params.action_delete = eggs.params.action_delete
+
+params:add_separator('midi')
+for i,midi_out in ipairs(midi_outs) do
+    params:add_group('midi_outs_'..i, midi_out.name, midi_out.params_count)
+    midi_out.add_params()
+end
+
+eggs.params.add_keymap_params()
+
+params:add_separator('patcher')
+params:add_group('assignments', #patcher.destinations)
+patcher.add_assignment_params(function() 
+    crops.dirty.grid = true; crops.dirty.screen = true
+end)
+
+params:add_separator('sep_engine', 'engine')
+eggs.params.add_engine_selection_param()
+
+params:read(nil, true) --read a first time before init to set up the engine
 
 --create, connect UI components
 
@@ -130,15 +125,11 @@ crops.connect_screen(_app.norns)
 --init/cleanup
 
 function init()
-    -- mod_sources.lfos.reset_params()
-    -- for i = 1,2 do mod_sources.lfos[i]:start() end
+    eggs.params.add_engine_params()
+    eggs.params.add_pset_params()
 
     params:read()
-    -- params:set('hzlag', 0)
-    params:bang()
     
-    crow_add()
-
     for i = 1,eggs.track_count do
         local arq = eggs.arqs[i]:start()
     end

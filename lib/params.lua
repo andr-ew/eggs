@@ -1,24 +1,5 @@
 local p = {}
 
-function p.add_destination_params()
-    params:add_separator('midi')
-    for i,midi_out in ipairs(midi_outs) do
-        params:add_group('midi_outs_'..i, midi_out.name, midi_out.params_count)
-        midi_out.add_params()
-    end
-
-    params:add_separator('just friends')
-    params:add_group('jf_out', jf_out.name, jf_out.params_count)
-    jf_out.add_params()
-
-    params:add_separator('crow outputs')
-    for i,crow_out in ipairs(crow_outs) do
-        params:add_group('crow_outs_pair_'..i, crow_out.name, crow_out.params_count)
-        
-        crow_out.add_params()
-    end
-end
-
 function p.add_keymap_params()
     params:add_separator('keymap')
     for i = 1,eggs.track_count do
@@ -189,15 +170,15 @@ function p.action_read(file, silent, slot)
             eggs.snapshots = data.snapshots or {}
 
             for i = 1,eggs.track_count do
-                eggs.arqs[i].sequence = data.sequences[i] or {}
+                if data.sequences then eggs.arqs[i].sequence = data.sequences[i] or {} end
 
-                eggs.keymaps[i]:set(data.keys[i])
+                if data.keys then eggs.keymaps[i]:set(data.keys[i] or {}) end
 
-                for k,_ in pairs(data.pattern_groups[i]) do
+                if data.pattern_groups then for k,_ in pairs(data.pattern_groups[i] or {}) do 
                     for ii,_ in ipairs(data.pattern_groups[i][k]) do
                         eggs.pattern_groups[i][k][ii]:import(data.pattern_groups[i][k][ii], true)
                     end
-                end
+                end end
             end
         else
             print('pset action read: no data file found at '..fname)
