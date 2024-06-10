@@ -122,3 +122,12 @@ most params on screen + grid can be mapped to one of 4 destinations:
 - track 3 gate (crow output 2)
 
 to map an on-screen param, just hold K1 and turn the encoder or press the key of the associated param. to map a param on the grid, hold K1 and tap any of the keys associated with that param
+
+## engines
+
+the midi track(s) can optionally be routed to an internal supercollider engine running on norns itself. currently there is a choice of three engines selectable via the **engine** param:
+- polysub
+- [orgn](https://github.com/andr-ew/orgn)
+- [molly the poly](https://llllllll.co/t/molly-the-poly/21090)
+
+if there's an engine you'd like to use with eggs that's not included in this list, I've written some [instructions](doc/adding-an-engine.md) on how to add one.
