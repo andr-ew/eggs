@@ -101,8 +101,7 @@ in **eggs/midi-only**, all tracks are midi
   - **E2:** function generator - shape
   - **E3:** function generator - ramp
   - **K2:** function generator - transient/sustain/cycle. hold: retrigger
-- **K1 (hold):** set mod source
-  - currently most params on the crow / jf screens can be mapped to either input of crow. select source using the encoders & keys
+- **K1 (hold):** set [mod source](#modulation)
 
 **view:** scale
 - **E1:** scale
@@ -113,4 +112,14 @@ in **eggs/midi-only**, all tracks are midi
 **view:** key
 - **E1:** tuning system
 - **E2:** base key
-- **E3:** 0v pitch 
+- **E3:** 0v pitch
+
+## modulation
+
+most params on screen + grid can be mapped to one of 4 destinations:
+- crow input 1
+- crow input 2
+- track 3 cv (crow output 1)
+- track 3 gate (crow output 2)
+
+to map an on-screen param, just hold K1 and turn the encoder or press the key of the associated param. to map a param on the grid, hold K1 and tap any of the keys associated with that param
