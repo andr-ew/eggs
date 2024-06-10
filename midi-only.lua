@@ -1,9 +1,9 @@
--- eggs
+-- eggs (midi only)
 --
 -- pitch gesture looper 
 -- for norns + grid
 --
--- version 0.3.0 @andrew
+-- version 0.4.0 @andrew
 --
 -- required: grid (any size)
 --
@@ -18,8 +18,6 @@ local wide = g and g.device and g.device.cols >= 16 or false
 
 --system libs
 
-polysub = require 'engine/polysub'
-engine.name = 'PolySub'
 cs = require 'controlspec'
 -- lfos = require 'lfo'
 
@@ -48,21 +46,21 @@ arqueggiator = include 'lib/arqueggiator/arqueggiator'      --arqueggiation (arq
 Arqueggiator = include 'lib/arqueggiator/ui'
 
 patcher = include 'lib/patcher/patcher'                     --modulation maxtrix
+Patcher = include 'lib/patcher/ui/using_map_key'            --mod matrix patching UI utilities
 
 --script files
 
 eggs = include 'lib/globals'                                --global variables & objects
 
-Components = include 'lib/ui/components'                    --ui components
-mod_sources = include 'lib/modulation_sources'              --add modulation sources (crow ins)
+eggs.engines = include 'lib/engines'                        --DEFINE NEW ENGINES IN THIS FILE
 
-jf_out = include 'lib/jf_out'                               --just friends output
+Components = include 'lib/ui/components'                    --ui components
+
 midi_outs = include 'lib/midi_outs'                         --midi output
-crow_outs = include 'lib/crow_outs'                         --crow output
 
 midi_outs.init(4)
 
---setup pages
+--set up pages
 
 eggs.outs = {}
 eggs.keymaps = {}
@@ -80,13 +78,38 @@ for i = 1,4 do
     eggs.arqs[i].action_on = midi_outs[i].note_on
     eggs.arqs[i].action_off = midi_outs[i].note_off
 end
-    
+
 --more script files
 
-include 'lib/params'                                        --add params
+eggs.params = include 'lib/params'                          --script params
 App = {}
 App.grid = include 'lib/ui/grid'                            --grid UI
 App.norns = include 'lib/ui/norns'                          --norns UI
+
+--add params
+
+params.action_read = eggs.params.action_read
+params.action_write = eggs.params.action_write
+params.action_delete = eggs.params.action_delete
+
+params:add_separator('midi')
+for i,midi_out in ipairs(midi_outs) do
+    params:add_group('midi_outs_'..i, midi_out.name, midi_out.params_count)
+    midi_out.add_params()
+end
+
+eggs.params.add_keymap_params()
+
+params:add_separator('patcher')
+params:add_group('assignments', #patcher.destinations)
+patcher.add_assignment_params(function() 
+    crops.dirty.grid = true; crops.dirty.screen = true
+end)
+
+params:add_separator('sep_engine', 'engine')
+eggs.params.add_engine_selection_param()
+
+params:read(nil, true) --read a first time before init to set up the engine
 
 --create, connect UI components
 
@@ -102,12 +125,10 @@ crops.connect_screen(_app.norns)
 --init/cleanup
 
 function init()
-    -- mod_sources.lfos.reset_params()
-    -- for i = 1,2 do mod_sources.lfos[i]:start() end
+    eggs.params.add_engine_params()
+    eggs.params.add_pset_params()
 
     params:read()
-    params:set('hzlag', 0)
-    params:bang()
     
     for i = 1,eggs.track_count do
         local arq = eggs.arqs[i]:start()

@@ -10,41 +10,69 @@ end
 
 function midi_outs.init(count)
     for i = 1,count do
-        midi_outs[i] = {}
+        local out = {}
 
         local target = tab.key(midi_outs.device_names, 'engine')
-        local preset = i
-        local oct = 0
-        local column = 0
-        local row = -2
+
+        out.preset = i
+        out.oct = 0
+        out.column = 0
+        out.row = -2
     
-        midi_outs[i].voicing = 'poly'
+        out.voicing = 'poly'
 
-        midi_outs[i].note_on = function(idx)
-            local x = (idx-1)%eggs.keymap_wrap + 1 + column 
-            local y = (idx-1)//eggs.keymap_wrap + 1 + row 
+        local held = {}
 
+        local function get_note_hz(idx)
+            local x = (idx-1)%eggs.keymap_wrap + 1 + out.column 
+            local y = (idx-1)//eggs.keymap_wrap + 1 + out.row 
+            local note = eggs.tunes[out.preset]:midi(x, y, nil, out.oct) + 33
+            local hz = eggs.tunes[out.preset]:hz(x, y, nil, out.oct) * 55
+
+            return note, hz
+        end
+        local function note_on(note, hz)
             if target == ENGINE then
-                local hz = eggs.tunes[preset]:hz(x, y, nil, oct) * 55
-                engine.start(idx, hz)
+                eggs.noteOn(note, hz)
             else
-                local note = eggs.tunes[preset]:midi(x, y, nil, oct) + 33
                 midi_outs.devices[target]:note_on(note)
             end
         end
-        midi_outs[i].note_off = function(idx) 
+        local function note_off(note)
             if target == ENGINE then
-                engine.stop(idx) 
+                eggs.noteOff(note)
             else
-                local x = (idx-1)%eggs.keymap_wrap + 1 + column 
-                local y = (idx-1)//eggs.keymap_wrap + 1 + row 
-
-                local note = eggs.tunes[preset]:midi(x, y, nil, oct) + 33
                 midi_outs.devices[target]:note_off(note)
             end
         end
 
-        midi_outs[i].params_count = 5
+        out.note_on = function(idx)
+            local note, hz = get_note_hz(idx)
+            note_on(note, hz)
+
+            table.insert(held, { idx = idx, note = note })
+        end
+        out.note_off = function(idx) 
+            local note = get_note_hz(idx)
+            note_off(note)
+
+            for i,h in ipairs(held) do if h.note==note then
+                table.remove(held, i)
+                break
+            end end
+        end
+
+        local function update_notes()
+            for i,h in ipairs(held) do
+                note_off(h.note)
+
+                local new_note, new_hz = get_note_hz(h.idx)
+                h.note = new_note
+                note_on(new_note, new_hz)
+            end
+        end
+
+        out.params_count = 5
     
         local param_ids = {
             target = 'target_midi_outs_'..i,
@@ -53,11 +81,11 @@ function midi_outs.init(count)
             row = 'row_midi_outs_'..i,
             column = 'column_midi_outs_'..i,
         }
-        midi_outs[i].param_ids = param_ids
+        out.param_ids = param_ids
     
-        midi_outs[i].name = 'midi out '..i
+        out.name = 'midi out '..i
 
-        midi_outs[i].add_params = function()
+        out.add_params = function()
             params:add{
                 type = 'option', id = param_ids.target, name = 'destination',
                 options = midi_outs.device_names, default = target,
@@ -68,9 +96,9 @@ function midi_outs.init(count)
             }
             params:add{
                 type = 'number', id = param_ids.tuning_preset, name = 'tuning preset',
-                min = 1, max = presets, default = preset, 
+                min = 1, max = #eggs.tunes, default = out.preset, 
                 action = function(v) 
-                    preset = v
+                    out.preset = v; update_notes()
 
                     for _,t in ipairs(eggs.tunes) do
                         t:update_tuning()
@@ -79,42 +107,56 @@ function midi_outs.init(count)
             }
             params:add{
                 type = 'number', id = param_ids.oct, name = 'oct',
-                min = -5, max = 5, default = oct,
+                min = -5, max = 5, default = out.oct,
                 action = function(v) 
-                    oct = v
+                    out.oct = v; update_notes()
 
                     crops.dirty.grid = true 
                 end
             }
-            params:add{
-                type = 'number', id = param_ids.column, name = 'column',
-                min = -16, max = 16, default = column,
-                action = function(v) 
-                    column = v
+            do
+                local min, max = -12, 12
+                params:add{
+                    type = 'control', id = param_ids.column, name = 'column',
+                    controlspec = cs.def{ 
+                        min = min, max = max, default = out.column * eggs.volts_per_column, 
+                        quantum = (1/(max - min)) * eggs.volts_per_column, units = 'v',
+                    },
+                    action = function(v) 
+                        local last = out.column
+                        out.column = v // eggs.volts_per_column
+                
+                        if last ~= out.column then update_notes() end
 
-                    crops.dirty.grid = true 
-                end
-            }
+                        crops.dirty.grid = true 
+                    end
+                }
+            end
             params:add{
                 type = 'number', id = param_ids.row, name = 'row',
-                min = -16, max = 16, default = row,
+                min = -16, max = 16, default = out.row,
                 action = function(v) 
-                    row = v
+                    local last = out.row
+                    out.row = v
+            
+                    if last ~= out.row then update_notes() end
 
                     crops.dirty.grid = true 
                 end
             }
         end
 
-        midi_outs[i].Components = { norns = {} }
+        out.Components = { norns = {} }
 
-        midi_outs[i].Components.norns.page = function()
+        out.Components.norns.page = function()
             local _target = Components.enc_screen.param()
 
             return function()
                 _target{ id = param_ids.target, n = 1, is_dest = false }
             end
         end
+
+        midi_outs[i] = out
     end
 end
 

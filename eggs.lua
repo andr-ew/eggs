@@ -1,9 +1,9 @@
--- eggs
+-- eggs (midi only)
 --
 -- pitch gesture looper 
 -- for norns + grid
 --
--- version 0.3.0 @andrew
+-- version 0.4.0 @andrew
 --
 -- required: grid (any size)
 --           crow
@@ -19,8 +19,6 @@ local wide = g and g.device and g.device.cols >= 16 or false
 
 --system libs
 
-polysub = require 'engine/polysub'
-engine.name = 'PolySub'
 cs = require 'controlspec'
 -- lfos = require 'lfo'
 
@@ -49,13 +47,15 @@ arqueggiator = include 'lib/arqueggiator/arqueggiator'      --arqueggiation (arq
 Arqueggiator = include 'lib/arqueggiator/ui'
 
 patcher = include 'lib/patcher/patcher'                     --modulation maxtrix
+Patcher = include 'lib/patcher/ui/using_map_key'            --mod matrix patching UI utilities
 
 --script files
 
 eggs = include 'lib/globals'                                --global variables & objects
 
+eggs.engines = include 'lib/engines'                        --DEFINE NEW ENGINES IN THIS FILE
+
 Components = include 'lib/ui/components'                    --ui components
-mod_sources = include 'lib/modulation_sources'              --add modulation sources (crow ins)
 
 jf_out = include 'lib/jf_out'                               --just friends output
 midi_outs = include 'lib/midi_outs'                         --midi output
@@ -106,21 +106,87 @@ eggs.arqs[3].action_off = function(idx) crow_outs[1].set_note(idx, 0) end
 eggs.arqs[4].action_on = function(idx) crow_outs[2].set_note(idx, 1) end
 eggs.arqs[4].action_off = function(idx) crow_outs[2].set_note(idx, 0) end
 
+--set up modulation sources
+
+local add_actions = {}
+for i = 1,2 do
+    add_actions[i] = patcher.crow.add_source(i)
+end
+
+do
+    local stream = patcher.add_source{ name = 'cv 1', id = 'cv_1' }
+    crow_outs[1].cv_callback = stream
+end
+do
+    local stream, change
+
+    local function assignment_callback(mode)
+        if mode == 'stream' then
+            crow_outs[1].gate_callback = function(state)
+                stream(state and 5 or 0)
+            end
+        elseif mode == 'change' then
+            crow_outs[1].gate_callback = change
+        end
+    end
+
+    stream, change = patcher.add_source{ 
+        name = 'gate 1', id = 'gate_1',
+        assignment_callback = assignment_callback,
+    }
+end
+
+--set up crow
+
 local function crow_add()
     for _,out in ipairs(crow_outs) do
         out.add()
     end
-
-    mod_sources.crow.add()
+    for _,action in ipairs(add_actions) do action() end
 end
 norns.crow.add = crow_add
 
 --more script files
 
-include 'lib/params'                                        --add params
+eggs.params = include 'lib/params'                          --script params
 App = {}
 App.grid = include 'lib/ui/grid'                            --grid UI
 App.norns = include 'lib/ui/norns'                          --norns UI
+
+--add params
+
+params.action_read = eggs.params.action_read
+params.action_write = eggs.params.action_write
+params.action_delete = eggs.params.action_delete
+
+params:add_separator('midi')
+for i,midi_out in ipairs(midi_outs) do
+    params:add_group('midi_outs_'..i, midi_out.name, midi_out.params_count)
+    midi_out.add_params()
+end
+
+params:add_separator('just friends')
+params:add_group('jf_out', jf_out.name, jf_out.params_count)
+jf_out.add_params()
+
+params:add_separator('crow outputs')
+for i,crow_out in ipairs(crow_outs) do
+    params:add_group('crow_outs_pair_'..i, crow_out.name, crow_out.params_count)
+    
+    crow_out.add_params()
+end
+eggs.params.add_keymap_params()
+
+params:add_separator('patcher')
+params:add_group('assignments', #patcher.destinations)
+patcher.add_assignment_params(function() 
+    crops.dirty.grid = true; crops.dirty.screen = true
+end)
+
+params:add_separator('sep_engine', 'engine')
+eggs.params.add_engine_selection_param()
+
+params:read(nil, true) --read a first time before init to set up the engine
 
 --create, connect UI components
 
@@ -132,16 +198,14 @@ _app = {
 crops.connect_enc(_app.norns)
 crops.connect_key(_app.norns)
 crops.connect_screen(_app.norns)
-
+    
 --init/cleanup
 
 function init()
-    -- mod_sources.lfos.reset_params()
-    -- for i = 1,2 do mod_sources.lfos[i]:start() end
+    eggs.params.add_engine_params()
+    eggs.params.add_pset_params()
 
     params:read()
-    params:set('hzlag', 0)
-    params:bang()
     
     crow_add()
 
