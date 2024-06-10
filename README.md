@@ -106,13 +106,11 @@ in **eggs/midi-only**, all tracks are midi
 **view:** scale
 - **E1:** scale
 - **E2:** row tuning
-- **E3:** midi in
 - **K2-3:** fret marks
 
 **view:** key
 - **E1:** tuning system
 - **E2:** base key
-- **E3:** 0v pitch
 
 ## modulation
 
