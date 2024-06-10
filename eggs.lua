@@ -1,4 +1,4 @@
--- eggs (midi only)
+-- eggs
 --
 -- pitch gesture looper 
 -- for norns + grid
