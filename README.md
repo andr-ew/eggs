@@ -130,4 +130,4 @@ the midi track(s) can optionally be routed to an internal supercollider engine r
 - [orgn](https://github.com/andr-ew/orgn)
 - [molly the poly](https://llllllll.co/t/molly-the-poly/21090)
 
-if there's an engine you'd like to use with eggs that's not included in this list, I've written some [instructions](doc/adding-an-engine.md) on how to add one.
+if there's an engine you'd like to use with eggs that's not included in this list, I've written some [instructions](lib/doc/adding-an-engine.md) on how to add one.
