@@ -101,6 +101,7 @@ in **eggs/midi-only**, all tracks are midi
   - **E2:** function generator - shape
   - **E3:** function generator - ramp
   - **K2:** function generator - transient/sustain/cycle. hold: retrigger
+  - **K3:** function generator - trigger. hold: trigger patching on/off
 - **K1 (hold):** set [mod source](#modulation)
 
 **view:** scale
