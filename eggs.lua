@@ -64,7 +64,6 @@ midi_outs = include 'lib/midi_outs'                         --midi output
 crow_outs = include 'lib/crow_outs'                         --crow output
 
 eggs.midi_out_count = 1
-
 midi_outs.init(eggs.midi_out_count)
 
 --setup pages
@@ -157,7 +156,7 @@ App = {}
 App.grid = include 'lib/ui/grid'                            --grid UI
 App.norns = include 'lib/ui/norns'                          --norns UI
 
---add params
+--params stuff pre-init
 
 params.action_read = eggs.params.action_read
 params.action_write = eggs.params.action_write
@@ -184,6 +183,8 @@ crops.connect_screen(_app.norns)
 
 function init()
     nb:init()
+
+    --params-stuff post-init
 
     eggs.params.add_engine_params()
 
