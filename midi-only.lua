@@ -3,7 +3,7 @@
 -- pitch gesture looper 
 -- for norns + grid
 --
--- version 0.4.0 @andrew
+-- version 0.4.1 @andrew
 --
 -- required: grid (any size)
 --
