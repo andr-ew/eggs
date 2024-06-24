@@ -81,7 +81,7 @@ out.param_ids = param_ids
         
 out.name = 'just friends'
 
-out.params_count = 11
+out.params_count = 12
 
 out.add_params = function()
     patcher.add_destination_and_param{

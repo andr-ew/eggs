@@ -159,30 +159,6 @@ params.action_read = eggs.params.action_read
 params.action_write = eggs.params.action_write
 params.action_delete = eggs.params.action_delete
 
-params:add_separator('midi')
-for i,midi_out in ipairs(midi_outs) do
-    params:add_group('midi_outs_'..i, midi_out.name, midi_out.params_count)
-    midi_out.add_params()
-end
-
-params:add_separator('just friends')
-params:add_group('jf_out', jf_out.name, jf_out.params_count)
-jf_out.add_params()
-
-params:add_separator('crow outputs')
-for i,crow_out in ipairs(crow_outs) do
-    params:add_group('crow_outs_pair_'..i, crow_out.name, crow_out.params_count)
-    
-    crow_out.add_params()
-end
-eggs.params.add_keymap_params()
-
-params:add_separator('patcher')
-params:add_group('assignments', #patcher.destinations)
-patcher.add_assignment_params(function() 
-    crops.dirty.grid = true; crops.dirty.screen = true
-end)
-
 params:add_separator('sep_engine', 'engine')
 eggs.params.add_engine_selection_param()
 
@@ -204,6 +180,31 @@ crops.connect_screen(_app.norns)
 
 function init()
     eggs.params.add_engine_params()
+
+    params:add_separator('midi')
+    for i,midi_out in ipairs(midi_outs) do
+        params:add_group('midi_outs_'..i, midi_out.name, midi_out.params_count)
+        midi_out.add_params()
+    end
+
+    params:add_separator('just friends')
+    params:add_group('jf_out', jf_out.name, jf_out.params_count)
+    jf_out.add_params()
+
+    params:add_separator('crow outputs')
+    for i,crow_out in ipairs(crow_outs) do
+        params:add_group('crow_outs_pair_'..i, crow_out.name, crow_out.params_count)
+        
+        crow_out.add_params()
+    end
+    eggs.params.add_keymap_params()
+
+    params:add_separator('patcher')
+    params:add_group('assignments', #patcher.destinations)
+    patcher.add_assignment_params(function() 
+        crops.dirty.grid = true; crops.dirty.screen = true
+    end)
+    
     eggs.params.add_pset_params()
 
     params:read()

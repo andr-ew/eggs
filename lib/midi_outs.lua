@@ -18,10 +18,22 @@ function midi_outs.init(count)
         out.oct = 0
         out.column = 0
         out.row = -2
-    
+        out.macro_ids = {}
+        out.cc_value = {}
+        out.cc_index = {}
+
         out.voicing = 'poly'
 
         local held = {}
+
+        local function update_cc(idx)
+            if target == ENGINE then
+            else
+                midi_outs.devices[target]:cc(out.cc_index[idx], out.cc_value[idx], 1)
+            end
+
+            crops.dirty.screen = true
+        end
 
         local function get_note_hz(idx)
             local x = (idx-1)%eggs.keymap_wrap + 1 + out.column 
@@ -72,16 +84,19 @@ function midi_outs.init(count)
             end
         end
 
-        out.params_count = 5
-    
         local param_ids = {
             target = 'target_midi_outs_'..i,
             tuning_preset = 'tuning_preset_midi_outs_'..i,
             oct = 'oct_midi_outs_'..i,
             row = 'row_midi_outs_'..i,
             column = 'column_midi_outs_'..i,
+            cc_value = {},
+            cc_index = {},
+            macro = {},
         }
         out.param_ids = param_ids
+        
+        out.params_count = tab.count(param_ids) - 3 + 2 + (3 * eggs.macro_count) + 1
     
         out.name = 'midi out '..i
 
@@ -94,6 +109,63 @@ function midi_outs.init(count)
                     crops.dirty.screen = true
                 end
             }
+
+            local cc_value_names = {}
+                
+            for ii = 1,eggs.macro_count do
+                param_ids.cc_index[ii] = 'cc_index_'..ii..'_midi_outs_'..i
+                param_ids.cc_value[ii] = 'cc_value_'..ii..'_midi_outs_'..i
+                cc_value_names[ii] = 'CC '..ii
+            end
+            
+            params:add_separator('macros')
+            do
+                for ii = 1,eggs.macro_count do
+                    local dest_names = { cc_value_names[ii] }
+                    local dest_ids = { param_ids.cc_value[ii] }
+                
+                    for ii,v in ipairs(params.params) do
+                        if v.t == params.tCONTROL then
+                            table.insert(dest_names, v.name or v.id)
+                            table.insert(dest_ids, v.id)
+                        end
+                    end
+
+                    param_ids.macro[ii] = 'macro_'..ii..'_midi_outs_'..i
+
+                    params:add {
+                        type = 'option', id = param_ids.macro[ii], name = 'macro '..ii,
+                        options = dest_names, action = function(v)
+                            out.macro_ids[ii] = dest_ids[v]
+                            crops.dirty.screen = true
+                        end
+                    }
+                end
+            end
+            
+            params:add_separator('midi CCs')
+            do
+                local cc_spec = cs.def{ default = 0, min = 0, max = 127, step = 1 }
+
+                for ii = 1,eggs.macro_count do
+                    params:add{
+                        type = 'number', id = param_ids.cc_index[ii], name = 'CC address '..ii,
+                        min = 0, max = 127, action = function(v)
+                            out.cc_index[ii] = v; update_cc(ii)
+                        end
+                    }
+                    patcher.add_destination_and_param{
+                        type = 'control', id = param_ids.cc_value[ii], name = cc_value_names[ii],
+                        controlspec = cc_spec,
+                        action = function(v)
+                            out.cc_value[ii] = v; update_cc(ii)
+                        end
+                    }
+                end
+            end
+
+            params:add_separator('keymap')
+
             params:add{
                 type = 'number', id = param_ids.tuning_preset, name = 'tuning preset',
                 min = 1, max = #eggs.tunes, default = out.preset, 
@@ -147,12 +219,55 @@ function midi_outs.init(count)
         end
 
         out.Components = { norns = {} }
+    
+        local x, y, e, k = eggs.x, eggs.y, eggs.e, eggs.k
 
         out.Components.norns.page = function()
             local _target = Components.enc_screen.param()
 
+            local dots = {}
+            for i = 1,eggs.macro_page_count do
+                table.insert(dots, ".")
+            end
+
+            local macro_focus = 1
+            local _macro_focus = {
+                key = Key.integer(),
+                screen = Screen.list(),
+            }
+
+            local _macros = {}
+            for ii = 1,2 do
+                _macros[ii] = Components.enc_screen.param()
+            end
+
             return function()
                 _target{ id = param_ids.target, n = 1, is_dest = false }
+
+                _macro_focus.key{
+                    n_next = 3, n_prev = 2, min = 1, max = eggs.macro_page_count,
+                    state = crops.of_variable(macro_focus, function(v) 
+                        macro_focus = v; crops.dirty.screen = true
+                    end)
+                }
+                _macro_focus.screen{
+                    x = k[2].x, y = k[2].y, text = dots, focus = macro_focus,
+                    font_size = 16, margin = 3,
+                }
+
+                for ii = 1,2 do
+                    local i_macro = (macro_focus - 1)*2 + ii
+                    local id = out.macro_ids[i_macro]
+                    local is_cc = id == param_ids.cc_value[i_macro]
+
+                    _macros[ii]{
+                        id = id, n = 1 + ii, is_dest = is_cc,
+                    }
+
+                    if not is_cc then
+                        crops.dirty.screen = true --hahahah well there's not really a better solution
+                    end
+                end
             end
         end
 
