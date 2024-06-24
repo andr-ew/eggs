@@ -2,7 +2,7 @@
 
 is an egg a type of seed?
 
-a multi-track gesture sequencer for norns, grid, crow, and midi (beta). four tracks of manual, droning, or arquenced pitch, many tunings, midi, just friends communication + slewed pitch & function generators for crow
+a multi-track gesture sequencer for norns, grid, crow, midi, and internal sounds (beta). four tracks of manual, droning, or arquenced pitch, many tunings, midi, just friends communication + slewed pitch & function generators for crow
 
 a spiritual successor to [synecdoche](https://github.com/andr-ew/prosody?tab=readme-ov-file#synecdoche)
 
@@ -90,7 +90,7 @@ in **eggs/midi-only**, all tracks are midi
 **view:** normal
 - **track 1: midi**
   - **E1:** midi destination
-  - **E2-E3**: macro
+  - **E2-E3**: [macro](#macros)
   - **K2-K3:** macro focus
 - **track 2: jf**
   - **E1:** shift (linear pitch offset, map for vibrato)
@@ -103,16 +103,37 @@ in **eggs/midi-only**, all tracks are midi
   - **E2:** function generator - shape
   - **E3:** function generator - ramp
   - **K2:** function generator - transient/sustain/cycle. hold: retrigger
-- **K1 (hold):** set mod source
-  - currently most params on the crow / jf screens can be mapped to either input of crow. select source using the encoders & keys
+  - **K3:** function generator - trigger. hold: trigger patching on/off
+- **K1 (hold):** set [mod source](#modulation)
 
 **view:** scale
 - **E1:** scale
 - **E2:** row tuning
-- **E3:** midi in
 - **K2-3:** fret marks
 
 **view:** key
 - **E1:** tuning system
 - **E2:** base key
-- **E3:** 0v pitch 
+
+## modulation
+
+most params on screen + grid can be mapped to one of 4 destinations:
+- crow input 1
+- crow input 2
+- track 3 cv (crow output 1)
+- track 3 gate (crow output 2)
+
+to map an on-screen param, just hold K1 and turn the encoder or press the key of the associated param. to map a param on the grid, hold K1 and tap any of the keys associated with that param
+
+## engines
+
+the midi track(s) can optionally be routed to an internal supercollider engine running on norns itself. currently there is a choice of three engines selectable via the **engine** param:
+- polysub
+- [orgn](https://github.com/andr-ew/orgn)
+- [molly the poly](https://llllllll.co/t/molly-the-poly/21090)
+
+if there's an engine you'd like to use with eggs that's not included in this list, I've written some [instructions](lib/doc/adding-an-engine.md) on how to add one.
+
+## macros
+
+on the midi track(s), there are 3 pages of macros. these macros can be assigned to address either an outgoing midi cc, or any param found in the selected engine or n.b. voice. configuration is found under PARAMS > midi out [#] > macros. if using midi CC you can set the CC# of each of the CCs available using the "address" params.
