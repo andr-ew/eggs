@@ -106,6 +106,16 @@ function midi_outs.init(count)
         out.params_count = tab.count(param_ids) - 3 + 2 + (3 * eggs.macro_count) + 1
     
         out.name = 'midi out '..i
+            
+        local cc_value_names = {}
+                
+        for ii = 1,eggs.macro_count do
+            param_ids.cc_index[ii] = 'cc_index_'..ii..'_midi_outs_'..i
+            param_ids.cc_value[ii] = 'cc_value_'..ii..'_midi_outs_'..i
+            cc_value_names[ii] = 'CC '..ii
+            out.macro_ids[ii] = param_ids.cc_value[ii]
+        end
+            
 
         out.add_params = function()
             params:add{
@@ -117,14 +127,6 @@ function midi_outs.init(count)
                 end
             }
 
-            local cc_value_names = {}
-                
-            for ii = 1,eggs.macro_count do
-                param_ids.cc_index[ii] = 'cc_index_'..ii..'_midi_outs_'..i
-                param_ids.cc_value[ii] = 'cc_value_'..ii..'_midi_outs_'..i
-                cc_value_names[ii] = 'CC '..ii
-            end
-            
             params:add_separator('macros')
             do
                 for ii = 1,eggs.macro_count do
