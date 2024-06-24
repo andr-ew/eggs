@@ -150,7 +150,8 @@ function midi_outs.init(count)
                 for ii = 1,eggs.macro_count do
                     params:add{
                         type = 'number', id = param_ids.cc_index[ii], name = 'CC address '..ii,
-                        min = 0, max = 127, action = function(v)
+                        min = 0, max = 127, default = ii,
+                        action = function(v)
                             out.cc_index[ii] = v; update_cc(ii)
                         end
                     }
@@ -161,6 +162,7 @@ function midi_outs.init(count)
                             out.cc_value[ii] = v; update_cc(ii)
                         end
                     }
+                    params:hide(param_ids.cc_value[ii])
                 end
             end
 
