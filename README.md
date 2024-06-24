@@ -90,6 +90,8 @@ in **eggs/midi-only**, all tracks are midi
 **view:** normal
 - **track 1: midi**
   - **E1:** midi destination
+  - **E2-E3**: macro
+  - **K2-K3:** macro focus
 - **track 2: jf**
   - **E1:** shift (linear pitch offset, map for vibrato)
   - **E2:** note level
