@@ -34,6 +34,10 @@ eggs.view_focus = eggs.NORMAL
 eggs.change_engine_modal = false
 eggs.current_engine = nil
 
+local macros_per_page = 2
+eggs.macro_page_count = 3
+eggs.macro_count = 3 * macros_per_page
+
 -- eggs.engine_loaded = false
 
 local tune_count = 8

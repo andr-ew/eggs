@@ -49,6 +49,8 @@ Arqueggiator = include 'lib/arqueggiator/ui'
 patcher = include 'lib/patcher/patcher'                     --modulation maxtrix
 Patcher = include 'lib/patcher/ui/using_map_key'            --mod matrix patching UI utilities
 
+nb = include 'lib/nb/lib/nb'                                --nb
+
 --script files
 
 eggs = include 'lib/globals'                                --global variables & objects
@@ -61,7 +63,8 @@ jf_out = include 'lib/jf_out'                               --just friends outpu
 midi_outs = include 'lib/midi_outs'                         --midi output
 crow_outs = include 'lib/crow_outs'                         --crow output
 
-midi_outs.init(1)
+eggs.midi_out_count = 1
+midi_outs.init(eggs.midi_out_count)
 
 --setup pages
 
@@ -153,40 +156,17 @@ App = {}
 App.grid = include 'lib/ui/grid'                            --grid UI
 App.norns = include 'lib/ui/norns'                          --norns UI
 
---add params
+--params stuff pre-init
 
 params.action_read = eggs.params.action_read
 params.action_write = eggs.params.action_write
 params.action_delete = eggs.params.action_delete
 
-params:add_separator('midi')
-for i,midi_out in ipairs(midi_outs) do
-    params:add_group('midi_outs_'..i, midi_out.name, midi_out.params_count)
-    midi_out.add_params()
-end
-
-params:add_separator('just friends')
-params:add_group('jf_out', jf_out.name, jf_out.params_count)
-jf_out.add_params()
-
-params:add_separator('crow outputs')
-for i,crow_out in ipairs(crow_outs) do
-    params:add_group('crow_outs_pair_'..i, crow_out.name, crow_out.params_count)
-    
-    crow_out.add_params()
-end
-eggs.params.add_keymap_params()
-
-params:add_separator('patcher')
-params:add_group('assignments', #patcher.destinations)
-patcher.add_assignment_params(function() 
-    crops.dirty.grid = true; crops.dirty.screen = true
-end)
-
 params:add_separator('sep_engine', 'engine')
 eggs.params.add_engine_selection_param()
 
-params:read(nil, true) --read a first time before init to set up the engine
+params:read(nil, true) --read a first time before init to check the engine
+params:lookup_param('engine'):bang()
 
 --create, connect UI components
 
@@ -202,7 +182,42 @@ crops.connect_screen(_app.norns)
 --init/cleanup
 
 function init()
+    nb:init()
+
+    --params-stuff post-init
+
     eggs.params.add_engine_params()
+
+    params:add_separator('nb')
+    for i = 1,eggs.midi_out_count do
+        nb:add_param('voice_'..i, 'voice '..i)
+        nb:add_player_params()
+    end
+
+    params:add_separator('midi')
+    for i,midi_out in ipairs(midi_outs) do
+        params:add_group('midi_outs_'..i, midi_out.name, midi_out.params_count)
+        midi_out.add_params()
+    end
+
+    params:add_separator('just friends')
+    params:add_group('jf_out', jf_out.name, jf_out.params_count)
+    jf_out.add_params()
+
+    params:add_separator('crow outputs')
+    for i,crow_out in ipairs(crow_outs) do
+        params:add_group('crow_outs_pair_'..i, crow_out.name, crow_out.params_count)
+        
+        crow_out.add_params()
+    end
+    eggs.params.add_keymap_params()
+
+    params:add_separator('patcher')
+    params:add_group('assignments', #patcher.destinations)
+    patcher.add_assignment_params(function() 
+        crops.dirty.grid = true; crops.dirty.screen = true
+    end)
+    
     eggs.params.add_pset_params()
 
     params:read()

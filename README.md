@@ -2,7 +2,7 @@
 
 is an egg a type of seed?
 
-a multi-track gesture sequencer for norns, grid, crow, and midi (beta). four tracks of manual, droning, or arquenced pitch, many tunings, midi, just friends communication + slewed pitch & function generators for crow
+a multi-track gesture sequencer for norns, grid, crow, midi, and internal sounds (beta). four tracks of manual, droning, or arquenced pitch, many tunings, midi, just friends communication + slewed pitch & function generators for crow
 
 a spiritual successor to [synecdoche](https://github.com/andr-ew/prosody?tab=readme-ov-file#synecdoche)
 
@@ -90,6 +90,8 @@ in **eggs/midi-only**, all tracks are midi
 **view:** normal
 - **track 1: midi**
   - **E1:** midi destination
+  - **E2-E3**: [macro](#macros)
+  - **K2-K3:** macro focus
 - **track 2: jf**
   - **E1:** shift (linear pitch offset, map for vibrato)
   - **E2:** note level
@@ -131,3 +133,7 @@ the midi track(s) can optionally be routed to an internal supercollider engine r
 - [molly the poly](https://llllllll.co/t/molly-the-poly/21090)
 
 if there's an engine you'd like to use with eggs that's not included in this list, I've written some [instructions](lib/doc/adding-an-engine.md) on how to add one.
+
+## macros
+
+on the midi track(s), there are 3 pages of macros. these macros can be assigned to address either an outgoing midi cc, or any param found in the selected engine or n.b. voice. configuration is found under PARAMS > midi out [#] > macros. if using midi CC you can set the CC# of each of the CCs available using the "address" params.
