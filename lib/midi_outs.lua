@@ -1,11 +1,11 @@
 local midi_outs = {}
 
 midi_outs.devices = {}
-midi_outs.device_names = { 'engine' }
-local ENGINE = 1
+midi_outs.device_names = { 'engine', 'nb' }
+local ENGINE, NB = 1, 2
 for i = 1,#midi.vports do
-    midi_outs.devices[i + 1] = midi.connect(i)
-    midi_outs.device_names[i + 1] = util.trim_string_to_width(midi_outs.devices[i+1].name,80)
+    midi_outs.devices[i + 2] = midi.connect(i)
+    midi_outs.device_names[i + 2] = util.trim_string_to_width(midi_outs.devices[i+2].name,80)
 end
 
 function midi_outs.init(count)
@@ -28,6 +28,7 @@ function midi_outs.init(count)
 
         local function update_cc(idx)
             if target == ENGINE then
+            elseif target == NB then
             else
                 midi_outs.devices[target]:cc(out.cc_index[idx], out.cc_value[idx], 1)
             end
@@ -46,6 +47,9 @@ function midi_outs.init(count)
         local function note_on(note, hz)
             if target == ENGINE then
                 eggs.noteOn(note, hz)
+            elseif target == NB then
+                local player = params:lookup_param('voice_'..i):get_player()
+                player:note_on(note, 1)
             else
                 midi_outs.devices[target]:note_on(note)
             end
@@ -53,6 +57,9 @@ function midi_outs.init(count)
         local function note_off(note)
             if target == ENGINE then
                 eggs.noteOff(note)
+            elseif target == NB then
+                local player = params:lookup_param('voice_'..i):get_player()
+                player:note_off(note)
             else
                 midi_outs.devices[target]:note_off(note)
             end

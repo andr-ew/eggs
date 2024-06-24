@@ -49,6 +49,8 @@ Arqueggiator = include 'lib/arqueggiator/ui'
 patcher = include 'lib/patcher/patcher'                     --modulation maxtrix
 Patcher = include 'lib/patcher/ui/using_map_key'            --mod matrix patching UI utilities
 
+nb = include 'lib/nb/lib/nb'                                --nb
+
 --script files
 
 eggs = include 'lib/globals'                                --global variables & objects
@@ -61,7 +63,9 @@ jf_out = include 'lib/jf_out'                               --just friends outpu
 midi_outs = include 'lib/midi_outs'                         --midi output
 crow_outs = include 'lib/crow_outs'                         --crow output
 
-midi_outs.init(1)
+eggs.midi_out_count = 1
+
+midi_outs.init(eggs.midi_out_count)
 
 --setup pages
 
@@ -179,7 +183,15 @@ crops.connect_screen(_app.norns)
 --init/cleanup
 
 function init()
+    nb:init()
+
     eggs.params.add_engine_params()
+
+    params:add_separator('nb')
+    for i = 1,eggs.midi_out_count do
+        nb:add_param('voice_'..i, 'voice '..i)
+        nb:add_player_params()
+    end
 
     params:add_separator('midi')
     for i,midi_out in ipairs(midi_outs) do
