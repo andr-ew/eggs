@@ -1,7 +1,7 @@
 local eggs = {}                                               
 
 do
-    local mar = { left = 2, top = 7, right = 2, bottom = 2 }
+    local mar = { left = 2, top = 1, right = 2, bottom = 2 }
     local top, bottom = mar.top, 64-mar.bottom
     local left, right = mar.left, 128-mar.right
     local w = 128 - mar.left - mar.right
@@ -12,14 +12,14 @@ do
     eggs.x, eggs.y, eggs.w, eggs.h = x, y, w, h
 
     eggs.e = {
-        { x = x[1], y = y[1] },
-        { x = x[1], y = mar.top + h*(5.5/8) },
-        { x = x[2], y = mar.top + h*(5.5/8) },
+        { x = x[1], y = y[1] + 5 },
+        { x = x[1], y = mar.top + h*(6.75/8) },
+        { x = x[2], y = mar.top + h*(6.75/8) },
     }
     eggs.k = {
         {},
-        { x = x[1], y = mar.top + h*(7/8) },
-        { x = x[2], y = mar.top + h*(7/8) },
+        { x = x[1], y = mar.top + h*(8/8) },
+        { x = x[2], y = mar.top + h*(8/8) },
     }
 end
 
