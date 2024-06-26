@@ -177,7 +177,7 @@ _app = {
 
 crops.connect_enc(_app.norns)
 crops.connect_key(_app.norns)
-crops.connect_screen(_app.norns)
+crops.connect_screen(_app.norns, 60)
     
 --init/cleanup
 
@@ -191,8 +191,8 @@ function init()
     params:add_separator('nb')
     for i = 1,eggs.midi_out_count do
         nb:add_param('voice_'..i, 'voice '..i)
-        nb:add_player_params()
     end
+    nb:add_player_params()
 
     params:add_separator('midi')
     for i,midi_out in ipairs(midi_outs) do

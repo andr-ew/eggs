@@ -75,7 +75,8 @@ local function Arq(args)
                 end
             end
             
-            if #arq.sequence > 0 then
+            -- if #arq.sequence > 0 then
+            if true then
                 do
                     local id = arq:pfix('pulse')
                     _pulse(id, eggs.mapping, {

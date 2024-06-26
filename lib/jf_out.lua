@@ -194,6 +194,7 @@ out.add_params = function()
                 if last ~= out.column then update_notes() end
 
                 crops.dirty.grid = true 
+                crops.dirty.screen = true 
             end
         }
     end
@@ -207,6 +208,7 @@ out.add_params = function()
             if last ~= out.row then update_notes() end
 
             crops.dirty.grid = true 
+            crops.dirty.screen = true 
         end
     }
 end

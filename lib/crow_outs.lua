@@ -24,6 +24,18 @@ local shape_nicknames = {
     'under',
     'rebound',
 }
+    
+local fps = 70
+clock.run(function() while true do
+    for i = 1,2 do
+        local off = i==2 and 2 or 0
+        local jacks = { cv = 1+off, gate = 2+off }
+        crow.output[jacks.cv].query()
+        crow.output[jacks.gate].query()
+        clock.sleep(1/fps)
+    end
+end end)
+
 
 for i = 1,2 do
     local off = i==2 and 2 or 0
@@ -289,6 +301,7 @@ for i = 1,2 do
                     out.column = v // eggs.volts_per_column; update_volts_cv()
 
                     crops.dirty.grid = true 
+                    crops.dirty.screen = true 
                 end
             }
         end
@@ -299,6 +312,7 @@ for i = 1,2 do
                 out.row = v; update_volts_cv()
 
                 crops.dirty.grid = true 
+                crops.dirty.screen = true 
             end
         }
         params:add{
@@ -328,13 +342,6 @@ for i = 1,2 do
         end
     end
 
-    local fps = 40
-    clock.run(function() while true do
-        crow.output[jacks.cv].query()
-        crow.output[jacks.gate].query()
-        clock.sleep(1/fps)
-    end end)
-
     out.Components = { norns = {} }
 
     out.Components.norns.page = function()
@@ -352,16 +359,6 @@ for i = 1,2 do
             
             _k2{ id = param_ids.mode, id_hold = param_ids.retrigger, n = 2 }
             _k3{ id = param_ids.trigger, id_hold = param_ids.patched, n = 3 }
-
-            if crops.device == 'screen' and crops.mode == 'redraw' then
-                for ii,k in ipairs{ 'cv', 'gate' } do
-                    screen.level(8)
-                    screen.move(eggs.x[1], eggs.e[1].y + 2 + (ii + (i - 1)*2)*6)
-                    screen.line_width(1)
-                    screen.line_rel(out.volts[k] * eggs.w * (1/10) * 1 + 1, 0)
-                    screen.stroke()
-                end
-            end
         end
     end
 

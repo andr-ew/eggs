@@ -212,6 +212,7 @@ function midi_outs.init(count)
                         if last ~= out.column then update_notes() end
 
                         crops.dirty.grid = true 
+                        crops.dirty.screen = true 
                     end
                 }
             end
@@ -225,6 +226,7 @@ function midi_outs.init(count)
                     if last ~= out.row then update_notes() end
 
                     crops.dirty.grid = true 
+                    crops.dirty.screen = true 
                 end
             }
         end
