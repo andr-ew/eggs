@@ -160,6 +160,7 @@ local function Keymap()
         local out = eggs.outs[track]
         local tune = eggs.tunes[params:get(out.param_ids.tuning_preset)]
         local keymap = eggs.keymaps[track]
+        local arq = eggs.arqs[track]
 
         -- can't use cause it's noticibly slower with all the single pixel draw calls :/
         -- _frets{
@@ -174,17 +175,30 @@ local function Keymap()
         -- }
 
         local lvl_key = 10
+        local mask_props = {
+            x = 1, y = 1, size = eggs.keymap_size, wrap = eggs.keymap_wrap,
+            flow = 'right', flow_wrap = 'up',
+        }
 
-        --TODO: draw mono, arq
-        if props.voicing == 'poly' then
+        if props.arq then
+            local index = arq.sequence[arq.step]
+            local gate = arq.gate
+            
+            if index and gate > 0 then
+                local x, y = Grid.util.index_to_xy(mask_props, index)
+                screen.level(lvl_key)
+                screen.pixel(
+                    (x - 1)*2 + props.x, 
+                    (y - 1)*2 + props.y
+                )
+                screen.fill()
+            end
+        elseif props.voicing == 'poly' then
             local keys = keymap:get_state()[1]
 
             for i = 1,eggs.keymap_size do
                 if (keys[i] or 0) > 0 then
-                    local x, y = Grid.util.index_to_xy({ 
-                        x = 1, y = 1, size = eggs.keymap_size, wrap = eggs.keymap_wrap,
-                        flow = 'right', flow_wrap = 'up',
-                    }, i)
+                    local x, y = Grid.util.index_to_xy(mask_props, i)
 
                     screen.level(lvl_key)
                     screen.pixel(
@@ -195,6 +209,16 @@ local function Keymap()
                 end
             end
         else
+            local index, gate = table.unpack(keymap:get_state()[1] or { 1, 0 })
+            if gate > 0 then
+                local x, y = Grid.util.index_to_xy(mask_props, index)
+                screen.level(lvl_key)
+                screen.pixel(
+                    (x - 1)*2 + props.x, 
+                    (y - 1)*2 + props.y
+                )
+                screen.fill()
+            end
         end
     end
 end
@@ -227,14 +251,8 @@ local function App()
 
             _pages[eggs.track_focus]()
 
-            local top = { 21, 35, 40, 43, }
+            local top = { 21, 36, 40, 43, }
 
-            --TODO: draw single PNG of all key grids
-            _keymaps[1]{ track = 1, x = x[1], y = top[1], voicing = eggs.outs[1].voicing }
-            _keymaps[2]{ track = 2, x = x[2], y = top[1], voicing = eggs.outs[2].voicing  }
-            _keymaps[3]{ track = 3, x = x[1], y = top[2], voicing = eggs.outs[3].voicing  }
-            _keymaps[4]{ track = 4, x = x[2], y = top[2], voicing = eggs.outs[4].voicing  }
-            
             if crops.device == 'screen' and crops.mode == 'redraw' then
                 for i = 1,2 do
                     local out = eggs.outs[2 + i]
@@ -246,6 +264,21 @@ local function App()
                         screen.stroke()
                     end
                 end
+
+                screen.display_png(norns.state.lib..'img/grid_bg.png', x[1], top[1] - 10)
+            end
+
+            for i,_keymap in ipairs(_keymaps) do
+                _keymaps[i]{ 
+                    track = i, x = x[(i - 1)%2 + 1], y = top[(i - 1)//2 + 1], 
+                    voicing = eggs.outs[i].voicing, arq = params:get('mode_'..i) == eggs.ARQ,
+                }
+            end
+            
+            if crops.device == 'screen' and crops.mode == 'redraw' then
+                local w = 88
+
+                screen.display_png(norns.state.lib..'img/glyph_flower.png', (128/2) - (w/2), -5)
             end
         else
             _tuning{ track = eggs.track_focus, view = eggs.view_focus }
