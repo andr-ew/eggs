@@ -223,7 +223,7 @@ local function Page(args)
     -- end
 
     local _patrecs = { manual = {}, aux = {} }
-    for i = 1, #eggs.pattern_groups[track].manual do
+    for i = 1, #eggs.pattern_groups[track].poly do
         _patrecs.manual[i] = Patcher.grid.destination(Produce.grid.pattern_recorder())
     end
     for i = 1, #eggs.pattern_groups[track].aux do
@@ -344,12 +344,12 @@ local function Page(args)
                     }
                 end
                     
-                local ss = eggs.snapshots[track].manual
+                local ss = eggs.snapshots[track][voicing]
 
-                for i = 1, wide and #eggs.pattern_groups[track].manual or 1 do
+                for i = 1, wide and #eggs.pattern_groups[track].poly or 1 do
                     _patrecs.manual[i](nil, eggs.mapping, {
                         x = 4 + i - 1, y = 1,
-                        pattern = eggs.pattern_groups[track].manual[i],
+                        pattern = eggs.pattern_groups[track][voicing][i],
                     })
                 end
                 
@@ -373,7 +373,7 @@ local function Page(args)
                     end
 
                     _rate_rev{
-                        mute_group = eggs.mute_groups[track].manual, wide = wide,
+                        mute_group = eggs.mute_groups[track][voicing], wide = wide,
                     }
                     if not wide then
                         _view_scroll{

@@ -90,23 +90,23 @@ eggs.keymaps = {
     [1] = keymap.poly.new{
         action_on = function(...) eggs.track_dest[1]:note_on(...) end,
         action_off = function(...) eggs.track_dest[1]:note_off(...) end,
-        pattern = eggs.pattern_shims[1].manual,
+        pattern = eggs.pattern_shims[1].poly,
         size = eggs.keymap_size,
     },
     [2] = keymap.poly.new{
         action_on = function(...) eggs.track_dest[2]:note_on(...) end,
         action_off = function(...) eggs.track_dest[2]:note_off(...) end,
-        pattern = eggs.pattern_shims[2].manual,
+        pattern = eggs.pattern_shims[2].poly,
         size = eggs.keymap_size,
     },
     [3] = keymap.mono.new{
         action = function(...) eggs.track_dest[3]:set_note(...) end,
-        pattern = eggs.pattern_shims[3].manual,
+        pattern = eggs.pattern_shims[3].mono,
         size = eggs.keymap_size,
     },
     [4] = keymap.mono.new{
         action = function(...) eggs.track_dest[4]:set_note(...) end,
-        pattern = eggs.pattern_shims[4].manual,
+        pattern = eggs.pattern_shims[4].mono,
         size = eggs.keymap_size,
     }    
 }

@@ -72,13 +72,13 @@ local function process_param(id, v)
     params:set(id, v) 
 end
 
-local pat_count = { manual = 4, arq = 4, aux = 2 }
+local pat_count = { mono = 4, poly = 4, arq = 4, aux = 2 }
 eggs.pattern_groups = {}
 eggs.mute_groups = {}
 eggs.pattern_shims = {}
 
 for i = 1,eggs.track_count do
-    eggs.pattern_groups[i] = { manual = {}, arq = {}, aux = {} }
+    eggs.pattern_groups[i] = { mono = {}, poly = {}, arq = {}, aux = {} }
     for k,_ in pairs(eggs.pattern_groups[i]) do
         for ii = 1,pat_count[k] do
             eggs.pattern_groups[i][k][ii] = pattern_time.new()
@@ -86,7 +86,8 @@ for i = 1,eggs.track_count do
     end
 
     eggs.mute_groups[i] = {
-        manual = mute_group.new(eggs.pattern_groups[i].manual),
+        mono = mute_group.new(eggs.pattern_groups[i].mono),
+        poly = mute_group.new(eggs.pattern_groups[i].poly),
         arq = mute_group.new(eggs.pattern_groups[i].arq),
     }
 
@@ -161,7 +162,7 @@ for i = 1,eggs.track_count do
 
     eggs.arqs[i] = arq
 
-    eggs.snapshots[i] = { manual = {}, arq = {} }
+    eggs.snapshots[i] = { mono = {}, poly = {}, arq = {} }
 end
 
 function eggs.noteOn(note_number, hz) end

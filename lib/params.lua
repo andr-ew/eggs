@@ -15,7 +15,8 @@ function p.add_keymap_params()
                     eggs.mute_groups[i].arq:stop()
                     eggs.arqs[i].sequence = {}
                 else
-                    eggs.mute_groups[i].manual:stop()
+                    local voicing = eggs.track_dest[i].voicing
+                    eggs.mute_groups[i][voicing]:stop()
                 end
                 if v ~= eggs.LATCH then
                     eggs.keymaps[i]:clear()
@@ -84,7 +85,8 @@ function p.add_keymap_params()
                 for track = 1,eggs.track_count do
                     if params:get(eggs.track_dest[track].param_ids.tuning_preset) == i then
                         local arq = eggs.arqs[track]
-                        local pat = eggs.mute_groups[track].manual:get_playing_pattern()
+                        local voicing = eggs.track_dest[i].voicing
+                        local pat = eggs.mute_groups[track][voicing]:get_playing_pattern()
 
                         if params:get('mode_'..track) == eggs.ARQ then
                             if params:get(arq:pfix('loop')) == 0 then arq:restart() end
