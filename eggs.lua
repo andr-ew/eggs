@@ -86,6 +86,7 @@ eggs.track_dest = {
     eggs.dests[4][1],
 }
 
+--TODO: initialize entries here within each destination selection param, clearing previous keymap
 eggs.keymaps = {
     [1] = keymap.poly.new{
         action_on = function(...) eggs.track_dest[1]:note_on(...) end,
@@ -111,6 +112,7 @@ eggs.keymaps = {
     }    
 }
     
+--TODO: reassign in destination selection param, based on destination voicing
 eggs.arqs[1].action_on = function(...) eggs.track_dest[1]:note_on(...) end
 eggs.arqs[1].action_off = function(...) eggs.track_dest[1]:note_off(...) end
 eggs.arqs[2].action_on = function(...) eggs.track_dest[2]:note_on(...) end
