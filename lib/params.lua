@@ -82,7 +82,7 @@ function p.add_keymap_params()
                 crops.dirty.screen = true
 
                 for track = 1,eggs.track_count do
-                    if params:get(eggs.outs[track].param_ids.tuning_preset) == i then
+                    if params:get(eggs.dests[track].param_ids.tuning_preset) == i then
                         local arq = eggs.arqs[track]
                         local pat = eggs.mute_groups[track].manual:get_playing_pattern()
 

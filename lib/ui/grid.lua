@@ -211,7 +211,7 @@ end
 
 local function Page(args)
     local track = args.track
-    local out = eggs.outs[track]
+    local out = eggs.dests[track]
     local voicing = out.voicing
     local _view_scale = Grid.momentary()
     local _view_key = Grid.momentary()
