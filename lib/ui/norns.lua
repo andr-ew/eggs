@@ -249,7 +249,7 @@ local function App()
                 end)
             }
 
-            _pages[eggs.track_focus]()
+            _pages[eggs.track_focus]{ dest = eggs.dests[eggs.track_focus] }
 
             local top = { 21, 36, 40, 43, }
 

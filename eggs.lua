@@ -59,6 +59,7 @@ eggs.engines = include 'lib/engines'                        --DEFINE NEW ENGINES
 
 Components = include 'lib/ui/components'                    --ui components
 
+destination = include 'lib/destinations/destination'        --destination prototype
 jf_dest = include 'lib/destinations/jf'                     --just friends output
 midi_dest = include 'lib/destinations/midi'                 --midi output
 crow_dests = include 'lib/destinations/crow'                --crow output
@@ -66,7 +67,7 @@ crow_dests = include 'lib/destinations/crow'                --crow output
 --setup pages
 
 eggs.dests = {
-    midi_dest.new(1),
+    midi_dest:new(1),
     jf_dest,
     crow_dests[1],
     crow_dests[2]
@@ -74,8 +75,8 @@ eggs.dests = {
 
 eggs.keymaps = {
     [1] = keymap.poly.new{
-        action_on = eggs.dests[1].note_on,
-        action_off = eggs.dests[1].note_off,
+        action_on = function(...) eggs.dests[1]:note_on(...) end,
+        action_off = function(...) eggs.dests[1]:note_off(...) end,
         pattern = eggs.pattern_shims[1].manual,
         size = eggs.keymap_size,
     },
@@ -97,8 +98,8 @@ eggs.keymaps = {
     }    
 }
     
-eggs.arqs[1].action_on = eggs.dests[1].note_on
-eggs.arqs[1].action_off = eggs.dests[1].note_off
+eggs.arqs[1].action_on = function(...) eggs.dests[1]:note_on(...) end
+eggs.arqs[1].action_off = function(...) eggs.dests[1]:note_off(...) end
 eggs.arqs[2].action_on = eggs.dests[2].note_on
 eggs.arqs[2].action_off = eggs.dests[2].note_off
 eggs.arqs[3].action_on = function(idx) eggs.dests[3].set_note(idx, 1) end
@@ -194,7 +195,7 @@ function init()
     params:add_separator('midi')
     for i,midi_dest in ipairs({ eggs.dests[1] }) do
         params:add_group('midi_dests_'..i, midi_dest.name, midi_dest.params_count)
-        midi_dest.add_params()
+        midi_dest:add_params()
     end
 
     params:add_separator('just friends')
