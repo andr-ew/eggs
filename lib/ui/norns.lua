@@ -13,7 +13,7 @@ local function Tuning()
     return function(props)
         local track = props.track
         local view = props.view
-        local out = eggs.dests[track]
+        local out = eggs.track_dest[track]
         local tune = eggs.tunes[params:get(out.param_ids.tuning_preset)]
 
         _degs{
@@ -157,7 +157,7 @@ local function Keymap()
 
     return function(props)
         local track = props.track
-        local out = eggs.dests[track]
+        local out = eggs.track_dest[track]
         local tune = eggs.tunes[params:get(out.param_ids.tuning_preset)]
         local keymap = eggs.keymaps[track]
         local arq = eggs.arqs[track]
@@ -231,7 +231,7 @@ local function App()
     local _pages = {}
     local _keymaps = {}
     for track = 1,eggs.track_count do
-        _pages[track] = eggs.dests[track].Components.norns.page()
+        _pages[track] = eggs.track_dest[track].Components.norns.page()
         _keymaps[track] = Keymap()
     end
 
@@ -249,13 +249,13 @@ local function App()
                 end)
             }
 
-            _pages[eggs.track_focus]{ dest = eggs.dests[eggs.track_focus] }
+            _pages[eggs.track_focus]{ dest = eggs.track_dest[eggs.track_focus] }
 
             local top = { 21, 36, 40, 43, }
 
             if crops.device == 'screen' and crops.mode == 'redraw' then
                 for i = 1,2 do
-                    local out = eggs.dests[2 + i]
+                    local out = eggs.track_dest[2 + i]
                     for ii,k in ipairs{ 'cv', 'gate' } do
                         screen.level(8)
                         screen.move(eggs.x[i], top[2 + ii])
@@ -271,7 +271,7 @@ local function App()
             for i,_keymap in ipairs(_keymaps) do
                 _keymaps[i]{ 
                     track = i, x = x[(i - 1)%2 + 1], y = top[(i - 1)//2 + 1], 
-                    voicing = eggs.dests[i].voicing, arq = params:get('mode_'..i) == eggs.ARQ,
+                    voicing = eggs.track_dest[i].voicing, arq = params:get('mode_'..i) == eggs.ARQ,
                 }
             end
             

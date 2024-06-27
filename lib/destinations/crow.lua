@@ -92,7 +92,7 @@ for i = 1,2 do
 
     dest.voicing = 'mono'
 
-    dest.set_note = function(idx, gate)
+    dest.set_note = function(_, idx, gate)
         if gate > 0 then
             dest.index = idx; update_volts_cv()
         end
@@ -184,7 +184,7 @@ for i = 1,2 do
     
     dest.params_count = 2 + tab.count(param_ids)
 
-    dest.add_params = function()
+    dest.add_params = function(_)
         params:add_separator('crow_fg_'..i, 'function generator')
 
         patcher.add_destination_and_param{

@@ -53,7 +53,7 @@ for i = 1,tune_count do
             local visible = false
 
             for track = 1,eggs.track_count do
-                if params:get(eggs.dests[track].param_ids.tuning_preset) == i then
+                if params:get(eggs.track_dest[track].param_ids.tuning_preset) == i then
                     visible = true
                     break
                 end

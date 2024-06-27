@@ -6,7 +6,6 @@ local function Arq(args)
     local mute_group = args.mute_group
     local pattern_group = args.pattern_group
     local snapshot_count = args.snapshot_count
-    local out = args.out
     --TODO: mulipattern alongside div & reverse (?)
     local function process_arq(new)
         arq:set_sequence(new)
@@ -130,8 +129,8 @@ local function Arq(args)
             levels = { 0, 1 },
             tune = tune,
             toct = 0, --?
-            column_offset = out.column,
-            row_offset = out.row,
+            column_offset = props.out.column,
+            row_offset = props.out.row,
         }
         _keymap{
             x = 1, y = 8, size = eggs.keymap_size, wrap = eggs.keymap_wrap,
@@ -211,8 +210,6 @@ end
 
 local function Page(args)
     local track = args.track
-    local out = eggs.dests[track]
-    local voicing = out.voicing
     local _view_scale = Grid.momentary()
     local _view_key = Grid.momentary()
     
@@ -220,10 +217,10 @@ local function Page(args)
     local _mode_latch = Patcher.grid.destination(Grid.toggle())
 
     local _slew_enable, _slew_time
-    if out.param_ids.slew_enable then
+    -- if out.param_ids.slew_enable then
         _slew_enable = Grid.momentary()
         _slew_time = Patcher.grid.destination(Grid.integer())
-    end
+    -- end
 
     local _patrecs = { manual = {}, aux = {} }
     for i = 1, #eggs.pattern_groups[track].manual do
@@ -248,7 +245,6 @@ local function Page(args)
         pattern_group = eggs.pattern_groups[track].arq,
         mute_group = eggs.pattern_shims[track].arq,
         snapshot_count = eggs.snapshot_count,
-        out = out
     }
 
     local view_scroll = 0
@@ -258,7 +254,7 @@ local function Page(args)
     local _row = Patcher.grid.destination(Produce.grid.integer_trigger())
 
     local _frets = Tune.grid.fretboard()
-    local _keymap = Keymap.grid[voicing]()
+    local _keymap = { mono = Keymap.grid.mono(), poly = Keymap.grid.poly() }
 
     local _tonic = Patcher.grid.destination(Tune.grid.tonic())
     
@@ -274,6 +270,8 @@ local function Page(args)
     }
 
     return function(props)
+        local out = eggs.track_dest[track]
+        local voicing = out.voicing
         local tune = eggs.tunes[params:get(out.param_ids.tuning_preset)]
         local wide = props.wide
 
@@ -335,11 +333,11 @@ local function Page(args)
 
             _arq{ 
                 track = track, snapshots = eggs.snapshots[track].arq, tune = tune, 
-                wide = wide, view_scroll = view_scroll,
+                wide = wide, view_scroll = view_scroll, out = out
             }
         else
             if eggs.view_focus == eggs.NORMAL then
-                if _slew_enable then
+                if out.param_ids.slew_enable then
                     _slew_enable{
                         x = 3, y = 2, levels = { 4, 15 },
                         state = eggs.of_param(out.param_ids.slew_enable)
@@ -441,7 +439,7 @@ local function Page(args)
                 column_offset = out.column,
                 row_offset = params:get(out.param_ids.row),
             }
-            _keymap{
+            _keymap[out.voicing]{
                 x = 1, y = 8, size = eggs.keymap_size, wrap = eggs.keymap_wrap,
                 flow = 'right', flow_wrap = 'up',
                 levels = { 0, 15 },

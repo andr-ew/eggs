@@ -64,48 +64,61 @@ jf_dest = include 'lib/destinations/jf'                     --just friends outpu
 midi_dest = include 'lib/destinations/midi'                 --midi output
 crow_dests = include 'lib/destinations/crow'                --crow output
 
+eggs.dests = {
+    { midi_dest:new(1) },
+    { jf_dest, midi_dest:new(2) },
+    { crow_dests[1], midi_dest:new(3) },
+    { crow_dests[2], midi_dest:new(4) },
+}
+eggs.dest_names = {
+    { 'midi' },
+    { 'jf', 'midi' },
+    { 'crow 1+2', 'midi' },
+    { 'crow 3+4', 'midi' },
+}
+
 --setup pages
 
-eggs.dests = {
-    midi_dest:new(1),
-    jf_dest,
-    crow_dests[1],
-    crow_dests[2]
+eggs.track_dest = {
+    eggs.dests[1][1],
+    eggs.dests[2][1],
+    eggs.dests[3][1],
+    eggs.dests[4][1],
 }
 
 eggs.keymaps = {
     [1] = keymap.poly.new{
-        action_on = function(...) eggs.dests[1]:note_on(...) end,
-        action_off = function(...) eggs.dests[1]:note_off(...) end,
+        action_on = function(...) eggs.track_dest[1]:note_on(...) end,
+        action_off = function(...) eggs.track_dest[1]:note_off(...) end,
         pattern = eggs.pattern_shims[1].manual,
         size = eggs.keymap_size,
     },
     [2] = keymap.poly.new{
-        action_on = eggs.dests[2].note_on,
-        action_off = eggs.dests[2].note_off,
+        action_on = function(...) eggs.track_dest[2]:note_on(...) end,
+        action_off = function(...) eggs.track_dest[2]:note_off(...) end,
         pattern = eggs.pattern_shims[2].manual,
         size = eggs.keymap_size,
     },
     [3] = keymap.mono.new{
-        action = eggs.dests[3].set_note,
+        action = function(...) eggs.track_dest[3]:set_note(...) end,
         pattern = eggs.pattern_shims[3].manual,
         size = eggs.keymap_size,
     },
     [4] = keymap.mono.new{
-        action = eggs.dests[4].set_note,
+        action = function(...) eggs.track_dest[4]:set_note(...) end,
         pattern = eggs.pattern_shims[4].manual,
         size = eggs.keymap_size,
     }    
 }
     
-eggs.arqs[1].action_on = function(...) eggs.dests[1]:note_on(...) end
-eggs.arqs[1].action_off = function(...) eggs.dests[1]:note_off(...) end
-eggs.arqs[2].action_on = eggs.dests[2].note_on
-eggs.arqs[2].action_off = eggs.dests[2].note_off
-eggs.arqs[3].action_on = function(idx) eggs.dests[3].set_note(idx, 1) end
-eggs.arqs[3].action_off = function(idx) eggs.dests[3].set_note(idx, 0) end
-eggs.arqs[4].action_on = function(idx) eggs.dests[4].set_note(idx, 1) end
-eggs.arqs[4].action_off = function(idx) eggs.dests[4].set_note(idx, 0) end
+eggs.arqs[1].action_on = function(...) eggs.track_dest[1]:note_on(...) end
+eggs.arqs[1].action_off = function(...) eggs.track_dest[1]:note_off(...) end
+eggs.arqs[2].action_on = function(...) eggs.track_dest[2]:note_on(...) end
+eggs.arqs[2].action_off = function(...) eggs.track_dest[2]:note_off(...) end
+eggs.arqs[3].action_on = function(idx) eggs.track_dest[3]:set_note(idx, 1) end
+eggs.arqs[3].action_off = function(idx) eggs.track_dest[3]:set_note(idx, 0) end
+eggs.arqs[4].action_on = function(idx) eggs.track_dest[4]:set_note(idx, 1) end
+eggs.arqs[4].action_off = function(idx) eggs.track_dest[4]:set_note(idx, 0) end
 
 --set up modulation sources
 
@@ -193,7 +206,7 @@ function init()
     nb:add_player_params()
 
     params:add_separator('midi')
-    for i,midi_dest in ipairs({ eggs.dests[1] }) do
+    for i,midi_dest in ipairs({ eggs.track_dest[1] }) do
         params:add_group('midi_dests_'..i, midi_dest.name, midi_dest.params_count)
         midi_dest:add_params()
     end

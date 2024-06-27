@@ -22,7 +22,7 @@ local function get_volts(idx)
     return eggs.tunes[dest.preset]:volts(x, y, nil, dest.oct - 2) - 3/12
 end
 
-dest.note_on = function(idx)
+dest.note_on = function(_, idx)
     local volts = get_volts(idx)
     local vel = math.random()*0.2 + 0.85
 
@@ -34,7 +34,7 @@ dest.note_on = function(idx)
         robin = robin%6 + 1
     end
 end
-dest.note_off = function(idx) 
+dest.note_off = function(_, idx) 
     local volts = get_volts(idx)
 
     for i,h in ipairs(held) do if h.volts==volts then
@@ -83,7 +83,7 @@ dest.name = 'just friends'
 
 dest.params_count = 12
 
-dest.add_params = function()
+dest.add_params = function(_)
     patcher.add_destination_and_param{
         id = param_ids.shift, name = 'shift',
         type = 'control', 
