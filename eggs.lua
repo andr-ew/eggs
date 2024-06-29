@@ -64,11 +64,21 @@ jf_dest = include 'lib/destinations/jf'                     --just friends outpu
 midi_dest = include 'lib/destinations/midi'                 --midi output
 crow_dests = include 'lib/destinations/crow'                --crow output
 
+--setup destinations
+
+eggs.midi_dests = {}
+
+for i = 1,eggs.track_count do
+    eggs.midi_dests[i] = midi_dest:new(i)
+end
+eggs.crow_dests = crow_dests
+eggs.jf_dest = jf_dest
+
 eggs.dests = {
-    { midi_dest:new(1) },
-    { jf_dest, midi_dest:new(2) },
-    { crow_dests[1], midi_dest:new(3) },
-    { crow_dests[2], midi_dest:new(4) },
+    { eggs.midi_dests[1] },
+    { jf_dest, eggs.midi_dests[2] },
+    { crow_dests[1], eggs.midi_dests[3] },
+    { crow_dests[2], eggs.midi_dests[4] },
 }
 eggs.dest_names = {
     { 'midi' },
@@ -77,50 +87,52 @@ eggs.dest_names = {
     { 'crow 3+4', 'midi' },
 }
 
---setup pages
+for i = 1,eggs.track_count do
+    eggs.set_dest(i, 1)
+end
 
-eggs.track_dest = {
-    eggs.dests[1][1],
-    eggs.dests[2][1],
-    eggs.dests[3][1],
-    eggs.dests[4][1],
-}
+--eggs.track_dest = {
+--    eggs.dests[1][1],
+--    eggs.dests[2][1],
+--    eggs.dests[3][1],
+--    eggs.dests[4][1],
+--}
 
---TODO: initialize entries here within each destination selection param, clearing previous keymap
-eggs.keymaps = {
-    [1] = keymap.poly.new{
-        action_on = function(...) eggs.track_dest[1]:note_on(...) end,
-        action_off = function(...) eggs.track_dest[1]:note_off(...) end,
-        pattern = eggs.pattern_shims[1].poly,
-        size = eggs.keymap_size,
-    },
-    [2] = keymap.poly.new{
-        action_on = function(...) eggs.track_dest[2]:note_on(...) end,
-        action_off = function(...) eggs.track_dest[2]:note_off(...) end,
-        pattern = eggs.pattern_shims[2].poly,
-        size = eggs.keymap_size,
-    },
-    [3] = keymap.mono.new{
-        action = function(...) eggs.track_dest[3]:set_note(...) end,
-        pattern = eggs.pattern_shims[3].mono,
-        size = eggs.keymap_size,
-    },
-    [4] = keymap.mono.new{
-        action = function(...) eggs.track_dest[4]:set_note(...) end,
-        pattern = eggs.pattern_shims[4].mono,
-        size = eggs.keymap_size,
-    }    
-}
+----TODO: initialize entries here within each destination selection param, clearing previous keymap
+--eggs.keymaps = {
+--    [1] = keymap.poly.new{
+--        action_on = function(...) eggs.track_dest[1]:note_on(...) end,
+--        action_off = function(...) eggs.track_dest[1]:note_off(...) end,
+--        pattern = eggs.pattern_shims[1].poly,
+--        size = eggs.keymap_size,
+--    },
+--    [2] = keymap.poly.new{
+--        action_on = function(...) eggs.track_dest[2]:note_on(...) end,
+--        action_off = function(...) eggs.track_dest[2]:note_off(...) end,
+--        pattern = eggs.pattern_shims[2].poly,
+--        size = eggs.keymap_size,
+--    },
+--    [3] = keymap.mono.new{
+--        action = function(...) eggs.track_dest[3]:set_note(...) end,
+--        pattern = eggs.pattern_shims[3].mono,
+--        size = eggs.keymap_size,
+--    },
+--    [4] = keymap.mono.new{
+--        action = function(...) eggs.track_dest[4]:set_note(...) end,
+--        pattern = eggs.pattern_shims[4].mono,
+--        size = eggs.keymap_size,
+--    }    
+--}
     
---TODO: reassign in destination selection param, based on destination voicing
-eggs.arqs[1].action_on = function(...) eggs.track_dest[1]:note_on(...) end
-eggs.arqs[1].action_off = function(...) eggs.track_dest[1]:note_off(...) end
-eggs.arqs[2].action_on = function(...) eggs.track_dest[2]:note_on(...) end
-eggs.arqs[2].action_off = function(...) eggs.track_dest[2]:note_off(...) end
-eggs.arqs[3].action_on = function(idx) eggs.track_dest[3]:set_note(idx, 1) end
-eggs.arqs[3].action_off = function(idx) eggs.track_dest[3]:set_note(idx, 0) end
-eggs.arqs[4].action_on = function(idx) eggs.track_dest[4]:set_note(idx, 1) end
-eggs.arqs[4].action_off = function(idx) eggs.track_dest[4]:set_note(idx, 0) end
+----TODO: reassign in destination selection param, based on destination voicing
+--eggs.arqs[1].action_on = function(...) eggs.track_dest[1]:note_on(...) end
+--eggs.arqs[1].action_off = function(...) eggs.track_dest[1]:note_off(...) end
+--eggs.arqs[2].action_on = function(...) eggs.track_dest[2]:note_on(...) end
+--eggs.arqs[2].action_off = function(...) eggs.track_dest[2]:note_off(...) end
+--eggs.arqs[3].action_on = function(idx) eggs.track_dest[3]:set_note(idx, 1) end
+--eggs.arqs[3].action_off = function(idx) eggs.track_dest[3]:set_note(idx, 0) end
+--eggs.arqs[4].action_on = function(idx) eggs.track_dest[4]:set_note(idx, 1) end
+--eggs.arqs[4].action_off = function(idx) eggs.track_dest[4]:set_note(idx, 0) end
 
 --set up modulation sources
 
@@ -175,6 +187,9 @@ params.action_read = eggs.params.action_read
 params.action_write = eggs.params.action_write
 params.action_delete = eggs.params.action_delete
 
+params:add_separator('destination')
+eggs.params.add_destination_params()
+
 params:add_separator('sep_engine', 'engine')
 eggs.params.add_engine_selection_param()
 
@@ -203,13 +218,13 @@ function init()
 
     params:add_separator('nb')
     for i = 1,4 do
-        nb:add_param('voice_'..i, 'voice '..i)
+        nb:add_param('voice_'..i, 'track '..i..' voice')
     end
     nb:add_player_params()
 
     params:add_separator('midi')
-    for i,midi_dest in ipairs({ eggs.track_dest[1] }) do
-        params:add_group('midi_dests_'..i, midi_dest.name, midi_dest.params_count)
+    for i,midi_dest in ipairs(eggs.midi_dests) do
+        params:add_group('midi_dests_'..i, 'track '..i, midi_dest.params_count)
         midi_dest:add_params()
     end
 

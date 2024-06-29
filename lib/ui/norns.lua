@@ -228,11 +228,19 @@ local function App()
     
     local _tuning = Tuning()
 
-    local _pages = {}
     local _keymaps = {}
     for track = 1,eggs.track_count do
-        _pages[track] = eggs.track_dest[track].Components.norns.page()
+        -- _pages[track] = eggs.track_dest[track].Components.norns.page()
         _keymaps[track] = Keymap()
+    end
+    
+    local _dest_pages = {}
+    for track,dests in ipairs(eggs.dests) do
+        _dest_pages[track] = {}
+
+        for i in ipairs(dests) do
+            _dest_pages[track][i] = eggs.dests[track][i].Components.norns.page()
+        end
     end
 
     local _change_engine_modal = Change_engine_modal()
@@ -249,13 +257,14 @@ local function App()
                 end)
             }
 
-            _pages[eggs.track_focus]{ dest = eggs.track_dest[eggs.track_focus] }
+            local i_dest = params:get('dest_track_'..eggs.track_focus)
+            _dest_pages[eggs.track_focus][i_dest]{ dest = eggs.track_dest[eggs.track_focus] }
 
             local top = { 21, 36, 40, 43, }
 
             if crops.device == 'screen' and crops.mode == 'redraw' then
                 for i = 1,2 do
-                    local out = eggs.track_dest[2 + i]
+                    local out = eggs.crow_dests[i]
                     for ii,k in ipairs{ 'cv', 'gate' } do
                         screen.level(8)
                         screen.move(eggs.x[i], top[2 + ii])

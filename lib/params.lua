@@ -1,5 +1,45 @@
 local p = {}
 
+function p.add_destination_params()
+    for i = 1,eggs.track_count do
+        params:add{
+            id = 'dest_track_'..i, name = 'track '..i, 
+            type = 'option', options = eggs.dest_names[i],
+            action = function(v)
+                eggs.set_dest(i, v)
+
+                crops.dirty.screen = true
+                crops.dirty.grid = true
+            end
+        }
+    end
+end
+
+function p.add_engine_selection_param()
+    params:add{
+        id = 'engine', name = 'engine', type = 'option', options = eggs.engines.nicknames,
+        action = function(v)
+            local name = eggs.engines.names[v or 1]
+            local nickname = eggs.engines.nicknames[v or 1]
+
+            if not eggs.current_engine then
+                engine.name = name
+
+                eggs.current_engine = nickname
+            else
+                eggs.change_engine_modal = (nickname ~= eggs.current_engine)
+                crops.dirty.screen = true
+            end
+        end
+    }
+end
+
+function p.add_engine_params()
+    params:add_separator('sep_engine_params', eggs.current_engine)
+
+    eggs.engines.init[eggs.current_engine]()
+end
+
 function p.add_keymap_params()
     params:add_separator('keymap')
     for i = 1,eggs.track_count do
@@ -98,31 +138,6 @@ function p.add_keymap_params()
             end)
         end
     end
-end
-
-function p.add_engine_selection_param()
-    params:add{
-        id = 'engine', name = 'engine', type = 'option', options = eggs.engines.nicknames,
-        action = function(v)
-            local name = eggs.engines.names[v or 1]
-            local nickname = eggs.engines.nicknames[v or 1]
-
-            if not eggs.current_engine then
-                engine.name = name
-
-                eggs.current_engine = nickname
-            else
-                eggs.change_engine_modal = (nickname ~= eggs.current_engine)
-                crops.dirty.screen = true
-            end
-        end
-    }
-end
-
-function p.add_engine_params()
-    params:add_separator('sep_engine_params', eggs.current_engine)
-
-    eggs.engines.init[eggs.current_engine]()
 end
 
 function p.add_pset_params()

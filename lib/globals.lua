@@ -168,4 +168,39 @@ end
 function eggs.noteOn(note_number, hz) end
 function eggs.noteOff(note_number) end
 
+eggs.track_dest = {}
+eggs.keymaps = {}
+
+function eggs.set_dest(track, v)
+    local i = track
+    
+    if eggs.keymaps[i] then eggs.keymaps[i]:clear() end
+
+    eggs.track_dest[i] = eggs.dests[i][v]
+
+    local out = eggs.track_dest[i]
+    local voicing = out.voicing
+    local poly = voicing == 'poly'
+    local mono = voicing == 'mono'
+
+    eggs.keymaps[i] = keymap[voicing].new{
+        action_on = poly and function(...) eggs.track_dest[i]:note_on(...) end,
+        action_off = poly and function(...) eggs.track_dest[i]:note_off(...) end,
+        action = mono and function(...) eggs.track_dest[i]:set_note(...) end,
+        pattern = eggs.pattern_shims[i][voicing],
+        size = eggs.keymap_size,
+    }
+
+    eggs.arqs[2].action_on = poly and (
+        function(...) eggs.track_dest[i]:note_on(...) end
+    ) or (
+        function(idx) eggs.track_dest[i]:set_note(idx, 1) end
+    )
+    eggs.arqs[2].action_off = poly and (
+        function(...) eggs.track_dest[i]:note_off(...) end
+    ) or (
+        function(idx) eggs.track_dest[i]:set_note(idx, 0) end
+    )
+end
+
 return eggs
