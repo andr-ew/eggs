@@ -191,12 +191,12 @@ function eggs.set_dest(track, v)
         size = eggs.keymap_size,
     }
 
-    eggs.arqs[2].action_on = poly and (
+    eggs.arqs[i].action_on = poly and (
         function(...) eggs.track_dest[i]:note_on(...) end
     ) or (
         function(idx) eggs.track_dest[i]:set_note(idx, 1) end
     )
-    eggs.arqs[2].action_off = poly and (
+    eggs.arqs[i].action_off = poly and (
         function(...) eggs.track_dest[i]:note_off(...) end
     ) or (
         function(idx) eggs.track_dest[i]:set_note(idx, 0) end
