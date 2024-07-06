@@ -62,75 +62,37 @@ Components = include 'lib/ui/components'                    --ui components
 destination = include 'lib/destinations/destination'        --destination prototype
 jf_dest = include 'lib/destinations/jf'                     --just friends output
 midi_dest = include 'lib/destinations/midi'                 --midi output
+engine_dest = include 'lib/destinations/engine'             --engine output
 crow_dests = include 'lib/destinations/crow'                --crow output
 
 --setup destinations
 
 eggs.midi_dests = {}
+eggs.engine_dests = {}
 
 for i = 1,eggs.track_count do
     eggs.midi_dests[i] = midi_dest:new(i)
+    eggs.engine_dests[i] = engine_dest:new(i)
 end
 eggs.crow_dests = crow_dests
 eggs.jf_dest = jf_dest
 
 eggs.dests = {
-    { eggs.midi_dests[1] },
-    { jf_dest, eggs.midi_dests[2] },
-    { crow_dests[1], eggs.midi_dests[3] },
-    { crow_dests[2], eggs.midi_dests[4] },
+    { eggs.engine_dests[1], eggs.midi_dests[1] },
+    { jf_dest, eggs.engine_dests[2], eggs.midi_dests[2] },
+    { crow_dests[1], eggs.engine_dests[3], eggs.midi_dests[3] },
+    { crow_dests[2], eggs.engine_dests[4], eggs.midi_dests[4] },
 }
 eggs.dest_names = {
-    { 'midi' },
-    { 'jf', 'midi' },
-    { 'crow 1+2', 'midi' },
-    { 'crow 3+4', 'midi' },
+    { 'engine', 'midi' },
+    { 'jf', 'engine', 'midi' },
+    { 'crow 1+2', 'engine', 'midi' },
+    { 'crow 3+4', 'engine', 'midi' },
 }
 
 for i = 1,eggs.track_count do
     eggs.set_dest(i, 1)
 end
-
---eggs.track_dest = {
---    eggs.dests[1][1],
---    eggs.dests[2][1],
---    eggs.dests[3][1],
---    eggs.dests[4][1],
---}
-
---eggs.keymaps = {
---    [1] = keymap.poly.new{
---        action_on = function(...) eggs.track_dest[1]:note_on(...) end,
---        action_off = function(...) eggs.track_dest[1]:note_off(...) end,
---        pattern = eggs.pattern_shims[1].poly,
---        size = eggs.keymap_size,
---    },
---    [2] = keymap.poly.new{
---        action_on = function(...) eggs.track_dest[2]:note_on(...) end,
---        action_off = function(...) eggs.track_dest[2]:note_off(...) end,
---        pattern = eggs.pattern_shims[2].poly,
---        size = eggs.keymap_size,
---    },
---    [3] = keymap.mono.new{
---        action = function(...) eggs.track_dest[3]:set_note(...) end,
---        pattern = eggs.pattern_shims[3].mono,
---        size = eggs.keymap_size,
---    },
---    [4] = keymap.mono.new{
---        action = function(...) eggs.track_dest[4]:set_note(...) end,
---        pattern = eggs.pattern_shims[4].mono,
---        size = eggs.keymap_size,
---    }    
---}
-    
---eggs.arqs[1].action_on = function(...) eggs.track_dest[1]:note_on(...) end
---eggs.arqs[1].action_off = function(...) eggs.track_dest[1]:note_off(...) end
---eggs.arqs[2].action_on = function(...) eggs.track_dest[2]:note_on(...) end
---eggs.arqs[2].action_off = function(...) eggs.track_dest[2]:note_off(...) end
---eggs.arqs[3].action_on = function(idx) eggs.track_dest[3]:set_note(idx, 1) end
---eggs.arqs[3].action_off = function(idx) eggs.track_dest[3]:set_note(idx, 0) end
---eggs.arqs[4].action_on = function(idx) eggs.track_dest[4]:set_note(idx, 1) end
---eggs.arqs[4].action_off = function(idx) eggs.track_dest[4]:set_note(idx, 0) end
 
 --set up modulation sources
 
@@ -192,7 +154,7 @@ params:add_separator('sep_engine', 'engine')
 eggs.params.add_engine_selection_param()
 
 params:read(nil, true) --read a first time before init to check the engine
-params:lookup_param('engine'):bang()
+params:lookup_param('engine_eggs'):bang()
 
 --create, connect UI components
 
@@ -214,15 +176,15 @@ function init()
 
     eggs.params.add_engine_params()
 
-    params:add_separator('nb')
+    params:add_separator('sep_nb', 'nb')
     for i = 1,4 do
-        nb:add_param('voice_'..i, 'track '..i..' voice')
+        nb:add_param('nb_voice_'..i, 'track '..i..' voice')
     end
     nb:add_player_params()
 
     params:add_separator('midi')
     for i,midi_dest in ipairs(eggs.midi_dests) do
-        params:add_group('midi_dests_'..i, 'track '..i, midi_dest.params_count)
+        params:add_group('midi_dests_'..i, 'track '..i..' options', midi_dest.params_count)
         midi_dest:add_params()
     end
 

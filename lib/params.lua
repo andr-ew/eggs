@@ -17,7 +17,7 @@ end
 
 function p.add_engine_selection_param()
     params:add{
-        id = 'engine', name = 'engine', type = 'option', options = eggs.engines.nicknames,
+        id = 'engine_eggs', name = 'engine', type = 'option', options = eggs.engines.nicknames,
         action = function(v)
             local name = eggs.engines.names[v or 1]
             local nickname = eggs.engines.nicknames[v or 1]
@@ -35,9 +35,19 @@ function p.add_engine_selection_param()
 end
 
 function p.add_engine_params()
-    params:add_separator('sep_engine_params', eggs.current_engine)
+    -- params:add_separator('sep_engine_params', eggs.current_engine)
+
+    params:add{
+        id = 'eggs_param_none', name = 'none', type = 'control', controlspec = cs.new(),
+    }
+    params:hide('eggs_param_none')
 
     eggs.engines.init[eggs.current_engine]()
+    
+    for i, dest in ipairs(eggs.engine_dests) do
+        params:add_group('engine_dests_'..i, 'track '..i..' options', dest.params_count)
+        dest:add_params()
+    end
 end
 
 function p.add_keymap_params()
@@ -173,7 +183,7 @@ function p.action_read(file, silent, slot)
     print('pset action read', file, silent, slot)
 
     -- params:bang()
-    params:lookup_param('engine'):bang()
+    params:lookup_param('engine_eggs'):bang()
 
     if (not eggs.change_engine_modal) and (not silent) then
         local name = 'pset-'..string.format("%02d", slot)

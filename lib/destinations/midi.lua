@@ -21,13 +21,13 @@ function midi_dest:new(id)
     o.param_ids.cc_value = {}
     o.param_ids.cc_index = {}
     
-    o.params_count = tab.count(o.param_ids) - 3 + 2 + (2 * eggs.macro_count) + 1
+    o.params_count = tab.count(o.param_ids) - 3 + 2 + (2 * eggs.cc_count) + 1
 
     o.name = 'midi dest '..id
         
     o.cc_value_names = {}
             
-    for ii = 1,eggs.macro_count do
+    for ii = 1,eggs.cc_count do
         o.param_ids.cc_index[ii] = 'cc_index_'..alph[ii]..id_postfix
         o.param_ids.cc_value[ii] = 'cc_value_'..alph[ii]..id_postfix        
         o.cc_value_names[ii] = 'CC '..alph[ii]
@@ -66,7 +66,7 @@ function midi_dest:add_params()
     do
         local cc_spec = cs.def{ default = 0, min = 0, max = 127, step = 1 }
 
-        for ii = 1,eggs.macro_count do
+        for ii = 1,eggs.cc_count do
             patcher.add_destination_and_param{
                 type = 'control', id = param_ids.cc_value[ii], name = self.cc_value_names[ii],
                 controlspec = cc_spec,
@@ -95,7 +95,7 @@ midi_dest.Components.norns.page = function()
     local _target = Components.enc_screen.param()
 
     local dots = {}
-    for i = 1,eggs.macro_page_count do
+    for i = 1,eggs.cc_page_count do
         table.insert(dots, ".")
     end
 
@@ -116,8 +116,8 @@ midi_dest.Components.norns.page = function()
         _target{ id = param_ids.target, n = 1, is_dest = false }
 
         _subpage_focus.key{
-            n_next = 3, n_prev = 2, min = 1, max = eggs.macro_page_count, wrap = true,
-            state = crops.of_variable(subpage_focus, function(v) 
+            n_next = 3, n_prev = 2, min = 1, max = eggs.cc_page_count, wrap = true,
+            state = crops.of_variable(subpage_focus, function(v)
                 subpage_focus = v; crops.dirty.screen = true
             end)
         }
