@@ -1,12 +1,12 @@
-local out = {}
+local dest = {}
         
 local NOTE, PITCH = 1, 2
 local note_mode_names = { 'note', 'pitch' }
 
-out.preset = 2
-out.oct = 0
-out.column = 0
-out.row = -2
+dest.preset = 2
+dest.oct = 0
+dest.column = 0
+dest.row = -2
 
 local shift = 0
 local level = 3.5
@@ -14,15 +14,15 @@ local robin = 1
 local note_mode = NOTE
 local held = {}
 
-out.voicing = 'poly'
+dest.voicing = 'poly'
 
 local function get_volts(idx)
-    local x = (idx-1)%eggs.keymap_wrap + 1 + out.column 
-    local y = (idx-1)//eggs.keymap_wrap + 1 + out.row 
-    return eggs.tunes[out.preset]:volts(x, y, nil, out.oct - 2) - 3/12
+    local x = (idx-1)%eggs.keymap_wrap + 1 + dest.column 
+    local y = (idx-1)//eggs.keymap_wrap + 1 + dest.row 
+    return eggs.tunes[dest.preset]:volts(x, y, nil, dest.oct - 2) - 3/12
 end
 
-out.note_on = function(idx)
+dest.note_on = function(_, idx)
     local volts = get_volts(idx)
     local vel = math.random()*0.2 + 0.85
 
@@ -34,7 +34,7 @@ out.note_on = function(idx)
         robin = robin%6 + 1
     end
 end
-out.note_off = function(idx) 
+dest.note_off = function(_, idx) 
     local volts = get_volts(idx)
 
     for i,h in ipairs(held) do if h.volts==volts then
@@ -64,26 +64,26 @@ end
 -- setup()
 
 local param_ids = {
-    tuning_preset = 'tuning_preset_jf_out',
-    oct = 'oct_jf_out',
-    row = 'row_jf_out',
-    column = 'column_jf_out',
-    mode = 'mode_jf_out',
-    level = 'level_jf_out',
-    shift = 'shift_jf_out',
-    run = 'run_jf_out',
-    run_mode = 'run_mode_jf_out',
-    god_mode = 'god_mode_jf_out',
-    note_mode = 'note_mode_jf_out',
-    panic = 'panic_jf_out',
+    tuning_preset = 'tuning_preset_jf_dest',
+    oct = 'oct_jf_dest',
+    row = 'row_jf_dest',
+    column = 'column_jf_dest',
+    mode = 'mode_jf_dest',
+    level = 'level_jf_dest',
+    shift = 'shift_jf_dest',
+    run = 'run_jf_dest',
+    run_mode = 'run_mode_jf_dest',
+    god_mode = 'god_mode_jf_dest',
+    note_mode = 'note_mode_jf_dest',
+    panic = 'panic_jf_dest',
 }
-out.param_ids = param_ids
+dest.param_ids = param_ids
         
-out.name = 'just friends'
+dest.name = 'just friends'
 
-out.params_count = 12
+dest.params_count = 12
 
-out.add_params = function()
+dest.add_params = function(_)
     patcher.add_destination_and_param{
         id = param_ids.shift, name = 'shift',
         type = 'control', 
@@ -161,9 +161,9 @@ out.add_params = function()
     
     params:add{
         type = 'number', id = param_ids.tuning_preset, name = 'tuning preset',
-        min = 1, max = #eggs.tunes, default = out.preset, 
+        min = 1, max = #eggs.tunes, default = dest.preset, 
         action = function(v) 
-            out.preset = v; update_notes()
+            dest.preset = v; update_notes()
 
             for _,t in ipairs(eggs.tunes) do
                 t:update_tuning()
@@ -172,9 +172,9 @@ out.add_params = function()
     }
     params:add{
         type = 'number', id = param_ids.oct, name = 'oct',
-        min = -5, max = 5, default = out.oct,
+        min = -5, max = 5, default = dest.oct,
         action = function(v) 
-            out.oct = v; update_notes()
+            dest.oct = v; update_notes()
 
             crops.dirty.grid = true 
         end
@@ -184,14 +184,14 @@ out.add_params = function()
         patcher.add_destination_and_param{
             type = 'control', id = param_ids.column, name = 'column',
             controlspec = cs.def{ 
-                min = min, max = max, default = out.column * eggs.volts_per_column, 
+                min = min, max = max, default = dest.column * eggs.volts_per_column, 
                 quantum = (1/(max - min)) * eggs.volts_per_column, units = 'v',
             },
             action = function(v) 
-                local last = out.column
-                out.column = v // eggs.volts_per_column
+                local last = dest.column
+                dest.column = v // eggs.volts_per_column
 
-                if last ~= out.column then update_notes() end
+                if last ~= dest.column then update_notes() end
 
                 crops.dirty.grid = true 
                 crops.dirty.screen = true 
@@ -200,12 +200,12 @@ out.add_params = function()
     end
     patcher.add_destination_and_param{
         type = 'number', id = param_ids.row, name = 'row',
-        min = -16, max = 16, default = out.row,
+        min = -16, max = 16, default = dest.row,
         action = function(v) 
-            local last = out.row
-            out.row = v
+            local last = dest.row
+            dest.row = v
                 
-            if last ~= out.row then update_notes() end
+            if last ~= dest.row then update_notes() end
 
             crops.dirty.grid = true 
             crops.dirty.screen = true 
@@ -213,9 +213,9 @@ out.add_params = function()
     }
 end
         
-out.Components = { norns = {} }
+dest.Components = { norns = {} }
 
-out.Components.norns.page = function()
+dest.Components.norns.page = function()
     local _e1 = Components.enc_screen.param()
     local _e2 = Components.enc_screen.param()
     local _e3 = Components.enc_screen.param()
@@ -233,4 +233,4 @@ out.Components.norns.page = function()
     end
 end
 
-return out
+return dest

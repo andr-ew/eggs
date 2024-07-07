@@ -65,11 +65,11 @@ midi_outs.init(eggs.midi_out_count)
 
 --set up pages
 
-eggs.outs = {}
+eggs.track_dest = {}
 eggs.keymaps = {}
 
 for i = 1,4 do
-    eggs.outs[i] = midi_outs[i]
+    eggs.track_dest[i] = midi_outs[i]
 
     eggs.keymaps[i] = keymap.poly.new{
         action_on = midi_outs[i].note_on,

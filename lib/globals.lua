@@ -34,9 +34,13 @@ eggs.view_focus = eggs.NORMAL
 eggs.change_engine_modal = false
 eggs.current_engine = nil
 
-local macros_per_page = 2
+local macros_per_page = 3
 eggs.macro_page_count = 3
-eggs.macro_count = 3 * macros_per_page
+eggs.macro_count = eggs.macro_page_count * macros_per_page
+
+local ccs_per_page = 2
+eggs.cc_page_count = 3
+eggs.cc_count = eggs.cc_page_count * ccs_per_page
 
 -- eggs.engine_loaded = false
 
@@ -53,7 +57,7 @@ for i = 1,tune_count do
             local visible = false
 
             for track = 1,eggs.track_count do
-                if params:get(eggs.outs[track].param_ids.tuning_preset) == i then
+                if params:get(eggs.track_dest[track].param_ids.tuning_preset) == i then
                     visible = true
                     break
                 end
@@ -72,13 +76,13 @@ local function process_param(id, v)
     params:set(id, v) 
 end
 
-local pat_count = { manual = 4, arq = 4, aux = 2 }
+local pat_count = { mono = 4, poly = 4, arq = 4, aux = 2 }
 eggs.pattern_groups = {}
 eggs.mute_groups = {}
 eggs.pattern_shims = {}
 
 for i = 1,eggs.track_count do
-    eggs.pattern_groups[i] = { manual = {}, arq = {}, aux = {} }
+    eggs.pattern_groups[i] = { mono = {}, poly = {}, arq = {}, aux = {} }
     for k,_ in pairs(eggs.pattern_groups[i]) do
         for ii = 1,pat_count[k] do
             eggs.pattern_groups[i][k][ii] = pattern_time.new()
@@ -86,7 +90,8 @@ for i = 1,eggs.track_count do
     end
 
     eggs.mute_groups[i] = {
-        manual = mute_group.new(eggs.pattern_groups[i].manual),
+        mono = mute_group.new(eggs.pattern_groups[i].mono),
+        poly = mute_group.new(eggs.pattern_groups[i].poly),
         arq = mute_group.new(eggs.pattern_groups[i].arq),
     }
 
@@ -161,10 +166,45 @@ for i = 1,eggs.track_count do
 
     eggs.arqs[i] = arq
 
-    eggs.snapshots[i] = { manual = {}, arq = {} }
+    eggs.snapshots[i] = { mono = {}, poly = {}, arq = {} }
 end
 
 function eggs.noteOn(note_number, hz) end
 function eggs.noteOff(note_number) end
+
+eggs.track_dest = {}
+eggs.keymaps = {}
+
+function eggs.set_dest(track, v)
+    local i = track
+    
+    if eggs.keymaps[i] then eggs.keymaps[i]:clear() end
+
+    eggs.track_dest[i] = eggs.dests[i][v]
+
+    local out = eggs.track_dest[i]
+    local voicing = out.voicing
+    local poly = voicing == 'poly'
+    local mono = voicing == 'mono'
+
+    eggs.keymaps[i] = keymap[voicing].new{
+        action_on = poly and function(...) eggs.track_dest[i]:note_on(...) end,
+        action_off = poly and function(...) eggs.track_dest[i]:note_off(...) end,
+        action = mono and function(...) eggs.track_dest[i]:set_note(...) end,
+        pattern = eggs.pattern_shims[i][voicing],
+        size = eggs.keymap_size,
+    }
+
+    eggs.arqs[i].action_on = poly and (
+        function(...) eggs.track_dest[i]:note_on(...) end
+    ) or (
+        function(idx) eggs.track_dest[i]:set_note(idx, 1) end
+    )
+    eggs.arqs[i].action_off = poly and (
+        function(...) eggs.track_dest[i]:note_off(...) end
+    ) or (
+        function(idx) eggs.track_dest[i]:set_note(idx, 0) end
+    )
+end
 
 return eggs
