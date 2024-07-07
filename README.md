@@ -116,7 +116,7 @@ in the maiden [REPL](https://monome.org/docs/norns/image/wifi_maiden-images/inst
 
 ## modulation
 
-most params on screen + grid can be mapped to one of 4 destinations:
+most params on screen + grid can be mapped to one of 4 modulation sources:
 - crow input 1
 - crow input 2
 - track 3 cv (crow output 1)
