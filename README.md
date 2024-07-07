@@ -18,6 +18,7 @@ a spiritual successor to [synecdoche](https://github.com/andr-ew/prosody?tab=rea
 - midi
 - crow
 - [just friends](https://www.whimsicalraps.com/products/just-friends) (synth mode)
+- anything supported by [nb](https://llllllll.co/t/n-b-et-al-v0-1/60374)
 
 ## install
 
