@@ -33,12 +33,14 @@ in the maiden [REPL](https://monome.org/docs/norns/image/wifi_maiden-images/inst
 ![diagram of the grid interface. text description forthcoming](/lib/doc/eggs.png)
 ![diagram of the 64 grid interface. text description forthcoming](/lib/doc/eggs_64.png)
 
-**track focus:** selects tracks 1-4. by default, tracks are as follows, but each track can also be assigned to midi or [nb](https://llllllll.co/t/n-b-et-al-v0-1/60374):
+**track focus:** selects tracks 1-4. by default, tracks are mapped as follows:
 
 | | |
 | -- | -- |
 | engine | just friends |
 | crow 1 + 2 | crow 3 + 4 |
+
+each track can also be assigned to midi or [nb](https://llllllll.co/t/n-b-et-al-v0-1/60374) under PARAMS > destination
 
 **keymap:** grid keyboard. edit the tuning using **scale** & **key**
 
@@ -135,4 +137,6 @@ if there's an engine you'd like to use with eggs that's not included in this lis
 
 ## macros
 
-on the midi track(s), there are 3 pages of macros. these macros can be assigned to address either an outgoing midi cc, or any param found in the selected engine or n.b. voice. configuration is found under PARAMS > midi out [#] > macros. if using midi CC you can set the CC# of each of the CCs available using the "address" params.
+on engine & nb tracks, there are 3 pages of macros. these macros can be assigned to address any param found in the selected engine voice. configuration is found under PARAMS > engine/nb > track options > macros.
+
+on a midi track, there are 3 pages of outgoing midi cc controls, each of which can be configured to output cc # 0-127 under PARAMS > midi > track options > midi CCs
