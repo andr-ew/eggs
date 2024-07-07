@@ -32,14 +32,12 @@ in the maiden [REPL](https://monome.org/docs/norns/image/wifi_maiden-images/inst
 ![diagram of the grid interface. text description forthcoming](/lib/doc/eggs.png)
 ![diagram of the 64 grid interface. text description forthcoming](/lib/doc/eggs_64.png)
 
-**track focus:** in the main variant, tracks are as follows:
+**track focus:** selects tracks 1-4. by default, tracks are as follows, but each track can also be assigned to midi or [nb](https://llllllll.co/t/n-b-et-al-v0-1/60374):
 
 | | |
 | -- | -- |
-| midi | just friends |
+| engine | just friends |
 | crow 1 + 2 | crow 3 + 4 |
-
-in **eggs/midi-only**, all tracks are midi
 
 **keymap:** grid keyboard. edit the tuning using **scale** & **key**
 
