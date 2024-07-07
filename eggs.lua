@@ -3,7 +3,7 @@
 -- pitch gesture looper 
 -- for norns + grid
 --
--- version 0.4.1 @andrew
+-- version 1.0.0 @andrew
 --
 -- required: grid (any size)
 --           crow
@@ -63,31 +63,34 @@ destination = include 'lib/destinations/destination'        --destination protot
 jf_dest = include 'lib/destinations/jf'                     --just friends output
 midi_dest = include 'lib/destinations/midi'                 --midi output
 engine_dest = include 'lib/destinations/engine'             --engine output
+nb_dest = include 'lib/destinations/nb'                     --nb output
 crow_dests = include 'lib/destinations/crow'                --crow output
 
 --setup destinations
 
 eggs.midi_dests = {}
 eggs.engine_dests = {}
+eggs.nb_dests = {}
 
 for i = 1,eggs.track_count do
     eggs.midi_dests[i] = midi_dest:new(i)
     eggs.engine_dests[i] = engine_dest:new(i)
+    eggs.nb_dests[i] = nb_dest:new(i)
 end
 eggs.crow_dests = crow_dests
 eggs.jf_dest = jf_dest
 
 eggs.dests = {
-    { eggs.engine_dests[1], eggs.midi_dests[1] },
-    { jf_dest, eggs.engine_dests[2], eggs.midi_dests[2] },
-    { crow_dests[1], eggs.engine_dests[3], eggs.midi_dests[3] },
-    { crow_dests[2], eggs.engine_dests[4], eggs.midi_dests[4] },
+    { eggs.engine_dests[1], eggs.midi_dests[1], eggs.nb_dests[1] },
+    { jf_dest, eggs.engine_dests[2], eggs.midi_dests[2], eggs.nb_dests[2] },
+    { crow_dests[1], eggs.engine_dests[3], eggs.midi_dests[3], eggs.nb_dests[3] },
+    { crow_dests[2], eggs.engine_dests[4], eggs.midi_dests[4], eggs.nb_dests[4] },
 }
 eggs.dest_names = {
-    { 'engine', 'midi' },
-    { 'jf', 'engine', 'midi' },
-    { 'crow 1+2', 'engine', 'midi' },
-    { 'crow 3+4', 'engine', 'midi' },
+    { 'engine', 'midi', 'nb' },
+    { 'jf', 'engine', 'midi', 'nb' },
+    { 'crow 1+2', 'engine', 'midi', 'nb' },
+    { 'crow 3+4', 'engine', 'midi', 'nb' },
 }
 
 for i = 1,eggs.track_count do
@@ -175,12 +178,7 @@ function init()
     --params-stuff post-init
 
     eggs.params.add_engine_params()
-
-    params:add_separator('sep_nb', 'nb')
-    for i = 1,4 do
-        nb:add_param('nb_voice_'..i, 'track '..i..' voice')
-    end
-    nb:add_player_params()
+    eggs.params.add_nb_params()
 
     params:add_separator('midi')
     for i,midi_dest in ipairs(eggs.midi_dests) do

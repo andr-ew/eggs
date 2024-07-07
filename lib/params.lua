@@ -37,15 +37,37 @@ end
 function p.add_engine_params()
     -- params:add_separator('sep_engine_params', eggs.current_engine)
 
+    params:add_separator('sep_engine_params', 'engine - params')
     params:add{
         id = 'eggs_param_none', name = 'none', type = 'control', controlspec = cs.new(),
     }
     params:hide('eggs_param_none')
 
     eggs.engines.init[eggs.current_engine]()
+
+    params:add_separator('sep_engine_options', 'engine - track options')
     
     for i, dest in ipairs(eggs.engine_dests) do
-        params:add_group('engine_dests_'..i, 'track '..i..' options', dest.params_count)
+        params:add_group('engine_dests_'..i, 'track '..i, dest.params_count)
+        dest:add_params()
+    end
+end
+
+function p.add_nb_params()
+    params:add_separator('sep_nb', 'nb')
+    for i = 1,4 do
+        nb:add_param('nb_voice_'..i, 'track '..i..' voice')
+    end
+
+    params:add{
+        id = 'eggs_param_none_2', name = 'none', type = 'control', controlspec = cs.new(),
+    }
+    params:hide('eggs_param_none_2')
+
+    nb:add_player_params()
+
+    for i, dest in ipairs(eggs.nb_dests) do
+        params:add_group('nb_dests_'..i, 'track '..i..' options', dest.params_count)
         dest:add_params()
     end
 end
