@@ -12,11 +12,11 @@ a spiritual successor to [synecdoche](https://github.com/andr-ew/prosody?tab=rea
 
 - [norns](https://github.com/p3r7/awesome-monome-norns) (220321 or later)
 - [grid](https://monome.org/docs/grid/) (128 or 64)
-- crow (main variant only)
 
 **also supported**
 
 - midi
+- crow
 - [just friends](https://www.whimsicalraps.com/products/just-friends) (synth mode)
 
 ## install
