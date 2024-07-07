@@ -6,7 +6,6 @@
 -- version 1.0.0 @andrew
 --
 -- required: grid (any size)
---           crow
 --
 -- documentation:
 -- github.com/andr-ew/eggs
