@@ -12,12 +12,13 @@ a spiritual successor to [synecdoche](https://github.com/andr-ew/prosody?tab=rea
 
 - [norns](https://github.com/p3r7/awesome-monome-norns) (220321 or later)
 - [grid](https://monome.org/docs/grid/) (128 or 64)
-- crow (main variant only)
 
 **also supported**
 
 - midi
+- crow
 - [just friends](https://www.whimsicalraps.com/products/just-friends) (synth mode)
+- anything supported by [nb](https://llllllll.co/t/n-b-et-al-v0-1/60374)
 
 ## install
 
@@ -32,14 +33,14 @@ in the maiden [REPL](https://monome.org/docs/norns/image/wifi_maiden-images/inst
 ![diagram of the grid interface. text description forthcoming](/lib/doc/eggs.png)
 ![diagram of the 64 grid interface. text description forthcoming](/lib/doc/eggs_64.png)
 
-**track focus:** in the main variant, tracks are as follows:
+**track focus:** selects tracks 1-4. by default, tracks are mapped as follows:
 
 | | |
 | -- | -- |
-| midi | just friends |
+| engine | just friends |
 | crow 1 + 2 | crow 3 + 4 |
 
-in **eggs/midi-only**, all tracks are midi
+each track can also be assigned to midi or [nb](https://llllllll.co/t/n-b-et-al-v0-1/60374) under PARAMS > destination
 
 **keymap:** grid keyboard. edit the tuning using **scale** & **key**
 
@@ -117,7 +118,7 @@ in **eggs/midi-only**, all tracks are midi
 
 ## modulation
 
-most params on screen + grid can be mapped to one of 4 destinations:
+most params on screen + grid can be mapped to one of 4 modulation sources:
 - crow input 1
 - crow input 2
 - track 3 cv (crow output 1)
@@ -136,4 +137,6 @@ if there's an engine you'd like to use with eggs that's not included in this lis
 
 ## macros
 
-on the midi track(s), there are 3 pages of macros. these macros can be assigned to address either an outgoing midi cc, or any param found in the selected engine or n.b. voice. configuration is found under PARAMS > midi out [#] > macros. if using midi CC you can set the CC# of each of the CCs available using the "address" params.
+on engine & nb tracks, there are 3 pages of macros. these macros can be assigned to address any param found in the selected engine voice. configuration is found under PARAMS > engine/nb > track options > macros.
+
+on a midi track, there are 3 pages of outgoing midi cc controls, each of which can be configured to output cc # 0-127 under PARAMS > midi > track options > midi CCs
