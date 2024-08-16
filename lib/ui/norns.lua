@@ -225,6 +225,8 @@ end
 
 local function App()
     local _map = Key.momentary()
+
+    local _mapping_modal = Patcher.screen.last_connection()
     
     local _tuning = Tuning()
 
@@ -254,6 +256,9 @@ local function App()
                     eggs.mapping = v>0
                     crops.dirty.screen = true
                     crops.dirty.grid = true
+
+                    patcher.last_assignment.src = nil
+                    patcher.last_assignment.dest = nil
                 end)
             }
 
@@ -262,26 +267,32 @@ local function App()
 
             local top = { 21, 36, 40, 43, }
 
-            if crops.device == 'screen' and crops.mode == 'redraw' then
-                for i = 1,2 do
-                    local out = eggs.crow_dests[i]
-                    for ii,k in ipairs{ 'cv', 'gate' } do
-                        screen.level(8)
-                        screen.move(eggs.x[i], top[2 + ii])
-                        screen.line_width(1)
-                        screen.line_rel(out.volts[k] * (eggs.w/2) * (1/10) * 1 + 1, 0)
-                        screen.stroke()
+            if eggs.mapping and patcher.last_assignment.src then
+                _mapping_modal{
+                    x_left = x[1], x_right = x[2], y = 30,
+                }
+            else
+                if crops.device == 'screen' and crops.mode == 'redraw' then
+                    for i = 1,2 do
+                        local out = eggs.crow_dests[i]
+                        for ii,k in ipairs{ 'cv', 'gate' } do
+                            screen.level(8)
+                            screen.move(eggs.x[i], top[2 + ii])
+                            screen.line_width(1)
+                            screen.line_rel(out.volts[k] * (eggs.w/2) * (1/10) * 1 + 1, 0)
+                            screen.stroke()
+                        end
                     end
+
+                    screen.display_png(norns.state.lib..'img/grid_bg.png', x[1], top[1] - 10)
                 end
 
-                screen.display_png(norns.state.lib..'img/grid_bg.png', x[1], top[1] - 10)
-            end
-
-            for i,_keymap in ipairs(_keymaps) do
-                _keymaps[i]{ 
-                    track = i, x = x[(i - 1)%2 + 1], y = top[(i - 1)//2 + 1], 
-                    voicing = eggs.track_dest[i].voicing, arq = params:get('mode_'..i) == eggs.ARQ,
-                }
+                for i,_keymap in ipairs(_keymaps) do
+                    _keymaps[i]{ 
+                        track = i, x = x[(i - 1)%2 + 1], y = top[(i - 1)//2 + 1], 
+                        voicing = eggs.track_dest[i].voicing, arq = params:get('mode_'..i) == eggs.ARQ,
+                    }
+                end
             end
             
             if crops.device == 'screen' and crops.mode == 'redraw' then
