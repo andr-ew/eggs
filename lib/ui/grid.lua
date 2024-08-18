@@ -481,14 +481,14 @@ local function Page(args)
             end
         elseif eggs.view_focus == eggs.SCALE then
             _degs_bg(nil, eggs.mapping, {
-                left = wide and 3 or 1, top = 1, level = 4,
+                left = -2 + (wide and 3 or 1), top = 1, level = 4,
                 -- width = 7, nudge = 6, -- 8x8 sizing
                 width = wide and 12 or 7, nudge = wide and 3 or 6,
             })
             for i,_deg in ipairs(_degs) do
                 local id = tune:get_param_id('enable_'..i)
                 _deg(id, eggs.mapping, {
-                    left = wide and 3 or 1, top = 1, levels = { 8, 15 },
+                    left = -2 + (wide and 3 or 1), top = 1, levels = { 8, 15 },
                     tune = tune, degree = i, 
                     -- width = 7, nudge = 6, -- 8x8 sizing
                     width = wide and 12 or 7, nudge = wide and 3 or 6,
@@ -499,7 +499,7 @@ local function Page(args)
             --TODO: support pattern recording & retriggers as I did in ndls
             local id = tune:get_param_id('tonic')
             _tonic(id, eggs.mapping, {
-                left = wide and 3 or 1, top = 1, levels = { 4, 15 },
+                left = -2 + (wide and 3 or 1), top = 1, levels = { 4, 15 },
                 -- width = 7, nudge = 6, -- 8x8 sizing
                 width = wide and 12 or 7, nudge = wide and 3 or 6,
                 -- state = Tune.of_param(eggs.get_tune(track), 'tonic'), 
