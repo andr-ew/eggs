@@ -80,6 +80,7 @@ local param_ids = {
 dest.param_ids = param_ids
         
 dest.name = 'just friends'
+dest.shortname = 'jf'
 
 dest.params_count = 12
 

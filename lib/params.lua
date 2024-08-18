@@ -37,7 +37,7 @@ end
 function p.add_engine_params()
     -- params:add_separator('sep_engine_params', eggs.current_engine)
 
-    params:add_separator('sep_engine_params', 'engine - params')
+    params:add_separator('sep_engine_params', 'engine: params')
     params:add{
         id = 'eggs_param_none', name = 'none', type = 'control', controlspec = cs.new(),
     }
@@ -45,7 +45,7 @@ function p.add_engine_params()
 
     eggs.engines.init[eggs.current_engine]()
 
-    params:add_separator('sep_engine_options', 'engine - track options')
+    params:add_separator('sep_engine_options', 'engine: track options')
     
     for i, dest in ipairs(eggs.engine_dests) do
         params:add_group('engine_dests_'..i, 'track '..i, dest.params_count)

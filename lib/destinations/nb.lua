@@ -12,6 +12,7 @@ function nb_dest:new(id)
     o.params_count = tab.count(o.param_ids) - 1 + (1 * eggs.macro_count) + 2
 
     o.name = 'nb dest '..id
+    o.shortname = 'nb'
         
     for ii = 1,eggs.macro_count do
         o.param_ids.macro[ii] = 'macro_'..ii..id_postfix

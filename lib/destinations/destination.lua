@@ -13,6 +13,8 @@ function destination:new(id_postfix)
     o.cc_value = {}
     o.cc_index = {}
 
+    o.name = ''
+    o.shortname = ''
     o.voicing = 'poly'
 
     o.held = {}

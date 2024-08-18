@@ -288,17 +288,44 @@ local function App()
                 end
 
                 for i,_keymap in ipairs(_keymaps) do
-                    _keymaps[i]{ 
+                    _keymaps[i]{
                         track = i, x = x[(i - 1)%2 + 1], y = top[(i - 1)//2 + 1], 
-                        voicing = eggs.track_dest[i].voicing, arq = params:get('mode_'..i) == eggs.ARQ,
+                        voicing = eggs.track_dest[i].voicing, 
+                        arq = params:get('mode_'..i) == eggs.ARQ,
                     }
                 end
             end
             
             if crops.device == 'screen' and crops.mode == 'redraw' then
-                local w = 88
+                do
+                    local w = 88
+                    screen.display_png(
+                        norns.state.lib
+                            ..'img/glyph_'..({ 
+                                'flower', 'leaf', 'wing_left', 'wing_right' 
+                            })[eggs.track_focus]
+                            ..'.png', 
+                        (128/2) - (w/2), 
+                        -6
+                    )
+                end
+                for i = 1,eggs.track_count do
+                    local size = eggs.track_count / 2
+                    local column = (i - 1) % size
+                    local row = (i - 1) // size
+                    local mar = 3
+                    local w = 9
+                    local h = 9
 
-                screen.display_png(norns.state.lib..'img/glyph_flower.png', (128/2) - (w/2), -5)
+                    local x = eggs.x[3] - (size - 1 - column)*(w + mar) - mar
+                    local y = eggs.e[1].y + h*row
+
+                    screen.font_face(1)
+                    screen.font_size(8)
+                    screen.move(x, y)
+                    screen.level(i == eggs.track_focus and 15 or 4)
+                    screen.text(eggs.track_dest[i].shortname)
+                end
             end
         else
             _tuning{ track = eggs.track_focus, view = eggs.view_focus }

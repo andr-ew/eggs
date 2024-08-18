@@ -24,6 +24,7 @@ function midi_dest:new(id)
     o.params_count = tab.count(o.param_ids) - 3 + 2 + (2 * eggs.cc_count) + 1
 
     o.name = 'midi dest '..id
+    o.shortname = 'm'
         
     o.cc_value_names = {}
             

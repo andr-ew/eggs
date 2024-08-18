@@ -163,6 +163,7 @@ for i = 1,2 do
     end
 
     dest.name = 'output '..jacks.cv..' + '..jacks.gate
+    dest.shortname = '^^'
 
     local param_ids = {
         tuning_preset = 'tuning_preset_crow_dests_'..i,

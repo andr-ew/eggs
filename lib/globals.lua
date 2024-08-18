@@ -1,13 +1,13 @@
 local eggs = {}                                               
 
 do
-    local mar = { left = 2, top = 1, right = 2, bottom = 2 }
+    local mar = { left = 2, top = 1, right = 6, bottom = 2 }
     local top, bottom = mar.top, 64-mar.bottom
     local left, right = mar.left, 128-mar.right
     local w = 128 - mar.left - mar.right
     local h = 64 - mar.top - mar.bottom
     local mul = { x = (right - left) / 2, y = (bottom - top) / 2 }
-    local x = { left, left + 128/2, [1.5] = 24, right  }
+    local x = { left, 128/2, [1.5] = 24, right  }
     local y = { top, bottom - 22, bottom, [1.5] = 20, }
     eggs.x, eggs.y, eggs.w, eggs.h = x, y, w, h
 
