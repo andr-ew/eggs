@@ -25,6 +25,7 @@ cs = require 'controlspec'
 
 pattern_time = include 'lib/pattern_time_extended/pattern_time_extended' --pattern_time fork
 mute_group = include 'lib/pattern_time_extended/mute_group'              --pattern_time mute groups
+pattern_param_factory = include 'lib/pattern_time_extended/params'       --pattern_time params
 
 include 'lib/crops/core'                                    --crops, a UI component framework
 Grid = include 'lib/crops/components/grid'
@@ -195,7 +196,9 @@ function init()
         
         crow_dest.add_params()
     end
+
     eggs.params.add_keymap_params()
+    eggs.params.add_pattern_params()
 
     params:add_separator('patcher')
     params:add_group('assignments', #patcher.destinations)

@@ -78,6 +78,7 @@ end
 
 local pat_count = { mono = 4, poly = 4, arq = 4, aux = 2 }
 eggs.pattern_groups = {}
+eggs.pattern_factories = {}
 eggs.mute_groups = {}
 eggs.pattern_shims = {}
 
@@ -87,6 +88,19 @@ for i = 1,eggs.track_count do
         for ii = 1,pat_count[k] do
             eggs.pattern_groups[i][k][ii] = pattern_time.new()
         end
+    end
+    
+    eggs.pattern_factories[i] = {}
+    for _,k in ipairs({ 'mono', 'poly', 'arq' }) do
+        eggs.pattern_factories[i][k] = pattern_param_factory:new(
+            'pattern_'..k, 'group', eggs.pattern_groups[i][k]
+        )
+    end
+    eggs.pattern_factories[i].aux = {}
+    for ii = 1,pat_count.aux do
+        eggs.pattern_factories[i].aux[ii] = pattern_param_factory:new(
+            'pattern_aux_'..ii, 'single', eggs.pattern_groups[i].aux[ii]
+        )
     end
 
     eggs.mute_groups[i] = {

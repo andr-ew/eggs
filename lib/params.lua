@@ -172,6 +172,37 @@ function p.add_keymap_params()
     end
 end
 
+function p.add_pattern_params()
+    params:add_separator('patterns')
+
+    local action = function() 
+        crops.dirty.grid = true; crops.dirty.screen = true
+    end
+
+    for i = 1,eggs.track_count do
+        local count = 0
+        do     
+            for _,k in ipairs({ 'mono', 'poly', 'arq' }) do
+                count = count + 1 + eggs.pattern_factories[i][k].params_count
+            end
+            for ii,_ in ipairs(eggs.pattern_factories[i].aux) do
+                count = count + 1 + eggs.pattern_factories[i].aux[ii].params_count
+            end
+        end
+
+        params:add_group('patterns_track_'..i, 'track '..i, count)
+
+        for _,k in ipairs({ 'mono', 'poly', 'arq' }) do
+            params:add_separator('sep_patterns_'..i..'_'..k, 'mode: '..k)
+            eggs.pattern_factories[i][k]:add_params(action)
+        end
+        for ii,_ in ipairs(eggs.pattern_factories[i].aux) do
+            params:add_separator('sep_patterns_'..i..'_aux_'..ii, 'aux pattern '..ii)
+            eggs.pattern_factories[i].aux[ii]:add_params(action)
+        end
+    end
+end
+
 function p.add_pset_params()
     params:add_separator('pset')
 
