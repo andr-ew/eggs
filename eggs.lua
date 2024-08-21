@@ -198,7 +198,7 @@ function init()
     end
 
     eggs.params.add_keymap_params()
-    eggs.params.add_pattern_params()
+    -- eggs.params.add_pattern_params()
 
     params:add_separator('patcher')
     params:add_group('assignments', #patcher.destinations)
