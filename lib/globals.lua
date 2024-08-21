@@ -93,21 +93,23 @@ for i = 1,eggs.track_count do
     eggs.pattern_factories[i] = {}
     for _,k in ipairs({ 'mono', 'poly', 'arq' }) do
         eggs.pattern_factories[i][k] = pattern_param_factory:new(
-            'pattern_'..k, 'group', eggs.pattern_groups[i][k]
+            'pattern_track_'..i..'_'..k, 'group', eggs.pattern_groups[i][k]
         )
     end
     eggs.pattern_factories[i].aux = {}
     for ii = 1,pat_count.aux do
         eggs.pattern_factories[i].aux[ii] = pattern_param_factory:new(
-            'pattern_aux_'..ii, 'single', eggs.pattern_groups[i].aux[ii]
+            'pattern_track_'..i..'_aux_'..ii, 'single', eggs.pattern_groups[i].aux[ii]
         )
     end
 
-    eggs.mute_groups[i] = {
-        mono = mute_group.new(eggs.pattern_groups[i].mono),
-        poly = mute_group.new(eggs.pattern_groups[i].poly),
-        arq = mute_group.new(eggs.pattern_groups[i].arq),
-    }
+    eggs.mute_groups[i] = {}
+    for _,k in ipairs({ 'mono', 'poly', 'arq' }) do
+        eggs.mute_groups[i][k] = mute_group.new(
+            eggs.pattern_groups[i][k], nil, 
+            eggs.pattern_factories[i][k].param_ids
+        )
+    end
 
     eggs.pattern_shims[i] = {}
     for k,mute_group in pairs(eggs.mute_groups[i]) do
