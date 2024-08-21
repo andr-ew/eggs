@@ -242,8 +242,8 @@ local function Page(args)
 
     local _arq = Arq{
         arq = eggs.arqs[track],
-        pattern_group = eggs.pattern_groups[track].arq,
-        mute_group = eggs.pattern_shims[track].arq,
+        pattern_group = eggs.pattern_param_shims[track].arq,
+        mute_group = eggs.pattern_keymap_shims[track].arq,
         snapshot_count = eggs.snapshot_count,
     }
 
@@ -349,7 +349,7 @@ local function Page(args)
                 for i = 1, wide and #eggs.pattern_groups[track].poly or 1 do
                     _patrecs.manual[i](nil, eggs.mapping, {
                         x = -2 + 4 + i - 1, y = 1,
-                        pattern = eggs.pattern_groups[track][voicing][i],
+                        pattern = eggs.pattern_param_shims[track][voicing][i],
                     })
                 end
                 
