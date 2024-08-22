@@ -150,59 +150,33 @@ local function Rate_reverse()
     local _rate_small = Patcher.grid.destination(Produce.grid.integer_trigger())
 
     return function(props)
-        local pattern = props.mute_group:get_playing_pattern()
         local wide = props.wide
+        local prefix = 'pattern_track_'..props.track..'_'..props.voicing
 
-        if pattern then
-            _reverse(nil, eggs.mapping, {
-                x = -2 + 4, y = 2, levels = { 4, 15 },
-                state = {
-                    pattern.reverse and 1 or 0,
-                    function(v)
-                        pattern:set_reverse(v == 1)
-
-                        crops.dirty.grid = true
-                    end
-                }
-            })
-            do
-                local tf = pattern.time_factor
-                local state_rate = {
-                    (tf < 1) and ((1/tf) - 1) or ((-tf) + 1),
-                    function(v)
-                        pattern.time_factor = (v >= 0) and (1/(v + 1)) or (-(v - 1))
-
-                        crops.dirty.grid = true
-                    end
-                }
-
-                if wide then
-                    -- _rate_mark(nil, eggs.mapping, {
-                    --     x = 8, y = 2, level = 4,
-                    -- })
-                    _rate(nil, eggs.mapping, {
-                        x = -2 + 5, y = 2, size = 7, min = -3,
-                        state = state_rate
-                    })
-                    _loop(nil, eggs.mapping, {
-                        x = -2 + 12, y = 2, levels = { 4, 15 },
-                        state = {
-                            pattern.loop and 1 or 0,
-                            function(v)
-                                pattern:set_loop(v == 1)
-
-                                crops.dirty.grid = true
-                            end
-                        }
-                    })
-                else
-                    _rate_small(nil, eggs.mapping, {
-                        x = -2 + 5, y = 2, size = 2,
-                        levels = { 0, 15 }, wrap = false,
-                        min = -8, max = 8,
-                        state = state_rate,
-                    })
-                end
+        _reverse(prefix..'_reverse', eggs.mapping, {
+            x = -2 + 4, y = 2, levels = { 4, 15 },
+            state = eggs.of_param(prefix..'_reverse')
+        })
+        do
+            if wide then
+                -- _rate_mark(nil, eggs.mapping, {
+                --     x = 8, y = 2, level = 4,
+                -- })
+                _rate(prefix..'_time_factor', eggs.mapping, {
+                    x = -2 + 5, y = 2, size = 7, min = -3,
+                    state = eggs.of_param(prefix..'_time_factor')
+                })
+                _loop(prefix..'_loop', eggs.mapping, {
+                    x = -2 + 12, y = 2, levels = { 4, 15 },
+                    state = eggs.of_param(prefix..'_loop')
+                })
+            else
+                _rate_small(prefix..'_time_factor', eggs.mapping, {
+                    x = -2 + 5, y = 2, size = 2,
+                    levels = { 0, 15 }, wrap = false,
+                    min = -8, max = 8,
+                    state = eggs.of_param(prefix..'_time_factor')
+                })
             end
         end
     end
@@ -242,7 +216,7 @@ local function Page(args)
 
     local _arq = Arq{
         arq = eggs.arqs[track],
-        pattern_group = eggs.pattern_param_shims[track].arq,
+        pattern_group = eggs.pattern_groups[track].arq,
         mute_group = eggs.pattern_keymap_shims[track].arq,
         snapshot_count = eggs.snapshot_count,
     }
@@ -349,7 +323,7 @@ local function Page(args)
                 for i = 1, wide and #eggs.pattern_groups[track].poly or 1 do
                     _patrecs.manual[i](nil, eggs.mapping, {
                         x = -2 + 4 + i - 1, y = 1,
-                        pattern = eggs.pattern_param_shims[track][voicing][i],
+                        pattern = eggs.pattern_groups[track][voicing][i],
                     })
                 end
                 
@@ -373,7 +347,7 @@ local function Page(args)
                     end
 
                     _rate_rev{
-                        mute_group = eggs.mute_groups[track][voicing], wide = wide,
+                        track = track, voicing = voicing, wide = wide,
                     }
                     if not wide then
                         _view_scroll{

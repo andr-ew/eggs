@@ -96,7 +96,7 @@ end
 
 local pat_count = { mono = 4, poly = 4, arq = 4, aux = 2 }
 eggs.pattern_groups = {}
-eggs.pattern_param_shims = {}
+-- eggs.pattern_param_shims = {}
 eggs.pattern_factories = {}
 eggs.mute_groups = {}
 eggs.pattern_keymap_shims = {}
@@ -122,15 +122,15 @@ for i = 1,eggs.track_count do
         )
     end
 
-    eggs.pattern_param_shims[i] = {}
-    for _,k in ipairs({ 'mono', 'poly', 'arq' }) do
-        eggs.pattern_param_shims[i][k] = eggs.pattern_factories[i][k]:get_shim(eggs.set_param)
-    end
+    -- eggs.pattern_param_shims[i] = {}
+    -- for _,k in ipairs({ 'mono', 'poly', 'arq' }) do
+    --     eggs.pattern_param_shims[i][k] = eggs.pattern_factories[i][k]:get_shim(eggs.set_param)
+    -- end
 
     eggs.mute_groups[i] = {}
     for _,k in ipairs({ 'mono', 'poly', 'arq' }) do
-        -- eggs.mute_groups[i][k] = mute_group.new(eggs.pattern_groups[i][k])
-        eggs.mute_groups[i][k] = mute_group.new(eggs.pattern_param_shims[i][k])
+        eggs.mute_groups[i][k] = mute_group.new(eggs.pattern_groups[i][k])
+        -- eggs.mute_groups[i][k] = mute_group.new(eggs.pattern_param_shims[i][k])
     end
 
     eggs.pattern_keymap_shims[i] = {}
