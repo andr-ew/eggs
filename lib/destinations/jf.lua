@@ -142,6 +142,7 @@ dest.add_params = function(_)
             crops.dirty.screen = true
         end
     }
+    --TODO: clear held{} table ???
     params:add{
         id = param_ids.panic, name = 'panic !',
         type = 'binary', behavior = 'trigger',

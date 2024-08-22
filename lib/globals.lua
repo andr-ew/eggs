@@ -76,10 +76,30 @@ local function process_param(id, v)
     params:set(id, v) 
 end
 
+eggs.set_param = function(id, v)
+    local t = { 'param', id, v }
+    process_param(id, v)
+
+    -- for i,mute_groups in ipairs(eggs.mute_groups) do
+    --     for k,mute_group in pairs(mute_groups) do
+    --         mute_group:watch(t)
+    --     end
+    -- end
+    for i = 1,eggs.track_count do
+        for k,_ in pairs(eggs.pattern_groups[i]) do
+            for ii,pat in ipairs(eggs.pattern_groups[i][k]) do
+                pat:watch(t)
+            end
+        end
+    end
+end
+
 local pat_count = { mono = 4, poly = 4, arq = 4, aux = 2 }
 eggs.pattern_groups = {}
+-- eggs.pattern_param_shims = {}
+eggs.pattern_factories = {}
 eggs.mute_groups = {}
-eggs.pattern_shims = {}
+eggs.pattern_keymap_shims = {}
 
 for i = 1,eggs.track_count do
     eggs.pattern_groups[i] = { mono = {}, poly = {}, arq = {}, aux = {} }
@@ -88,14 +108,32 @@ for i = 1,eggs.track_count do
             eggs.pattern_groups[i][k][ii] = pattern_time.new()
         end
     end
+    
+    eggs.pattern_factories[i] = {}
+    for _,k in ipairs({ 'mono', 'poly', 'arq' }) do
+        eggs.pattern_factories[i][k] = pattern_param_factory:new(
+            'pattern_track_'..i..'_'..k, 'group', eggs.pattern_groups[i][k]
+        )
+    end
+    eggs.pattern_factories[i].aux = {}
+    for ii = 1,pat_count.aux do
+        eggs.pattern_factories[i].aux[ii] = pattern_param_factory:new(
+            'pattern_track_'..i..'_aux_'..ii, 'single', eggs.pattern_groups[i].aux[ii]
+        )
+    end
 
-    eggs.mute_groups[i] = {
-        mono = mute_group.new(eggs.pattern_groups[i].mono),
-        poly = mute_group.new(eggs.pattern_groups[i].poly),
-        arq = mute_group.new(eggs.pattern_groups[i].arq),
-    }
+    -- eggs.pattern_param_shims[i] = {}
+    -- for _,k in ipairs({ 'mono', 'poly', 'arq' }) do
+    --     eggs.pattern_param_shims[i][k] = eggs.pattern_factories[i][k]:get_shim(eggs.set_param)
+    -- end
 
-    eggs.pattern_shims[i] = {}
+    eggs.mute_groups[i] = {}
+    for _,k in ipairs({ 'mono', 'poly', 'arq' }) do
+        eggs.mute_groups[i][k] = mute_group.new(eggs.pattern_groups[i][k])
+        -- eggs.mute_groups[i][k] = mute_group.new(eggs.pattern_param_shims[i][k])
+    end
+
+    eggs.pattern_keymap_shims[i] = {}
     for k,mute_group in pairs(eggs.mute_groups[i]) do
         local shim = {}
 
@@ -114,30 +152,12 @@ for i = 1,eggs.track_count do
             elseif t[1] == 'keymap' then shim.process(t[2]) end
         end
 
-        eggs.pattern_shims[i][k] = shim
+        eggs.pattern_keymap_shims[i][k] = shim
     end
 
     for _,pat in ipairs(eggs.pattern_groups[i].aux) do
         pat.process = function(t)
             if t[1] == 'param' then process_param(t[2], t[3]) end
-        end
-    end
-end
-
-eggs.set_param = function(id, v)
-    local t = { 'param', id, v }
-    process_param(id, v)
-
-    -- for i,mute_groups in ipairs(eggs.mute_groups) do
-    --     for k,mute_group in pairs(mute_groups) do
-    --         mute_group:watch(t)
-    --     end
-    -- end
-    for i = 1,eggs.track_count do
-        for k,_ in pairs(eggs.pattern_groups[i]) do
-            for ii,pat in ipairs(eggs.pattern_groups[i][k]) do
-                pat:watch(t)
-            end
         end
     end
 end
@@ -191,7 +211,7 @@ function eggs.set_dest(track, v)
         action_on = poly and function(...) eggs.track_dest[i]:note_on(...) end,
         action_off = poly and function(...) eggs.track_dest[i]:note_off(...) end,
         action = mono and function(...) eggs.track_dest[i]:set_note(...) end,
-        pattern = eggs.pattern_shims[i][voicing],
+        pattern = eggs.pattern_keymap_shims[i][voicing],
         size = eggs.keymap_size,
     }
 
