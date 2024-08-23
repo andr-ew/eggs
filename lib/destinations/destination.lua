@@ -147,7 +147,8 @@ function destination:add_macro_params(id_start, id_end)
         for ii = 1,eggs.macro_count do
             params:add {
                 type = 'option', id = param_ids.macro[ii], name = 'macro '..ii,
-                options = dest_names, action = function(v)
+                options = dest_names, default = 1,
+                action = function(v)
                     self.macro_ids[ii] = dest_ids[v]
                     crops.dirty.screen = true
                 end

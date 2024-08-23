@@ -209,6 +209,7 @@ function init()
     eggs.params.add_pset_params()
 
     params:read()
+    params:bang()
     
     crow_add()
 
