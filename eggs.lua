@@ -105,7 +105,7 @@ for i = 1,2 do
 end
 
 do
-    local stream = patcher.add_source{ name = 'cv 1', id = 'cv_1' }
+    local stream = patcher.add_source{ name = 'crow out 1', id = 'crow_out_1' }
     crow_dests[1].cv_callback = stream
 end
 do
@@ -122,7 +122,7 @@ do
     end
 
     stream, change = patcher.add_source{ 
-        name = 'gate 1', id = 'gate_1',
+        name = 'crow out 2', id = 'crow_out_2',
         assignment_callback = assignment_callback,
     }
 end
