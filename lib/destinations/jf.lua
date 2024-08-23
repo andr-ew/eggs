@@ -55,6 +55,8 @@ local function update_notes()
     end
 end
 
+dest.update_notes = update_notes
+
 -- local function setup()
 --     crow.ii.jf.event = function(e, value)
 --         tab.print(e)

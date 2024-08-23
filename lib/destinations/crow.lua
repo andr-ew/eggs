@@ -58,6 +58,8 @@ for i = 1,2 do
     dest.cv_callback = function(volts) end
     dest.gate_callback = function(state) end
 
+    dest.update_notes = function() end
+
     local function update_volts_cv()
         local x = (dest.index-1)%eggs.keymap_wrap + 1 + dest.column 
         local y = (dest.index-1)//eggs.keymap_wrap + 1 + dest.row 

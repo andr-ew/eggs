@@ -156,8 +156,10 @@ function p.add_keymap_params()
 
                 for track = 1,eggs.track_count do
                     if params:get(eggs.track_dest[track].param_ids.tuning_preset) == i then
+                        local dest = eggs.track_dest[i]
+
                         local arq = eggs.arqs[track]
-                        local voicing = eggs.track_dest[i].voicing
+                        local voicing = dest.voicing
                         local pat = eggs.mute_groups[track][voicing]:get_playing_pattern()
 
                         if params:get('mode_'..track) == eggs.ARQ then
@@ -165,6 +167,8 @@ function p.add_keymap_params()
                         elseif pat and (not pat.loop) then
                             pat:start()
                         end
+
+                        dest:update_notes()
                     end
                 end
             end)
