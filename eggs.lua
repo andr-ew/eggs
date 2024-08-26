@@ -3,10 +3,9 @@
 -- pitch gesture looper 
 -- for norns + grid
 --
--- version 0.4.1 @andrew
+-- version 1.0.0 @andrew
 --
 -- required: grid (any size)
---           crow
 --
 -- documentation:
 -- github.com/andr-ew/eggs
@@ -26,6 +25,7 @@ cs = require 'controlspec'
 
 pattern_time = include 'lib/pattern_time_extended/pattern_time_extended' --pattern_time fork
 mute_group = include 'lib/pattern_time_extended/mute_group'              --pattern_time mute groups
+pattern_param_factory = include 'lib/pattern_time_extended/params'       --pattern_time params
 
 include 'lib/crops/core'                                    --crops, a UI component framework
 Grid = include 'lib/crops/components/grid'
@@ -59,55 +59,43 @@ eggs.engines = include 'lib/engines'                        --DEFINE NEW ENGINES
 
 Components = include 'lib/ui/components'                    --ui components
 
-jf_out = include 'lib/jf_out'                               --just friends output
-midi_outs = include 'lib/midi_outs'                         --midi output
-crow_outs = include 'lib/crow_outs'                         --crow output
+destination = include 'lib/destinations/destination'        --destination prototype
+jf_dest = include 'lib/destinations/jf'                     --just friends output
+midi_dest = include 'lib/destinations/midi'                 --midi output
+engine_dest = include 'lib/destinations/engine'             --engine output
+nb_dest = include 'lib/destinations/nb'                     --nb output
+crow_dests = include 'lib/destinations/crow'                --crow output
 
-eggs.midi_out_count = 1
-midi_outs.init(eggs.midi_out_count)
+--setup destinations
 
---setup pages
+eggs.midi_dests = {}
+eggs.engine_dests = {}
+eggs.nb_dests = {}
 
-eggs.outs = {
-    midi_outs[1],
-    jf_out,
-    crow_outs[1],
-    crow_outs[2]
+for i = 1,eggs.track_count do
+    eggs.midi_dests[i] = midi_dest:new(i)
+    eggs.engine_dests[i] = engine_dest:new(i)
+    eggs.nb_dests[i] = nb_dest:new(i)
+end
+eggs.crow_dests = crow_dests
+eggs.jf_dest = jf_dest
+
+eggs.dests = {
+    { eggs.engine_dests[1], eggs.midi_dests[1], eggs.nb_dests[1] },
+    { jf_dest, eggs.engine_dests[2], eggs.midi_dests[2], eggs.nb_dests[2] },
+    { crow_dests[1], eggs.engine_dests[3], eggs.midi_dests[3], eggs.nb_dests[3] },
+    { crow_dests[2], eggs.engine_dests[4], eggs.midi_dests[4], eggs.nb_dests[4] },
+}
+eggs.dest_names = {
+    { 'engine', 'midi', 'nb' },
+    { 'jf', 'engine', 'midi', 'nb' },
+    { 'crow 1+2', 'engine', 'midi', 'nb' },
+    { 'crow 3+4', 'engine', 'midi', 'nb' },
 }
 
-eggs.keymaps = {
-    [1] = keymap.poly.new{
-        action_on = midi_outs[1].note_on,
-        action_off = midi_outs[1].note_off,
-        pattern = eggs.pattern_shims[1].manual,
-        size = eggs.keymap_size,
-    },
-    [2] = keymap.poly.new{
-        action_on = jf_out.note_on,
-        action_off = jf_out.note_off,
-        pattern = eggs.pattern_shims[2].manual,
-        size = eggs.keymap_size,
-    },
-    [3] = keymap.mono.new{
-        action = crow_outs[1].set_note,
-        pattern = eggs.pattern_shims[3].manual,
-        size = eggs.keymap_size,
-    },
-    [4] = keymap.mono.new{
-        action = crow_outs[2].set_note,
-        pattern = eggs.pattern_shims[4].manual,
-        size = eggs.keymap_size,
-    }    
-}
-    
-eggs.arqs[1].action_on = midi_outs[1].note_on
-eggs.arqs[1].action_off = midi_outs[1].note_off
-eggs.arqs[2].action_on = jf_out.note_on
-eggs.arqs[2].action_off = jf_out.note_off
-eggs.arqs[3].action_on = function(idx) crow_outs[1].set_note(idx, 1) end
-eggs.arqs[3].action_off = function(idx) crow_outs[1].set_note(idx, 0) end
-eggs.arqs[4].action_on = function(idx) crow_outs[2].set_note(idx, 1) end
-eggs.arqs[4].action_off = function(idx) crow_outs[2].set_note(idx, 0) end
+for i = 1,eggs.track_count do
+    eggs.set_dest(i, 1)
+end
 
 --set up modulation sources
 
@@ -117,24 +105,24 @@ for i = 1,2 do
 end
 
 do
-    local stream = patcher.add_source{ name = 'cv 1', id = 'cv_1' }
-    crow_outs[1].cv_callback = stream
+    local stream = patcher.add_source{ name = 'crow out 1', id = 'crow_out_1' }
+    crow_dests[1].cv_callback = stream
 end
 do
     local stream, change
 
     local function assignment_callback(mode)
         if mode == 'stream' then
-            crow_outs[1].gate_callback = function(state)
+            crow_dests[1].gate_callback = function(state)
                 stream(state and 5 or 0)
             end
         elseif mode == 'change' then
-            crow_outs[1].gate_callback = change
+            crow_dests[1].gate_callback = change
         end
     end
 
     stream, change = patcher.add_source{ 
-        name = 'gate 1', id = 'gate_1',
+        name = 'crow out 2', id = 'crow_out_2',
         assignment_callback = assignment_callback,
     }
 end
@@ -142,8 +130,8 @@ end
 --set up crow
 
 local function crow_add()
-    for _,out in ipairs(crow_outs) do
-        out.add()
+    for _,dest in ipairs(crow_dests) do
+        dest.add()
     end
     for _,action in ipairs(add_actions) do action() end
 end
@@ -162,11 +150,14 @@ params.action_read = eggs.params.action_read
 params.action_write = eggs.params.action_write
 params.action_delete = eggs.params.action_delete
 
+params:add_separator('destination')
+eggs.params.add_destination_params()
+
 params:add_separator('sep_engine', 'engine')
 eggs.params.add_engine_selection_param()
 
 params:read(nil, true) --read a first time before init to check the engine
-params:lookup_param('engine'):bang()
+params:lookup_param('engine_eggs'):bang()
 
 --create, connect UI components
 
@@ -177,7 +168,7 @@ _app = {
 
 crops.connect_enc(_app.norns)
 crops.connect_key(_app.norns)
-crops.connect_screen(_app.norns)
+crops.connect_screen(_app.norns, 60)
     
 --init/cleanup
 
@@ -187,30 +178,27 @@ function init()
     --params-stuff post-init
 
     eggs.params.add_engine_params()
-
-    params:add_separator('nb')
-    for i = 1,eggs.midi_out_count do
-        nb:add_param('voice_'..i, 'voice '..i)
-        nb:add_player_params()
-    end
+    eggs.params.add_nb_params()
 
     params:add_separator('midi')
-    for i,midi_out in ipairs(midi_outs) do
-        params:add_group('midi_outs_'..i, midi_out.name, midi_out.params_count)
-        midi_out.add_params()
+    for i,midi_dest in ipairs(eggs.midi_dests) do
+        params:add_group('midi_dests_'..i, 'track '..i..' options', midi_dest.params_count)
+        midi_dest:add_params()
     end
 
     params:add_separator('just friends')
-    params:add_group('jf_out', jf_out.name, jf_out.params_count)
-    jf_out.add_params()
+    params:add_group('jf_dest', jf_dest.name, jf_dest.params_count)
+    jf_dest.add_params()
 
     params:add_separator('crow outputs')
-    for i,crow_out in ipairs(crow_outs) do
-        params:add_group('crow_outs_pair_'..i, crow_out.name, crow_out.params_count)
+    for i,crow_dest in ipairs(crow_dests) do
+        params:add_group('crow_dests_pair_'..i, crow_dest.name, crow_dest.params_count)
         
-        crow_out.add_params()
+        crow_dest.add_params()
     end
+
     eggs.params.add_keymap_params()
+    eggs.params.add_pattern_params()
 
     params:add_separator('patcher')
     params:add_group('assignments', #patcher.destinations)
@@ -221,6 +209,7 @@ function init()
     eggs.params.add_pset_params()
 
     params:read()
+    params:bang() ---- ?????
     
     crow_add()
 

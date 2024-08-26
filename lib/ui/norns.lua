@@ -13,7 +13,7 @@ local function Tuning()
     return function(props)
         local track = props.track
         local view = props.view
-        local out = eggs.outs[track]
+        local out = eggs.track_dest[track]
         local tune = eggs.tunes[params:get(out.param_ids.tuning_preset)]
 
         _degs{
@@ -30,7 +30,7 @@ local function Tuning()
                     state = crops.of_param(id)
                 }
                 _scale.screen{
-                    x = x[1], y = y[1],
+                    x = x[1], y = e[1].y,
                     text = { scale = params:string(id) }
                 }
             end
@@ -68,7 +68,7 @@ local function Tuning()
                     state = crops.of_param(id)
                 }
                 _tuning.screen{
-                    x = x[1], y = y[1],
+                    x = x[1], y = e[1].y,
                     text = { tuning = params:string(id) }
                 }
             end
@@ -152,14 +152,97 @@ local function Change_engine_modal()
     end
 end
 
+local function Keymap()
+    -- local _frets = Tune.screen.fretboard()
+
+    return function(props)
+        local track = props.track
+        local out = eggs.track_dest[track]
+        local tune = eggs.tunes[params:get(out.param_ids.tuning_preset)]
+        local keymap = eggs.keymaps[track]
+        local arq = eggs.arqs[track]
+
+        -- can't use cause it's noticibly slower with all the single pixel draw calls :/
+        -- _frets{
+        --     x = props.x, y = props.y, 
+        --     size = eggs.keymap_size, wrap = eggs.keymap_wrap,
+        --     flow = 'right', flow_wrap = 'up',
+        --     levels = { 0, 2 },
+        --     tune = tune,
+        --     toct = 0, --?
+        --     column_offset = out.column,
+        --     row_offset = out.row,
+        -- }
+
+        local lvl_key = 10
+        local mask_props = {
+            x = 1, y = 1, size = eggs.keymap_size, wrap = eggs.keymap_wrap,
+            flow = 'right', flow_wrap = 'up',
+        }
+
+        if props.arq then
+            local index = arq.sequence[arq.step]
+            local gate = arq.gate
+            
+            if index and gate > 0 then
+                local x, y = Grid.util.index_to_xy(mask_props, index)
+                screen.level(lvl_key)
+                screen.pixel(
+                    (x - 1)*2 + props.x, 
+                    (y - 1)*2 + props.y
+                )
+                screen.fill()
+            end
+        elseif props.voicing == 'poly' then
+            local keys = keymap:get_state()[1]
+
+            for i = 1,eggs.keymap_size do
+                if (keys[i] or 0) > 0 then
+                    local x, y = Grid.util.index_to_xy(mask_props, i)
+
+                    screen.level(lvl_key)
+                    screen.pixel(
+                        (x - 1)*2 + props.x, 
+                        (y - 1)*2 + props.y
+                    )
+                    screen.fill()
+                end
+            end
+        else
+            local index, gate = table.unpack(keymap:get_state()[1] or { 1, 0 })
+            if gate > 0 then
+                local x, y = Grid.util.index_to_xy(mask_props, index)
+                screen.level(lvl_key)
+                screen.pixel(
+                    (x - 1)*2 + props.x, 
+                    (y - 1)*2 + props.y
+                )
+                screen.fill()
+            end
+        end
+    end
+end
+
 local function App()
     local _map = Key.momentary()
+
+    local _mapping_modal = Patcher.screen.last_connection()
     
     local _tuning = Tuning()
 
-    local _pages = {}
+    local _keymaps = {}
     for track = 1,eggs.track_count do
-        _pages[track] = eggs.outs[track].Components.norns.page()
+        -- _pages[track] = eggs.track_dest[track].Components.norns.page()
+        _keymaps[track] = Keymap()
+    end
+    
+    local _dest_pages = {}
+    for track,dests in ipairs(eggs.dests) do
+        _dest_pages[track] = {}
+
+        for i in ipairs(dests) do
+            _dest_pages[track][i] = eggs.dests[track][i].Components.norns.page()
+        end
     end
 
     local _change_engine_modal = Change_engine_modal()
@@ -173,10 +256,77 @@ local function App()
                     eggs.mapping = v>0
                     crops.dirty.screen = true
                     crops.dirty.grid = true
+
+                    patcher.last_assignment.src = nil
+                    patcher.last_assignment.dest = nil
                 end)
             }
 
-            _pages[eggs.track_focus]()
+            local i_dest = params:get('dest_track_'..eggs.track_focus)
+            _dest_pages[eggs.track_focus][i_dest]{ dest = eggs.track_dest[eggs.track_focus] }
+
+            local top = { 21, 36, 40, 43, }
+
+            if eggs.mapping and patcher.last_assignment.src then
+                _mapping_modal{
+                    x_left = x[1], x_right = x[2], y = 30,
+                }
+            else
+                if crops.device == 'screen' and crops.mode == 'redraw' then
+                    for i = 1,2 do
+                        local out = eggs.crow_dests[i]
+                        for ii,k in ipairs{ 'cv', 'gate' } do
+                            screen.level(8)
+                            screen.move(eggs.x[i], top[2 + ii])
+                            screen.line_width(1)
+                            screen.line_rel(out.volts[k] * (eggs.w/2) * (1/10) * 1 + 1, 0)
+                            screen.stroke()
+                        end
+                    end
+
+                    screen.display_png(norns.state.lib..'img/grid_bg.png', x[1], top[1] - 10)
+                end
+
+                for i,_keymap in ipairs(_keymaps) do
+                    _keymaps[i]{
+                        track = i, x = x[(i - 1)%2 + 1], y = top[(i - 1)//2 + 1], 
+                        voicing = eggs.track_dest[i].voicing, 
+                        arq = params:get('mode_'..i) == eggs.ARQ,
+                    }
+                end
+            end
+            
+            if crops.device == 'screen' and crops.mode == 'redraw' then
+                do
+                    local w = 88
+                    screen.display_png(
+                        norns.state.lib
+                            ..'img/glyph_'..({ 
+                                'flower', 'leaf', 'wing_left', 'wing_right' 
+                            })[eggs.track_focus]
+                            ..'.png', 
+                        (128/2) - (w/2), 
+                        -6
+                    )
+                end
+                for i = 1,eggs.track_count do
+                    local size = eggs.track_count / 2
+                    local column = (i - 1) % size
+                    local row = (i - 1) // size
+                    local mar = 3
+                    local w = 9
+                    local h = 9
+
+                    local x = eggs.x[3] - (size - 1 - column)*(w + mar) - mar
+                    local y = eggs.e[1].y + h*row
+
+                    screen.font_face(1)
+                    screen.font_size(8)
+                    screen.move(x, y)
+                    screen.level(i == eggs.track_focus and 15 or 4)
+                    screen.text(eggs.track_dest[i].shortname)
+                end
+            end
         else
             _tuning{ track = eggs.track_focus, view = eggs.view_focus }
         end

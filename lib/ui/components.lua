@@ -31,6 +31,11 @@ do
                 })
             end
             
+            if crops.mode == 'input' and crops.device == 'enc' then
+                patcher.last_assignment.src = nil
+                patcher.last_assignment.dest = nil
+            end
+            
             local src = patcher.get_assignment_of_destination(props.id) 
             local assigned = src and (src ~= 'none')
             

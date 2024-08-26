@@ -1,5 +1,77 @@
 local p = {}
 
+function p.add_destination_params()
+    for i = 1,eggs.track_count do
+        params:add{
+            id = 'dest_track_'..i, name = 'track '..i, 
+            type = 'option', options = eggs.dest_names[i],
+            action = function(v)
+                eggs.set_dest(i, v)
+
+                crops.dirty.screen = true
+                crops.dirty.grid = true
+            end
+        }
+    end
+end
+
+function p.add_engine_selection_param()
+    params:add{
+        id = 'engine_eggs', name = 'engine', type = 'option', options = eggs.engines.nicknames,
+        action = function(v)
+            local name = eggs.engines.names[v or 1]
+            local nickname = eggs.engines.nicknames[v or 1]
+
+            if not eggs.current_engine then
+                engine.name = name
+
+                eggs.current_engine = nickname
+            else
+                eggs.change_engine_modal = (nickname ~= eggs.current_engine)
+                crops.dirty.screen = true
+            end
+        end
+    }
+end
+
+function p.add_engine_params()
+    -- params:add_separator('sep_engine_params', eggs.current_engine)
+
+    params:add_separator('sep_engine_params', 'engine: params')
+    params:add{
+        id = 'eggs_param_none', name = 'none', type = 'control', controlspec = cs.new(),
+    }
+    params:hide('eggs_param_none')
+
+    eggs.engines.init[eggs.current_engine]()
+
+    params:add_separator('sep_engine_options', 'engine: track options')
+    
+    for i, dest in ipairs(eggs.engine_dests) do
+        params:add_group('engine_dests_'..i, 'track '..i, dest.params_count)
+        dest:add_params()
+    end
+end
+
+function p.add_nb_params()
+    params:add_separator('sep_nb', 'nb')
+    for i = 1,4 do
+        nb:add_param('nb_voice_'..i, 'track '..i..' voice')
+    end
+
+    params:add{
+        id = 'eggs_param_none_2', name = 'none', type = 'control', controlspec = cs.new(),
+    }
+    params:hide('eggs_param_none_2')
+
+    nb:add_player_params()
+
+    for i, dest in ipairs(eggs.nb_dests) do
+        params:add_group('nb_dests_'..i, 'track '..i..' options', dest.params_count)
+        dest:add_params()
+    end
+end
+
 function p.add_keymap_params()
     params:add_separator('keymap')
     for i = 1,eggs.track_count do
@@ -15,7 +87,8 @@ function p.add_keymap_params()
                     eggs.mute_groups[i].arq:stop()
                     eggs.arqs[i].sequence = {}
                 else
-                    eggs.mute_groups[i].manual:stop()
+                    local voicing = eggs.track_dest[i].voicing
+                    eggs.mute_groups[i][voicing]:stop()
                 end
                 if v ~= eggs.LATCH then
                     eggs.keymaps[i]:clear()
@@ -82,15 +155,20 @@ function p.add_keymap_params()
                 crops.dirty.screen = true
 
                 for track = 1,eggs.track_count do
-                    if params:get(eggs.outs[track].param_ids.tuning_preset) == i then
+                    if params:get(eggs.track_dest[track].param_ids.tuning_preset) == i then
+                        local dest = eggs.track_dest[i]
+
                         local arq = eggs.arqs[track]
-                        local pat = eggs.mute_groups[track].manual:get_playing_pattern()
+                        local voicing = dest.voicing
+                        local pat = eggs.mute_groups[track][voicing]:get_playing_pattern()
 
                         if params:get('mode_'..track) == eggs.ARQ then
                             if params:get(arq:pfix('loop')) == 0 then arq:restart() end
                         elseif pat and (not pat.loop) then
                             pat:start()
                         end
+
+                        dest:update_notes()
                     end
                 end
             end)
@@ -98,29 +176,35 @@ function p.add_keymap_params()
     end
 end
 
-function p.add_engine_selection_param()
-    params:add{
-        id = 'engine', name = 'engine', type = 'option', options = eggs.engines.nicknames,
-        action = function(v)
-            local name = eggs.engines.names[v or 1]
-            local nickname = eggs.engines.nicknames[v or 1]
+function p.add_pattern_params()
+    params:add_separator('patterns')
 
-            if not eggs.current_engine then
-                engine.name = name
+    local action = function() 
+        crops.dirty.grid = true; crops.dirty.screen = true
+    end
 
-                eggs.current_engine = nickname
-            else
-                eggs.change_engine_modal = (nickname ~= eggs.current_engine)
-                crops.dirty.screen = true
+    for i = 1,eggs.track_count do
+        local count = 0
+        do     
+            for _,k in ipairs({ 'mono', 'poly', 'arq' }) do
+                count = count + 1 + eggs.pattern_factories[i][k].params_count
+            end
+            for ii,_ in ipairs(eggs.pattern_factories[i].aux) do
+                count = count + 1 + eggs.pattern_factories[i].aux[ii].params_count
             end
         end
-    }
-end
 
-function p.add_engine_params()
-    params:add_separator('sep_engine_params', eggs.current_engine)
+        params:add_group('patterns_track_'..i, 'track '..i, count)
 
-    eggs.engines.init[eggs.current_engine]()
+        for _,k in ipairs({ 'mono', 'poly', 'arq' }) do
+            params:add_separator('sep_patterns_'..i..'_'..k, 'mode: '..k)
+            eggs.pattern_factories[i][k]:add_params(action)
+        end
+        for ii,_ in ipairs(eggs.pattern_factories[i].aux) do
+            params:add_separator('sep_patterns_'..i..'_aux_'..ii, 'aux pattern '..ii)
+            eggs.pattern_factories[i].aux[ii]:add_params(action)
+        end
+    end
 end
 
 function p.add_pset_params()
@@ -156,7 +240,7 @@ function p.action_read(file, silent, slot)
     print('pset action read', file, silent, slot)
 
     -- params:bang()
-    params:lookup_param('engine'):bang()
+    params:lookup_param('engine_eggs'):bang()
 
     if (not eggs.change_engine_modal) and (not silent) then
         local name = 'pset-'..string.format("%02d", slot)

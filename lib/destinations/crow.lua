@@ -1,4 +1,4 @@
-local crow_outs = { {}, {} }
+local crow_dests = { {}, {} }
 
 local TRANSIENT, SUSTAIN, CYCLE = 1,2,3
 local mode_names = { 'transient', 'sustain', 'cycle' }
@@ -24,48 +24,62 @@ local shape_nicknames = {
     'under',
     'rebound',
 }
+    
+local fps = 70
+clock.run(function() while true do
+    for i = 1,2 do
+        local off = i==2 and 2 or 0
+        local jacks = { cv = 1+off, gate = 2+off }
+        crow.output[jacks.cv].query()
+        crow.output[jacks.gate].query()
+        clock.sleep(1/fps)
+    end
+end end)
+
 
 for i = 1,2 do
     local off = i==2 and 2 or 0
     local jacks = { cv = 1+off, gate = 2+off }
     
-    local out = {}
+    local dest = {}
     
-    out.mode = SUSTAIN
-    out.preset = 2 + i
-    out.oct = 0
-    out.column = 0
-    out.row = -2
-    out.index = 0
-    out.volts = { cv = 0, gate = 0 }
-    out.patched = 1
+    dest.mode = SUSTAIN
+    dest.preset = 2 + i
+    dest.oct = 0
+    dest.column = 0
+    dest.row = -2
+    dest.index = 0
+    dest.volts = { cv = 0, gate = 0 }
+    dest.patched = 1
 
-    out.keyboard_gate = 0
-    out.manual_gate = 0
+    dest.keyboard_gate = 0
+    dest.manual_gate = 0
 
-    out.cv_callback = function(volts) end
-    out.gate_callback = function(state) end
+    dest.cv_callback = function(volts) end
+    dest.gate_callback = function(state) end
+
+    dest.update_notes = function() end
 
     local function update_volts_cv()
-        local x = (out.index-1)%eggs.keymap_wrap + 1 + out.column 
-        local y = (out.index-1)//eggs.keymap_wrap + 1 + out.row 
+        local x = (dest.index-1)%eggs.keymap_wrap + 1 + dest.column 
+        local y = (dest.index-1)//eggs.keymap_wrap + 1 + dest.row 
 
-        local cv = math.max(0, eggs.tunes[out.preset]:volts(x, y, nil, out.oct))
+        local cv = math.max(0, eggs.tunes[dest.preset]:volts(x, y, nil, dest.oct))
         crow.output[jacks.cv].volts = cv
-        out.cv_callback(cv)
+        dest.cv_callback(cv)
                 
         crops.dirty.screen = true
     end
 
     local function update_gate()
-        local state = ((out.keyboard_gate & out.patched) | out.manual_gate) > 0
+        local state = ((dest.keyboard_gate & dest.patched) | dest.manual_gate) > 0
 
-        if out.mode == SUSTAIN then
+        if dest.mode == SUSTAIN then
             crow.output[jacks.gate](state)
-            out.gate_callback(state)
+            dest.gate_callback(state)
         elseif state then 
             crow.output[jacks.gate]() 
-            out.gate_callback()
+            dest.gate_callback()
         end
     end
     
@@ -78,14 +92,14 @@ for i = 1,2 do
         crow.output[jacks.cv].slew = slew_enable * slew_time
     end
 
-    out.voicing = 'mono'
+    dest.voicing = 'mono'
 
-    out.set_note = function(idx, gate)
+    dest.set_note = function(_, idx, gate)
         if gate > 0 then
-            out.index = idx; update_volts_cv()
+            dest.index = idx; update_volts_cv()
         end
 
-        out.keyboard_gate = gate; update_gate()
+        dest.keyboard_gate = gate; update_gate()
     end
     
     local time = 0.04
@@ -116,21 +130,21 @@ for i = 1,2 do
         local lock = rt and "" or "lock{"
         local end_lock = rt and "" or "}"
 
-        if out.mode == TRANSIENT then
+        if dest.mode == TRANSIENT then
             crow.output[jacks.gate].action = "{"..
                 "to(dyn{ l = 7 }, dyn{a = 1}, "..shp.."),"..
                     lock..
                         "to(0, dyn{r = 1}, "..shp..")"..
                     end_lock..
                 "}"
-        elseif out.mode == SUSTAIN then
+        elseif dest.mode == SUSTAIN then
             crow.output[jacks.gate].action = "{"..
                 "held{ to(dyn{ l = 7 }, dyn{a = 1}, "..shp..") },"..
                 lock..
                     "to(0, dyn{r = 1}, "..shp..")"..
                 end_lock..
             "}"
-        elseif out.mode == CYCLE then
+        elseif dest.mode == CYCLE then
             crow.output[jacks.gate].action = "{"..
                 lock..
                     "loop{"..
@@ -144,35 +158,36 @@ for i = 1,2 do
         update_dyn()
     end
 
-    out.add = function()
+    dest.add = function()
         update_asl()
         update_slew()
         update_volts_cv()
     end
 
-    out.name = 'output '..jacks.cv..' + '..jacks.gate
+    dest.name = 'output '..jacks.cv..' + '..jacks.gate
+    dest.shortname = '^^'
 
     local param_ids = {
-        tuning_preset = 'tuning_preset_crow_outs_'..i,
-        oct = 'oct_crow_outs_'..i,
-        row = 'row_crow_outs_'..i,
-        column = 'column_crow_outs_'..i,
-        shape = 'shape_crow_outs_'..i,
-        mode = 'mode_crow_outs_'..i,
-        retrigger = 'retrigger_crow_outs_'..i,
-        time = 'time_crow_outs_'..i,
-        ramp = 'ramp_crow_outs_'..i,
-        level = 'level_crow_outs_'..i,
-        slew_enable = 'slew_enable_crow_outs_'..i,
-        slew_time = 'slew_time_crow_outs_'..i,
+        tuning_preset = 'tuning_preset_crow_dests_'..i,
+        oct = 'oct_crow_dests_'..i,
+        row = 'row_crow_dests_'..i,
+        column = 'column_crow_dests_'..i,
+        shape = 'shape_crow_dests_'..i,
+        mode = 'mode_crow_dests_'..i,
+        retrigger = 'retrigger_crow_dests_'..i,
+        time = 'time_crow_dests_'..i,
+        ramp = 'ramp_crow_dests_'..i,
+        level = 'level_crow_dests_'..i,
+        slew_enable = 'slew_enable_crow_dests_'..i,
+        slew_time = 'slew_time_crow_dests_'..i,
         trigger = 'trigger_'..i,
         patched = 'patched_'..i,
     }
-    out.param_ids = param_ids
+    dest.param_ids = param_ids
     
-    out.params_count = 2 + tab.count(param_ids)
+    dest.params_count = 2 + tab.count(param_ids)
 
-    out.add_params = function()
+    dest.add_params = function(_)
         params:add_separator('crow_fg_'..i, 'function generator')
 
         patcher.add_destination_and_param{
@@ -214,9 +229,9 @@ for i = 1,2 do
         }
         patcher.add_destination_and_param{
             id = param_ids.mode, name = 'mode',
-            type = 'option', options = mode_names, default = out.mode,
+            type = 'option', options = mode_names, default = dest.mode,
             action = function(v)
-                out.mode = v; update_asl()
+                dest.mode = v; update_asl()
 
                 crops.dirty.screen = true
             end,
@@ -234,9 +249,9 @@ for i = 1,2 do
         patcher.add_destination_and_param{
             id = param_ids.trigger, name = 'trigger',
             type = 'binary', 
-            behavior = 'momentary', default = out.manual_gate,
+            behavior = 'momentary', default = dest.manual_gate,
             action = function(v)
-                out.manual_gate = v; update_gate()
+                dest.manual_gate = v; update_gate()
 
                 crops.dirty.screen = true
             end,
@@ -244,9 +259,9 @@ for i = 1,2 do
         patcher.add_destination_and_param{
             id = param_ids.patched, name = 'patched',
             type = 'binary', 
-            behavior = 'toggle', default = out.patched,
+            behavior = 'toggle', default = dest.patched,
             action = function(v)
-                out.patched = v
+                dest.patched = v
 
                 params:set(param_ids.trigger, 0)
                 update_gate()
@@ -259,9 +274,9 @@ for i = 1,2 do
 
         params:add{
             type = 'number', id = param_ids.tuning_preset, name = 'tuning preset',
-            min = 1, max = #eggs.tunes, default = out.preset, 
+            min = 1, max = #eggs.tunes, default = dest.preset, 
             action = function(v) 
-                out.preset = v
+                dest.preset = v
 
                 for _,t in ipairs(eggs.tunes) do
                     t:update_tuning()
@@ -270,9 +285,9 @@ for i = 1,2 do
         }
         params:add{
             type = 'number', id = param_ids.oct, name = 'oct',
-            min = -5, max = 5, default = out.oct,
+            min = -5, max = 5, default = dest.oct,
             action = function(v) 
-                out.oct = v; update_volts_cv()
+                dest.oct = v; update_volts_cv()
 
                 crops.dirty.grid = true 
             end
@@ -282,23 +297,25 @@ for i = 1,2 do
             patcher.add_destination_and_param{
                 type = 'control', id = param_ids.column, name = 'column',
                 controlspec = cs.def{ 
-                    min = min, max = max, default = out.column * eggs.volts_per_column, 
+                    min = min, max = max, default = dest.column * eggs.volts_per_column, 
                     quantum = (1/(max - min)) * eggs.volts_per_column, units = 'v',
                 },
                 action = function(v) 
-                    out.column = v // eggs.volts_per_column; update_volts_cv()
+                    dest.column = v // eggs.volts_per_column; update_volts_cv()
 
                     crops.dirty.grid = true 
+                    crops.dirty.screen = true 
                 end
             }
         end
         patcher.add_destination_and_param{
             type = 'number', id = param_ids.row, name = 'row',
-            min = -16, max = 16, default = out.row,
+            min = -16, max = 16, default = dest.row,
             action = function(v) 
-                out.row = v; update_volts_cv()
+                dest.row = v; update_volts_cv()
 
                 crops.dirty.grid = true 
+                crops.dirty.screen = true 
             end
         }
         params:add{
@@ -323,21 +340,14 @@ for i = 1,2 do
 
     for k,jack in pairs(jacks) do
         crow.output[jack].receive = function(v)
-            out.volts[k] = v
+            dest.volts[k] = v
             crops.dirty.screen = true
         end
     end
 
-    local fps = 40
-    clock.run(function() while true do
-        crow.output[jacks.cv].query()
-        crow.output[jacks.gate].query()
-        clock.sleep(1/fps)
-    end end)
+    dest.Components = { norns = {} }
 
-    out.Components = { norns = {} }
-
-    out.Components.norns.page = function()
+    dest.Components.norns.page = function()
         local _e1 = Components.enc_screen.param()
         local _e2 = Components.enc_screen.param()
         local _e3 = Components.enc_screen.param()
@@ -352,20 +362,10 @@ for i = 1,2 do
             
             _k2{ id = param_ids.mode, id_hold = param_ids.retrigger, n = 2 }
             _k3{ id = param_ids.trigger, id_hold = param_ids.patched, n = 3 }
-
-            if crops.device == 'screen' and crops.mode == 'redraw' then
-                for ii,k in ipairs{ 'cv', 'gate' } do
-                    screen.level(8)
-                    screen.move(eggs.x[1], eggs.e[1].y + 2 + (ii + (i - 1)*2)*6)
-                    screen.line_width(1)
-                    screen.line_rel(out.volts[k] * eggs.w * (1/10) * 1 + 1, 0)
-                    screen.stroke()
-                end
-            end
         end
     end
 
-    crow_outs[i] = out
+    crow_dests[i] = dest
 end
 
-return crow_outs
+return crow_dests

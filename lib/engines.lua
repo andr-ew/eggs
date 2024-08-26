@@ -73,6 +73,33 @@ do
     end
 end
 
+-- mi-engines
+do
+    local nicknames = { 'macro-b', 'macro-p', 'modal-e', 'resonate-r' }
+    local names = { 'MacroB', 'MacroP', 'ModalE', 'ResonateR' }
+
+    for i,name in ipairs(names) do
+        local nickname = nicknames[i]
+
+        table.insert(engine_nicknames, nickname)
+        table.insert(engine_names, name)
+
+        init_engine[nickname] = function()
+            local path = 'mi-eng/lib/'..name..'_engine'
+            print('path:', path)
+            local class = include(path)
+            class.add_params()
+
+            function eggs.noteOn(note_id, hz)   
+                engine.noteOn(note_id, 0.8 * 127)
+            end
+            function eggs.noteOff(note_id)
+                engine.noteOff(0)
+            end
+        end
+    end
+end
+
 -- jhnn
 do
     local nickname = 'jhnn'
@@ -123,4 +150,4 @@ return {
     init = init_engine,
 }
 
---don't put any code down here please !
+--don't put any code down here, it wont run ! put it before "return", but after polysub
