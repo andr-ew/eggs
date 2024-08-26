@@ -118,7 +118,7 @@ each track can also be assigned to midi or [nb](https://llllllll.co/t/n-b-et-al-
 
 ## modulation
 
-most params on screen + grid can be mapped to one of 4 modulation sources:
+most params visible on norns or grid can be mapped to one of 4 modulation sources:
 - crow input 1
 - crow input 2
 - crow output 1 (track 3 cv)
