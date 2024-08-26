@@ -128,10 +128,16 @@ to map an on-screen param, just hold K1 and turn the encoder or press the key of
 
 ## engines
 
-the midi track(s) can optionally be routed to an internal supercollider engine running on norns itself. currently there is a choice of three engines selectable via the **engine** param:
+each engine track is routed to a single supercollider engine running on norns itself. there are a number of engines to choose from via the **engine** param:
 - polysub
 - [orgn](https://github.com/andr-ew/orgn)
 - [molly the poly](https://llllllll.co/t/molly-the-poly/21090)
+- [macro-b](https://llllllll.co/t/mi-engines/32338)
+- [macro-p](https://llllllll.co/t/mi-engines/32338)
+- [modal-e](https://llllllll.co/t/mi-engines/32338)
+- [resonate-r](https://llllllll.co/t/mi-engines/32338)
+
+after selecting an engine & exiting the params menu, you'll be prompted to restart the script by pressing K3
 
 if there's an engine you'd like to use with eggs that's not included in this list, I've written some [instructions](lib/doc/adding-an-engine.md) on how to add one.
 
