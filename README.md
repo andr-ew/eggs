@@ -121,8 +121,8 @@ each track can also be assigned to midi or [nb](https://llllllll.co/t/n-b-et-al-
 most params on screen + grid can be mapped to one of 4 modulation sources:
 - crow input 1
 - crow input 2
-- track 3 cv (crow output 1)
-- track 3 gate (crow output 2)
+- crow output 1 (track 3 cv)
+- crow output 2 (track 3 gate)
 
 to map an on-screen param, just hold K1 and turn the encoder or press the key of the associated param. to map a param on the grid, hold K1 and tap any of the keys associated with that param
 
