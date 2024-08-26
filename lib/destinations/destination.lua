@@ -196,7 +196,7 @@ destination.Components.norns.page_macros = function()
 
         for ii = 1,3 do
             local i_macro = (macro_focus - 1)*3 + ii
-            local id = props.dest.macro_ids[i_macro]
+            local id = props.dest.macro_ids[i_macro] or props.dest.macro_ids[1] -- ???
 
             _macros[ii]{
                 id = id, n = ii, is_dest = false,
