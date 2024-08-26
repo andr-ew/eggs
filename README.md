@@ -6,6 +6,11 @@ a multi-track gesture sequencer for norns, grid, crow, midi, and internal sounds
 
 a spiritual successor to [synecdoche](https://github.com/andr-ew/prosody?tab=readme-ov-file#synecdoche)
 
+## TL;DR
+
+it's [earthsea](https://llllllll.co/t/ash-a-small-collection/21349), but with four tracks and a lot of connectivity & tuning options. but also it's my own take on things & it doesn't do one of the main things earthsea does. there's a sequencer inspired by cheat codes which isn't a sequencer, there's a latched drone recall instrument. it's a seed. so read on ! (or not)
+
+
 ## hardware
 
 **required**
@@ -27,11 +32,6 @@ in the maiden [REPL](https://monome.org/docs/norns/image/wifi_maiden-images/inst
 ```
 ;install https://github.com/andr-ew/eggs/releases/download/latest/complete-source-code.zip
 ```
-
-## TL;DR
-
-it's [earthsea](https://llllllll.co/t/ash-a-small-collection/21349), but with four tracks and a lot of connectivity & tuning options. but also it's my own take on things & it doesn't do one of the main things earthsea does. there's a sequencer inspired by cheat codes which isn't a sequencer, there's a latched drone recall instrument. it's a seed. so read on ! (or not)
-
 
 ## grid UI
 
