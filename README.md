@@ -1,8 +1,8 @@
-# eggs (beta)
+# eggs
 
 is an egg a type of seed?
 
-a multi-track gesture sequencer for norns, grid, crow, midi, and internal sounds (beta). four tracks of manual, droning, or arquenced pitch, many tunings, midi & internal sounds, just friends communication & dual pitch + function generators for crow
+a multi-track gesture sequencer for norns, grid, crow, midi, and internal sounds. four tracks of manual, droning, or arquenced pitch, many tunings, midi & internal sounds, just friends communication & dual pitch + function generators for crow
 
 a spiritual successor to [synecdoche](https://github.com/andr-ew/prosody?tab=readme-ov-file#synecdoche)
 
