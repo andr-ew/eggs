@@ -123,7 +123,7 @@ local function Change_engine_modal()
             _l3{
                 x = x, y = yy, --y = 64/2,
                 flow = flow, level = level,
-                text = '...restart?'
+                text = 'press K3 to restart?'
             } 
         end
 
