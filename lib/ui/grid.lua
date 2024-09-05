@@ -521,8 +521,13 @@ local function UI(args)
                         crops.dirty.screen = true 
                     end
                 },
-                input = function()
-                    script_focus = 'eggs'
+                input = function(v, z)
+                    if z==1 then
+                        script_focus = 'eggs'
+
+                        crops.dirty.screen = true
+                        crops.dirty.grid = true
+                    end
                 end
             }
         end
