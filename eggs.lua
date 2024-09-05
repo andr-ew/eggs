@@ -71,6 +71,8 @@ App = {}
 App.grid = include 'lib/ui/grid'                            --grid UI
 App.norns = include 'lib/ui/norns'                          --norns UI
 
+script_focus = 'eggs'
+
 --setup
 
 eggs.setup.destinations()

@@ -124,7 +124,7 @@ local function Arq(args)
         end
 
         _frets{
-            x = 1, y = 8, size = eggs.keymap_size, wrap = eggs.keymap_wrap,
+            x = 1, y = 2 + props.rows, size = eggs.keymap_wrap * props.rows, 
             flow = 'right', flow_wrap = 'up',
             levels = { 0, 1 },
             tune = tune,
@@ -133,7 +133,7 @@ local function Arq(args)
             row_offset = props.out.row,
         }
         _keymap{
-            x = 1, y = 8, size = eggs.keymap_size, wrap = eggs.keymap_wrap,
+            x = 1, y = 2 + props.rows, size = eggs.keymap_wrap * props.rows, 
             flow = 'right', flow_wrap = 'up', levels = { 4, 8, 15 }, 
             step = arq.step, gate = arq.gate,
             state = crops.of_variable(arq.sequence, set_arq),
@@ -307,7 +307,7 @@ local function Page(args)
 
             _arq{ 
                 track = track, snapshots = eggs.snapshots[track].arq, tune = tune, 
-                wide = wide, view_scroll = view_scroll, out = out
+                wide = wide, view_scroll = view_scroll, out = out, rows = props.rows,
             }
         else
             if eggs.view_focus == eggs.NORMAL then
@@ -318,7 +318,7 @@ local function Page(args)
                     }
                 end
                     
-                local ss = eggs.snapshots[track][voicing]
+                local ss = eggs.snapshots[track][voicing] or {}
 
                 for i = 1, wide and #eggs.pattern_groups[track].poly or 1 do
                     _patrecs.manual[i](nil, eggs.mapping, {
@@ -405,7 +405,7 @@ local function Page(args)
             end
 
             _frets{
-                x = 1, y = 8, size = eggs.keymap_size, wrap = eggs.keymap_wrap,
+                x = 1, y = 2 + props.rows, size = eggs.keymap_wrap * props.rows, 
                 flow = 'right', flow_wrap = 'up',
                 levels = { 0, 4 },
                 tune = tune,
@@ -414,7 +414,8 @@ local function Page(args)
                 row_offset = params:get(out.param_ids.row),
             }
             _keymap[out.voicing]{
-                x = 1, y = 8, size = eggs.keymap_size, wrap = eggs.keymap_wrap,
+                x = 1, y = 2 + props.rows, size = eggs.keymap_wrap * props.rows, 
+                wrap = eggs.keymap_wrap,
                 flow = 'right', flow_wrap = 'up',
                 levels = { 0, 15 },
                 state = eggs.keymaps[track]:get_state(),
@@ -490,7 +491,7 @@ local function Page(args)
     end
 end
 
-local function App(args)
+local function UI(args)
     local wide = args.wide
 
     local _track = Grid.integer()
@@ -505,10 +506,11 @@ local function App(args)
     --     rate_mark = Grid.fill(), loop = Grid.fill()
     -- }
 
-    return function()
+    return function(props)
         if wide or eggs.view_focus == eggs.NORMAL then 
             _track{
-                x = wide and 15 or 7, y = 1, size = #_pages, levels = { 0, 15 },
+                x = wide and 15 or 7, y = 1, size = #_pages, 
+                levels = { 0, props.focused and 15 or 4 },
                 wrap = 2,
                 state = { 
                     eggs.track_focus, 
@@ -518,7 +520,10 @@ local function App(args)
                         crops.dirty.grid = true 
                         crops.dirty.screen = true 
                     end
-                }
+                },
+                input = function()
+                    script_focus = 'eggs'
+                end
             }
         end
 
@@ -529,8 +534,16 @@ local function App(args)
         --     _fill.loop{ x = 12, y = 2, level = 4 }
         -- end
     
-        _pages[eggs.track_focus]{ wide = args.wide }
+        _pages[eggs.track_focus]{ wide = args.wide, rows = props.rows }
+    end
+end
+
+local function App(args)
+    local _ui = UI(args)
+
+    return function()
+        _ui{ focused = true, rows = 6 }
     end
 end
     
-return App
+return App, UI
