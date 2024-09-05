@@ -207,6 +207,31 @@ function p.add_pattern_params()
     end
 end
 
+function p.add_all_track_params()
+    eggs.params.add_engine_params()
+    eggs.params.add_nb_params()
+
+    params:add_separator('midi')
+    for i,midi_dest in ipairs(eggs.midi_dests) do
+        params:add_group('midi_dests_'..i, 'track '..i..' options', midi_dest.params_count)
+        midi_dest:add_params()
+    end
+
+    params:add_separator('just friends')
+    params:add_group('jf_dest', jf_dest.name, jf_dest.params_count)
+    jf_dest.add_params()
+
+    params:add_separator('crow outputs')
+    for i,crow_dest in ipairs(crow_dests) do
+        params:add_group('crow_dests_pair_'..i, crow_dest.name, crow_dest.params_count)
+        
+        crow_dest.add_params()
+    end
+
+    eggs.params.add_keymap_params()
+    eggs.params.add_pattern_params()
+end
+
 function p.add_pset_params()
     params:add_separator('pset')
 
