@@ -26,15 +26,15 @@ local shape_nicknames = {
 }
     
 local fps = 70
-clock.run(function() while true do
-    for i = 1,2 do
-        local off = i==2 and 2 or 0
-        local jacks = { cv = 1+off, gate = 2+off }
-        crow.output[jacks.cv].query()
-        crow.output[jacks.gate].query()
-        clock.sleep(1/fps)
-    end
-end end)
+-- clock.run(function() while true do
+--     for i = 1,2 do
+--         local off = i==2 and 2 or 0
+--         local jacks = { cv = 1+off, gate = 2+off }
+--         crow.output[jacks.cv].query()
+--         crow.output[jacks.gate].query()
+--         clock.sleep(1/fps)
+--     end
+-- end end)
 
 
 for i = 1,2 do
@@ -341,7 +341,7 @@ for i = 1,2 do
     for k,jack in pairs(jacks) do
         crow.output[jack].receive = function(v)
             dest.volts[k] = v
-            crops.dirty.screen = true
+            -- crops.dirty.screen = true
         end
     end
 

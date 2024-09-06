@@ -273,16 +273,16 @@ local function App()
                 }
             else
                 if crops.device == 'screen' and crops.mode == 'redraw' then
-                    for i = 1,2 do
-                        local out = eggs.crow_dests[i]
-                        for ii,k in ipairs{ 'cv', 'gate' } do
-                            screen.level(8)
-                            screen.move(eggs.x[i], top[2 + ii])
-                            screen.line_width(1)
-                            screen.line_rel(out.volts[k] * (eggs.w/2) * (1/10) * 1 + 1, 0)
-                            screen.stroke()
-                        end
-                    end
+                    -- for i = 1,2 do
+                    --     local out = eggs.crow_dests[i]
+                    --     for ii,k in ipairs{ 'cv', 'gate' } do
+                    --         screen.level(8)
+                    --         screen.move(eggs.x[i], top[2 + ii])
+                    --         screen.line_width(1)
+                    --         screen.line_rel(out.volts[k] * (eggs.w/2) * (1/10) * 1 + 1, 0)
+                    --         screen.stroke()
+                    --     end
+                    -- end
 
                     screen.display_png(eggs.img_path..'grid_bg.png', x[1], top[1] - 10)
                 end
