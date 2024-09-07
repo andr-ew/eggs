@@ -73,6 +73,27 @@ do
     end
 end
 
+-- passersby
+do
+    local nickname = 'passersby'
+    table.insert(engine_nicknames, nickname)
+
+    local name = 'Passersby'
+    table.insert(engine_names, name)
+
+    init_engine[nickname] = function()
+        local Passersby = include("passersby/lib/passersby_engine")
+        Passersby.add_params()
+
+        function eggs.noteOn(note_id, hz)   
+            engine.noteOn(note_id, hz, 0.8)
+        end
+        function eggs.noteOff(note_id)
+            engine.noteOff(note_id)
+        end
+    end
+end
+
 -- mi-engines
 do
     local nicknames = { 'macro-b', 'macro-p', 'modal-e', 'resonate-r' }
@@ -86,7 +107,6 @@ do
 
         init_engine[nickname] = function()
             local path = 'mi-eng/lib/'..name..'_engine'
-            print('path:', path)
             local class = include(path)
             class.add_params()
 
@@ -105,42 +125,20 @@ do
     local nickname = 'jhnn'
     table.insert(engine_nicknames, nickname)
 
-    local name = 'Johann'
+    local name = 'Jhnn'
     table.insert(engine_names, name)
 
     init_engine[nickname] = function()
-        params:add{
-            id = 'level', type = 'control',
-            controlspec = cs.def{ min = 0, max = 15, default = 4 },
-            action = function(v) engine.level(v) end,
-        }
-        params:add{
-            id = 'rate', type = 'control',
-            controlspec = cs.def{ 
-                min = -2, max = 2, default = -0.12, quantum = 1/100/4,
-            },
-            action = function(v) engine.rate(2^v) end,
-        }
-        local notes = { 'C','C#','D','D#','E','F','F#','G','G#','A','A#','B', }
-        params:add{
-            id = 'grid root', type = 'option',
-            options = notes,
-        }
+        local jhnn = include 'jhnn/lib/jhnn_engine'
     
-        local painissimo_mezzo = 1
-        local forte = 0
+        jhnn.add_params()
 
         function eggs.noteOn(note_id, hz)   
-            local dyn = forte > 0 and 5 or (
-                (painissimo_mezzo * 2) - 1
-            ) + math.random(0, 2)
-
-            engine.noteOn(note_id, util.clamp(1, 7, dyn), 1, 0)
-            -- engine.noteOn(note, util.clamp(1, 7, dyn), 1, 0)
+            local dyn = 3 + math.random(0, 2)
+        
+            jhnn.noteOn(note_id, dyn/7)
         end
         function eggs.noteOff(note_id) end
-    
-        engine.loadfolder(_path.audio .. 'johann/classic')
     end
 end
 
