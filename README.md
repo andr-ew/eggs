@@ -68,7 +68,7 @@ each track can also be assigned to midi or [nb](https://llllllll.co/t/n-b-et-al-
 
 **scroll rows:** transpose up or down based on the **row tuning** interval. this shifts your view of the keyboard up or down.
 
-**pattern slots:** slots for recording input sequences on the keymap. use them like this:
+**pattern slots:** slots for recording input sequences on the keymap. they aren't synced, sorry. use them like this:
 
 - **single tap**
   - (blank pattern): begin recording
