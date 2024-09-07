@@ -40,11 +40,12 @@ local function Arq(args)
         local ss = props.snapshots
         local tune = props.tune
         local wide = props.wide
+        local nudge = wide and -2 or 0
 
         if eggs.view_focus == eggs.NORMAL then
             for i = 1, wide and #pattern_group or 1 do
                 _patrecs[i](nil, eggs.mapping, {
-                    x = -2 + 4 + i - 1, y = 1,
+                    x = nudge + 4 + i - 1, y = 1,
                     pattern = pattern_group[i],
                 })
             end
@@ -66,7 +67,7 @@ local function Arq(args)
                         end
                     end
                     _snapshots[i](nil, eggs.mapping, {
-                        x = -2 + (wide and 9 or 6) + i - 1, y = 1,
+                        x = nudge + (wide and 9 or 6) + i - 1, y = 1,
                         levels = { filled and 4 or 0, filled and 15 or 8 },
                         action_tap = filled and recall or snapshot,
                         action_hold = clear_snapshot,
@@ -79,7 +80,7 @@ local function Arq(args)
                 do
                     local id = arq:pfix('pulse')
                     _pulse(id, eggs.mapping, {
-                        x = -2 + 3, y = 2, levels = { 4, 15 },
+                        x = nudge + 3, y = 2, levels = { 4, 15 },
                         input = function()
                             eggs.set_param(id, params:get(id) ~ 1)
                         end
@@ -88,7 +89,7 @@ local function Arq(args)
                 do
                     local id = arq:pfix('reverse')
                     _reverse(id, eggs.mapping, {
-                        x = -2 + 4, y = 2, levels = { 4, 15 },
+                        x = nudge + 4, y = 2, levels = { 4, 15 },
                         state = eggs.of_param(id, true)
                     })
                 end
@@ -100,21 +101,21 @@ local function Arq(args)
                         local id = arq:pfix('division')
                         local stopped = params:get(id) == 1
                         _rate(id, eggs.mapping, {
-                            x = -2 + 5, y = 2, size = 7, levels = { 0, stopped and 4 or 15 },
+                            x = nudge + 5, y = 2, size = 7, levels = { 0, stopped and 4 or 15 },
                             state = eggs.of_param(id, true)
                         })
                     end
                     do
                         local id = arq:pfix('loop')
                         _loop(id, eggs.mapping, {
-                            x = -2 + 12, y = 2, levels = { 4, 15 },
+                            x = nudge + 12, y = 2, levels = { 4, 15 },
                             state = eggs.of_param(id, true)
                         })
                     end
                 else
                     local id = arq:pfix('division')
                     _rate_small(id, eggs.mapping, {
-                        x = -2 + 5, y = 2, size = 2,
+                        x = nudge + 5, y = 2, size = 2,
                         levels = { 0, 15 }, wrap = false,
                         min = 1, max = 7,
                         state = eggs.of_param(id, true)
@@ -152,9 +153,10 @@ local function Rate_reverse()
     return function(props)
         local wide = props.wide
         local prefix = 'pattern_track_'..props.track..'_'..props.voicing
+        local nudge = wide and -2 or 0
 
         _reverse(prefix..'_reverse', eggs.mapping, {
-            x = -2 + 4, y = 2, levels = { 4, 15 },
+            x = nudge + 4, y = 2, levels = { 4, 15 },
             state = eggs.of_param(prefix..'_reverse')
         })
         do
@@ -163,16 +165,16 @@ local function Rate_reverse()
                 --     x = 8, y = 2, level = 4,
                 -- })
                 _rate(prefix..'_time_factor', eggs.mapping, {
-                    x = -2 + 5, y = 2, size = 7, min = -3,
+                    x = nudge + 5, y = 2, size = 7, min = -3,
                     state = eggs.of_param(prefix..'_time_factor')
                 })
                 _loop(prefix..'_loop', eggs.mapping, {
-                    x = -2 + 12, y = 2, levels = { 4, 15 },
+                    x = nudge + 12, y = 2, levels = { 4, 15 },
                     state = eggs.of_param(prefix..'_loop')
                 })
             else
                 _rate_small(prefix..'_time_factor', eggs.mapping, {
-                    x = -2 + 5, y = 2, size = 2,
+                    x = nudge + 5, y = 2, size = 2,
                     levels = { 0, 15 }, wrap = false,
                     min = -8, max = 8,
                     state = eggs.of_param(prefix..'_time_factor')
@@ -248,10 +250,11 @@ local function Page(args)
         local voicing = out.voicing
         local tune = eggs.tunes[params:get(out.param_ids.tuning_preset)]
         local wide = props.wide
+        local nudge = wide and -2 or 0
 
         if wide or view_scroll == 0 then
             _view_scale{
-                x = -2 + (wide and 15 or 8), y = 1, levels = { 2, 15 },
+                x = nudge + (wide and 15 or 8), y = 1, levels = { 2, 15 },
                 state = crops.of_variable(
                     eggs.view_focus==eggs.SCALE and 1 or 0,
                     function(v)
@@ -262,7 +265,7 @@ local function Page(args)
                 )
             }
             _view_key{
-                x = -2 + (wide and 15 or 8), y = 2, levels = { 2, 15 },
+                x = nudge + (wide and 15 or 8), y = 2, levels = { 2, 15 },
                 state = crops.of_variable(
                     eggs.view_focus==eggs.KEY and 1 or 0,
                     function(v)
@@ -278,7 +281,7 @@ local function Page(args)
 
         if eggs.view_focus == eggs.NORMAL then
             _mode_arq('mode_'..track, eggs.mapping, {
-                x = -2 + 3, y = 1, levels = { 4, 15 },
+                x = nudge + 3, y = 1, levels = { 4, 15 },
                 state = crops.of_variable(
                     mode==eggs.ARQ and 1 or 0,
                     function(v)
@@ -287,7 +290,7 @@ local function Page(args)
                 )
             })
             _mode_latch('mode_'..track, eggs.mapping, {
-                x = -2 + (wide and 8 or 5), y = 1, levels = { 4, 15 },
+                x = nudge + (wide and 8 or 5), y = 1, levels = { 4, 15 },
                 state = crops.of_variable(
                     mode==eggs.LATCH and 1 or 0,
                     function(v)
@@ -298,11 +301,11 @@ local function Page(args)
         end
 
         if mode==eggs.ARQ then
-            _fill.slew_pulse{ x = -2 + 3, y = 2, level = 4 }
-            _fill.rev{ x = -2 + 4, y = 2, level = 4 }
+            _fill.slew_pulse{ x = nudge + 3, y = 2, level = 4 }
+            _fill.rev{ x = nudge + 4, y = 2, level = 4 }
             if wide then
-                _fill.rate_mark{ x = -2 + 8, y = 2, level = 4 }
-                _fill.loop{ x = -2 + 12, y = 2, level = 4 }
+                _fill.rate_mark{ x = nudge + 8, y = 2, level = 4 }
+                _fill.loop{ x = nudge + 12, y = 2, level = 4 }
             end
 
             _arq{ 
@@ -313,7 +316,7 @@ local function Page(args)
             if eggs.view_focus == eggs.NORMAL then
                 if out.param_ids.slew_enable then
                     _slew_enable{
-                        x = -2 + 3, y = 2, levels = { 4, 15 },
+                        x = nudge + 3, y = 2, levels = { 4, 15 },
                         state = eggs.of_param(out.param_ids.slew_enable)
                     }
                 end
@@ -322,7 +325,7 @@ local function Page(args)
 
                 for i = 1, wide and #eggs.pattern_groups[track].poly or 1 do
                     _patrecs.manual[i](nil, eggs.mapping, {
-                        x = -2 + 4 + i - 1, y = 1,
+                        x = nudge + 4 + i - 1, y = 1,
                         pattern = eggs.pattern_groups[track][voicing][i],
                     })
                 end
@@ -330,7 +333,7 @@ local function Page(args)
                 if out.param_ids.slew_enable and params:get(out.param_ids.slew_enable) > 0 then
                     local id = out.param_ids.slew_time
                     _slew_time(id, eggs.mapping, {
-                        x = -2 + 4, y = 2, size = wide and 8 or 4, min = 1,
+                        x = nudge + 4, y = 2, size = wide and 8 or 4, min = 1,
                         state = wide and eggs.of_param(id, true) or crops.of_variable(
                             patcher.get_value(id) // 2 + 1,
                             function(v)
@@ -339,11 +342,11 @@ local function Page(args)
                         ),
                     })
                 else
-                    _fill.slew_pulse{ x = -2 + 3, y = 2, level = 4 }
-                    _fill.rev{ x = -2 + 4, y = 2, level = 4 }
+                    _fill.slew_pulse{ x = nudge + 3, y = 2, level = 4 }
+                    _fill.rev{ x = nudge + 4, y = 2, level = 4 }
                     if wide then
-                        _fill.rate_mark{ x = -2 + 8, y = 2, level = 4 }
-                        _fill.loop{ x = -2 + 12, y = 2, level = 4 }
+                        _fill.rate_mark{ x = nudge + 8, y = 2, level = 4 }
+                        _fill.loop{ x = nudge + 12, y = 2, level = 4 }
                     end
 
                     _rate_rev{
@@ -351,7 +354,7 @@ local function Page(args)
                     }
                     if not wide then
                         _view_scroll{
-                            x = -2 + 7, y = 2, levels = { 4, 15 },
+                            x = nudge + 7, y = 2, levels = { 4, 15 },
                             state = crops.of_variable(view_scroll, function(v) 
                                 view_scroll = v
                                 crops.dirty.grid = true
@@ -377,14 +380,14 @@ local function Page(args)
                         
                         if mode==eggs.LATCH then
                             _snapshots[i].latch(nil, eggs.mapping, {
-                                x = -2 + (wide and 9 or 6) + i - 1, y = 1,
+                                x = nudge + (wide and 9 or 6) + i - 1, y = 1,
                                 levels = { filled and 4 or 0, filled and 15 or 8 },
                                 action_tap = filled and recall or snapshot,
                                 action_hold = clear_snapshot,
                             })
                         else
                             _snapshots[i].normal(nil, eggs.mapping, {
-                                x = -2 + (wide and 9 or 6) + i - 1, y = 1,
+                                x = nudge + (wide and 9 or 6) + i - 1, y = 1,
                                 levels = { filled and 4 or 0, filled and 15 or 8 },
                                 state = crops.of_variable(snapshots_normal_held[i], function(v)
                                     snapshots_normal_held[i] = v
@@ -426,7 +429,7 @@ local function Page(args)
         if wide or view_scroll > 0 then
             local id = out.param_ids.row
             _row(id, eggs.mapping, {
-                x = -2 + (wide and 16 or 8), y = 2, flow = 'up', size = 2,
+                x = nudge + (wide and 16 or 8), y = 2, flow = 'up', size = 2,
                 levels = { 4, 15 }, wrap = false,
                 min = params:lookup_param(id).min,
                 max = params:lookup_param(id).max,
@@ -438,7 +441,7 @@ local function Page(args)
             if (wide or view_scroll > 0) then
                 local id = out.param_ids.column
                 _column(id, eggs.mapping, {
-                    x = -2 + (wide and 13 or 6), y = 1, size = 2,
+                    x = nudge + (wide and 13 or 6), y = 1, size = 2,
                     levels = { 4, 15 }, wrap = false,
                     min = params:lookup_param(id).controlspec.minval,
                     max = params:lookup_param(id).controlspec.maxval,
@@ -449,21 +452,21 @@ local function Page(args)
             if wide then
                 for i = 1, #eggs.pattern_groups[track].aux do
                     _patrecs.aux[i](nil, eggs.mapping, {
-                        x = -2 + 13 + i - 1, y = 2,
+                        x = nudge + 13 + i - 1, y = 2,
                         pattern = eggs.pattern_groups[track].aux[i],
                     })
                 end
             end
         elseif eggs.view_focus == eggs.SCALE then
             _degs_bg(nil, eggs.mapping, {
-                left = -2 + (wide and 3 or 1), top = 1, level = 4,
+                left = nudge + (wide and 3 or 1), top = 1, level = 4,
                 -- width = 7, nudge = 6, -- 8x8 sizing
                 width = wide and 12 or 7, nudge = wide and 3 or 6,
             })
             for i,_deg in ipairs(_degs) do
                 local id = tune:get_param_id('enable_'..i)
                 _deg(id, eggs.mapping, {
-                    left = -2 + (wide and 3 or 1), top = 1, levels = { 8, 15 },
+                    left = nudge + (wide and 3 or 1), top = 1, levels = { 8, 15 },
                     tune = tune, degree = i, 
                     -- width = 7, nudge = 6, -- 8x8 sizing
                     width = wide and 12 or 7, nudge = wide and 3 or 6,
@@ -474,7 +477,7 @@ local function Page(args)
             --TODO: support pattern recording & retriggers as I did in ndls
             local id = tune:get_param_id('tonic')
             _tonic(id, eggs.mapping, {
-                left = -2 + (wide and 3 or 1), top = 1, levels = { 4, 15 },
+                left = nudge + (wide and 3 or 1), top = 1, levels = { 4, 15 },
                 -- width = 7, nudge = 6, -- 8x8 sizing
                 width = wide and 12 or 7, nudge = wide and 3 or 6,
                 -- state = Tune.of_param(eggs.get_tune(track), 'tonic'), 
@@ -509,7 +512,7 @@ local function UI(args)
     return function(props)
         if wide or eggs.view_focus == eggs.NORMAL then 
             _track{
-                x = wide and 15 or 7, y = 1, size = #_pages, 
+                x = wide and 15 or 1, y = 1, size = #_pages, 
                 levels = { 0, props.focused and 15 or 4 },
                 wrap = 2,
                 state = { 
