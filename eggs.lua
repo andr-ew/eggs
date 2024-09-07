@@ -3,7 +3,7 @@
 -- pitch gesture looper 
 -- for norns + grid
 --
--- version 1.0.0 @andrew
+-- version 1.0.1 @andrew
 --
 -- required: grid (any size)
 --
@@ -56,8 +56,8 @@ nb = include 'lib/nb/lib/nb'                                --nb
 eggs = include 'lib/globals'                                --global variables & objects
 
 eggs.engines = include 'lib/engines'                        --DEFINE NEW ENGINES IN THIS FILE
-
-Components = include 'lib/ui/components'                    --ui components
+eggs.setup = include 'lib/setup'                            --setup functions
+eggs.params = include 'lib/params'                          --script params
 
 destination = include 'lib/destinations/destination'        --destination prototype
 jf_dest = include 'lib/destinations/jf'                     --just friends output
@@ -66,83 +66,18 @@ engine_dest = include 'lib/destinations/engine'             --engine output
 nb_dest = include 'lib/destinations/nb'                     --nb output
 crow_dests = include 'lib/destinations/crow'                --crow output
 
---setup destinations
-
-eggs.midi_dests = {}
-eggs.engine_dests = {}
-eggs.nb_dests = {}
-
-for i = 1,eggs.track_count do
-    eggs.midi_dests[i] = midi_dest:new(i)
-    eggs.engine_dests[i] = engine_dest:new(i)
-    eggs.nb_dests[i] = nb_dest:new(i)
-end
-eggs.crow_dests = crow_dests
-eggs.jf_dest = jf_dest
-
-eggs.dests = {
-    { eggs.engine_dests[1], eggs.midi_dests[1], eggs.nb_dests[1] },
-    { jf_dest, eggs.engine_dests[2], eggs.midi_dests[2], eggs.nb_dests[2] },
-    { crow_dests[1], eggs.engine_dests[3], eggs.midi_dests[3], eggs.nb_dests[3] },
-    { crow_dests[2], eggs.engine_dests[4], eggs.midi_dests[4], eggs.nb_dests[4] },
-}
-eggs.dest_names = {
-    { 'engine', 'midi', 'nb' },
-    { 'jf', 'engine', 'midi', 'nb' },
-    { 'crow 1+2', 'engine', 'midi', 'nb' },
-    { 'crow 3+4', 'engine', 'midi', 'nb' },
-}
-
-for i = 1,eggs.track_count do
-    eggs.set_dest(i, 1)
-end
-
---set up modulation sources
-
-local add_actions = {}
-for i = 1,2 do
-    add_actions[i] = patcher.crow.add_source(i)
-end
-
-do
-    local stream = patcher.add_source{ name = 'crow out 1', id = 'crow_out_1' }
-    crow_dests[1].cv_callback = stream
-end
-do
-    local stream, change
-
-    local function assignment_callback(mode)
-        if mode == 'stream' then
-            crow_dests[1].gate_callback = function(state)
-                stream(state and 5 or 0)
-            end
-        elseif mode == 'change' then
-            crow_dests[1].gate_callback = change
-        end
-    end
-
-    stream, change = patcher.add_source{ 
-        name = 'crow out 2', id = 'crow_out_2',
-        assignment_callback = assignment_callback,
-    }
-end
-
---set up crow
-
-local function crow_add()
-    for _,dest in ipairs(crow_dests) do
-        dest.add()
-    end
-    for _,action in ipairs(add_actions) do action() end
-end
-norns.crow.add = crow_add
-
---more script files
-
-eggs.params = include 'lib/params'                          --script params
+Components = include 'lib/ui/components'                    --ui components
 App = {}
 App.grid = include 'lib/ui/grid'                            --grid UI
 App.norns = include 'lib/ui/norns'                          --norns UI
+
+script_focus = 'eggs'
+
+--setup
+
+eggs.setup.destinations()
+local add_actions = eggs.setup.modulation_sources()
+local crow_add = eggs.setup.crow(add_actions)
 
 --params stuff pre-init
 
@@ -175,30 +110,7 @@ crops.connect_screen(_app.norns, 60)
 function init()
     nb:init()
 
-    --params-stuff post-init
-
-    eggs.params.add_engine_params()
-    eggs.params.add_nb_params()
-
-    params:add_separator('midi')
-    for i,midi_dest in ipairs(eggs.midi_dests) do
-        params:add_group('midi_dests_'..i, 'track '..i..' options', midi_dest.params_count)
-        midi_dest:add_params()
-    end
-
-    params:add_separator('just friends')
-    params:add_group('jf_dest', jf_dest.name, jf_dest.params_count)
-    jf_dest.add_params()
-
-    params:add_separator('crow outputs')
-    for i,crow_dest in ipairs(crow_dests) do
-        params:add_group('crow_dests_pair_'..i, crow_dest.name, crow_dest.params_count)
-        
-        crow_dest.add_params()
-    end
-
-    eggs.params.add_keymap_params()
-    eggs.params.add_pattern_params()
+    eggs.params.add_all_track_params()
 
     params:add_separator('patcher')
     params:add_group('assignments', #patcher.destinations)
@@ -209,13 +121,11 @@ function init()
     eggs.params.add_pset_params()
 
     params:read()
-    params:bang() ---- ?????
+    params:bang()
     
     crow_add()
 
-    for i = 1,eggs.track_count do
-        local arq = eggs.arqs[i]:start()
-    end
+    eggs.setup.init()
 
     crops.connect_grid(_app.grid, g, 240)
 end

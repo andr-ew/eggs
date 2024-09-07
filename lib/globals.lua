@@ -178,6 +178,8 @@ eggs.mode_names = { 'normal', 'latch', 'arq' }
 eggs.snapshot_count = 4
 
 eggs.volts_per_column = 1/8
+
+eggs.img_path = norns.state.lib..'img/'
     
 eggs.arqs = {}
 eggs.snapshots = {}

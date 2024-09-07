@@ -284,7 +284,7 @@ local function App()
                         end
                     end
 
-                    screen.display_png(norns.state.lib..'img/grid_bg.png', x[1], top[1] - 10)
+                    screen.display_png(eggs.img_path..'grid_bg.png', x[1], top[1] - 10)
                 end
 
                 for i,_keymap in ipairs(_keymaps) do
@@ -300,8 +300,7 @@ local function App()
                 do
                     local w = 88
                     screen.display_png(
-                        norns.state.lib
-                            ..'img/glyph_'..({ 
+                        eggs.img_path..'glyph_'..({ 
                                 'flower', 'leaf', 'wing_left', 'wing_right' 
                             })[eggs.track_focus]
                             ..'.png', 
