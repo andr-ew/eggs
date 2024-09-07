@@ -137,10 +137,12 @@ each engine track is routed to a single supercollider engine running on norns it
 - polysub
 - [orgn](https://github.com/andr-ew/orgn)
 - [molly the poly](https://llllllll.co/t/molly-the-poly/21090)
+- [passersby](https://llllllll.co/t/passersby/21089)
 - [macro-b](https://llllllll.co/t/mi-engines/32338)
 - [macro-p](https://llllllll.co/t/mi-engines/32338)
 - [modal-e](https://llllllll.co/t/mi-engines/32338)
 - [resonate-r](https://llllllll.co/t/mi-engines/32338)
+- [jhnn](https://github.com/andr-ew/jhnn)
 
 after selecting an engine & exiting the params menu, you'll be prompted to restart the script by pressing K3
 
