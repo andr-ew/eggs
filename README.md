@@ -53,7 +53,10 @@ each track can also be assigned to midi or [nb](https://llllllll.co/t/n-b-et-al-
 
 **keymap:** grid keyboard. edit the tuning using **scale** & **key**
 
-**slew:** hold to enable pitch slew. 8 keys to the right select slew time
+**slew/pulse:** 
+- **crow output only:** hold to enable pitch slew. 8 keys to the right select slew time
+- **when the arquencer is active, all modes:** pulse to the next step in the sequence. modulate this with crow to drive the sequence with an LFO/clock
+- **all other outputs, non-arquencer:** do nothing
 
 **latch:** make it drone
 
