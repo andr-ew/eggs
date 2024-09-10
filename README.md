@@ -35,8 +35,12 @@ in the maiden [REPL](https://monome.org/docs/norns/image/wifi_maiden-images/inst
 
 ## grid UI
 
+yea I was supposed to update this diagram but here we are. track focus is on the right side and everything else on the top two rows is shifted to the left. but that's only true for 128 grid users. yea that's real confusing
+
+
 ![diagram of the grid interface. text description forthcoming](/lib/doc/eggs.png)
 ![diagram of the 64 grid interface. text description forthcoming](/lib/doc/eggs_64.png)
+
 
 **track focus:** selects tracks 1-4. by default, tracks are mapped as follows:
 
