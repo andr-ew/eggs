@@ -51,12 +51,7 @@ yea I was supposed to update this diagram but here we are. track focus is on the
 
 each track can also be assigned to midi or [nb](https://llllllll.co/t/n-b-et-al-v0-1/60374) under PARAMS > destination
 
-**keymap:** grid keyboard. edit the tuning using **scale** & **key**
-
-**slew/pulse:** 
-- **crow output only:** hold to enable pitch slew. 8 keys to the right select slew time
-- **when the arquencer is active, all modes:** pulse to the next step in the sequence. modulate this with crow to drive the sequence with an LFO/clock
-- **all other outputs, non-arquencer:** do nothing
+**keymap:** grid keyboard, like earthsea. like you play the keys and it plays notes. edit the tuning using **scale** & **key**
 
 **latch:** make it drone
 
@@ -74,6 +69,11 @@ each track can also be assigned to midi or [nb](https://llllllll.co/t/n-b-et-al-
 **scroll columns:** transpose up or down one degree within the current scale. this shifts your view of the keyboard left or right.
 
 **scroll rows:** transpose up or down based on the **row tuning** interval. this shifts your view of the keyboard up or down.
+
+**slew/pulse:** 
+- **crow output only:** hold to enable pitch slew. 8 keys to the right select slew time
+- **when the arquencer is active, all modes:** pulse to the next step in the sequence. modulate this with crow to drive the sequence with an LFO/clock
+- **all other outputs, non-arquencer:** do nothing
 
 **pattern slots:** slots for recording input sequences on the keymap. they aren't synced, sorry. use them like this:
 
