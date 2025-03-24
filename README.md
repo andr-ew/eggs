@@ -35,8 +35,12 @@ in the maiden [REPL](https://monome.org/docs/norns/image/wifi_maiden-images/inst
 
 ## grid UI
 
+yea I was supposed to update this diagram but here we are. track focus is on the right side and everything else on the top two rows is shifted to the left. but that's only true for 128 grid users. yea that's real confusing
+
+
 ![diagram of the grid interface. text description forthcoming](/lib/doc/eggs.png)
 ![diagram of the 64 grid interface. text description forthcoming](/lib/doc/eggs_64.png)
+
 
 **track focus:** selects tracks 1-4. by default, tracks are mapped as follows:
 
@@ -47,9 +51,7 @@ in the maiden [REPL](https://monome.org/docs/norns/image/wifi_maiden-images/inst
 
 each track can also be assigned to midi or [nb](https://llllllll.co/t/n-b-et-al-v0-1/60374) under PARAMS > destination
 
-**keymap:** grid keyboard. edit the tuning using **scale** & **key**
-
-**slew:** hold to enable pitch slew. 8 keys to the right select slew time
+**keymap:** grid keyboard, like earthsea. like you play the keys and it plays notes. edit the tuning using **scale** & **key**
 
 **latch:** make it drone
 
@@ -68,7 +70,12 @@ each track can also be assigned to midi or [nb](https://llllllll.co/t/n-b-et-al-
 
 **scroll rows:** transpose up or down based on the **row tuning** interval. this shifts your view of the keyboard up or down.
 
-**pattern slots:** slots for recording input sequences on the keymap. use them like this:
+**slew/pulse:** 
+- **crow output only:** hold to enable pitch slew. 8 keys to the right select slew time
+- **when the arquencer is active, all modes:** pulse to the next step in the sequence. modulate this with crow to drive the sequence with an LFO/clock
+- **all other outputs, non-arquencer:** do nothing
+
+**pattern slots:** slots for recording input sequences on the keymap. they aren't synced, sorry. use them like this:
 
 - **single tap**
   - (blank pattern): begin recording
@@ -137,10 +144,12 @@ each engine track is routed to a single supercollider engine running on norns it
 - polysub
 - [orgn](https://github.com/andr-ew/orgn)
 - [molly the poly](https://llllllll.co/t/molly-the-poly/21090)
+- [passersby](https://llllllll.co/t/passersby/21089)
 - [macro-b](https://llllllll.co/t/mi-engines/32338)
 - [macro-p](https://llllllll.co/t/mi-engines/32338)
 - [modal-e](https://llllllll.co/t/mi-engines/32338)
 - [resonate-r](https://llllllll.co/t/mi-engines/32338)
+- [jhnn](https://github.com/andr-ew/jhnn)
 
 after selecting an engine & exiting the params menu, you'll be prompted to restart the script by pressing K3
 
