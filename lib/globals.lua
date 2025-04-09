@@ -169,8 +169,14 @@ function eggs.of_param(id, sum_dest)
     }
 end
 
-eggs.keymap_size = 128-16-16
-eggs.keymap_wrap = 16
+-- eggs.keymap_size = 128-16-16
+-- eggs.keymap_wrap = 16
+eggs.keymap_view_width = 16
+eggs.keymap_columns = eggs.keymap_view_width * 3
+eggs.keymap_rows = 8 - 2
+eggs.keymap_view_height = eggs.keymap_rows
+eggs.keymap_wrap = eggs.keymap_columns
+eggs.keymap_size = eggs.keymap_columns * eggs.keymap_rows
 
 eggs.NORMAL, eggs.LATCH, eggs.ARQ = 1, 2, 3
 eggs.mode_names = { 'normal', 'latch', 'arq' }
@@ -196,6 +202,11 @@ function eggs.noteOff(note_number) end
 
 eggs.track_dest = {}
 eggs.keymaps = {}
+
+function eggs.get_view(track)
+    -- return util.clamp(5 + params:get('view_'..track), 0, eggs.keymap_columns - eggs.keymap_view_width)
+    return util.clamp(params:get('intervals_'..track) + params:get('view_'..track), 0, eggs.keymap_columns - eggs.keymap_view_width)
+end
 
 function eggs.set_dest(track, v)
     local i = track
