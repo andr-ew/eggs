@@ -63,11 +63,8 @@ function channels.new(count)
     for i = 1,count do
         self[i] = {}
 
-        --options
-        self[i].intervals = 5
-
         --params
-        self[i].offset = 0
+        self[i].intervals = 5
         self[i].modulation = 0 
         self[i].transposition_semitones = 0
         self[i].mode = 1-- 1==lydian
@@ -86,12 +83,10 @@ function channels.new(count)
 
         local pfx = x
         self.param_ids[x] = {
-            flourish = 'flourish_'..pfx,
-            offset = 'offset_'..pfx,
-            slew = 'slew_'..pfx,
             modulation = 'modulation_'..pfx,
             transposition = 'transposition_'..pfx,
             mode = 'musical_mode_'..pfx,
+            ['scale degrees'] = 'intervals_'..pfx,
             -- tuning_preset = 'tuning_preset_'..pfx,
         }
     end
@@ -257,18 +252,6 @@ for ivs = intervals_min, intervals_max do
     end
 end
 
---TODO: remove
-function channels:update_scale(i)
-    -- local ivs = self[i].intervals
-    -- self[i].scale = mode(build_scale(ivs), lookup_base[ivs][self[i].mode])
-end
-
-function channels:set_intervals(i, intervals)
-    self[i].intervals = intervals
-    -- self:update_scale(i)
-end
-
-
 function channels:get_param_id(channel, name, grouped)
     local i = grouped and self:group_index(channel) or channel
     return self.param_ids[i][name]
@@ -293,92 +276,21 @@ end
 function channels:add_channel_params(i)
     local ids = self.param_ids[i]
 
-    local min, max = -12, 12
     do
-        local trans_names = {
-            [4] = '+2 oct',
-            [3] = '+oct +5th',
-            [2] = '+oct',
-            [1] = '+5th',
-            [0] = 'unison',
-            [-1] = '-4th',
-            [-2] = '-oct',
-            [-3] = '-oct -4th',
-            [-4] = '-2 oct',
-        }
-        for i = 4, max do
-            local oct = math.floor(i / 2)
-            local fifth = (i % 2) > 0
-            trans_names[i] = '+'..oct..' oct'..(fifth and ' +5th' or '')
-        end
-        for i = -4, min, -1 do
-            local oct = math.abs(math.floor(i / 2))
-            local fourth = (i % 2) > 0
-            trans_names[i] = '-'..oct..' oct'..(fourth and ' -4th' or '')
-        end
-
-        local name = 'flourish'
+        local max_intervals = eggs.max_intervals
+        local name = 'scale degrees'
         patcher.add_destination_and_param{
             type = 'number', name = name, id = ids[name], 
-            min = min, max = max, default = self[i][name],
-            action = function(v) 
-                self[i][name] = v
-                self:update_cv(i)
-                crops.dirty.grid = true
-            end,
-            formatter = function(p)
-                return trans_names[p:get()]
-            end
-        }
-    end
-    do
-        local name = 'offset'
-        patcher.add_destination_and_param{
-            type = 'control', name = name, id = ids[name],
-            controlspec = cs.def{ 
-                min = min, max = max, default = self[i].offset * brds.offset_volts_per_step, 
-                quantum = (1/(max - min)) * brds.offset_volts_per_step, 
-                step = brds.offset_volts_per_step,
-                units = 'v',
-            },
-            action = function(v) 
-                self[i][name] = v // brds.offset_volts_per_step
-                self:update_cv(i)
-                crops.dirty.grid = true
-                crops.dirty.screen = true
-            end
-        }
-    end
-    do
-        local slew_times = { 0, 0.05, 0.07, 0.1, 0.4, 1 }
+            min = 1, max = max_intervals, default = 5,
+            action = function(v)
+                self[i].intervals = v
 
-        local name = 'slew'
-        patcher.add_destination_and_param{
-            type = 'option', name = name, id = ids[name], options = slew_times,
-            action = function(v) 
-                self[i][name] = slew_times[v]
-                self:bang(i)
-                crops.dirty.grid = true
+                crops.dirty.grid = true 
             end
         }
     end
-    -- do
-    --     local name = 'key'
-    --     patcher.add_destination_and_param{
-    --         type = 'number', name = name, id = ids[name], 
-    --         min = -22, max = 22, default = self[name],
-    --         action = function(v)
-    --             self[name] = v
-    --             -- self:update_cv()
-    --             crops.dirty.grid = true
-    --         end,
-    --         formatter = function(p)
-    --             local base = params:get('base_key')
-    --             return key_names[util.wrap(base + p:get(), -11,  11)]
-    --         end
-    --     }
-    -- end
 
+    local min, max = -12, 12
     do
         local name = 'modulation'
         patcher.add_destination_and_param{
@@ -469,39 +381,27 @@ function channels:get_key_names(i)
     return current, nxt, prev
 end
 
-function channels:update_cv(i, silent)
-    local grp = self:group_index(i)
+function channels:idx_to_deg_oct(i, idx)
+    local ivs = self[i].intervals
+    local x = (idx-1)%eggs.keymap_wrap
+    local y = (idx-1)//eggs.keymap_wrap
+    local oct = y + x//ivs + 1 - 1
+    local deg = x%ivs + 1
 
-    local deg = (self[i].degree + self[i].offset - 1)
+    return deg, oct
+end
+
+function channels:get_semitones(i, idx, column)
+    local deg, oct = self:idx_to_deg_oct(i, idx)
+
+    local deg = (self[i].degree + column - 1)
     local scale = scales[self[i].intervals][self[grp].mode]
     local st = scale[(deg + (self[i].intervals * 48)) % self[i].intervals + 1]
     local off_oct = deg // self[i].intervals
-    self[i].note = st + self[grp].modulation_semitones 
+    local note = st + self[grp].modulation_semitones 
                     + self[grp].transposition_semitones 
-                    + ((off_oct + self[i].octave - 1) * 12)
-
-    local trans = self[i].flourish
-    local t_oct = math.floor(trans / 2)
-    local t_fifth = (trans % 2) * ((trans>0) and 7 or -5)
-    self[i].transposition = ((t_oct) * 12) + t_fifth
-    
-    self[i].state = self[i].gate > 0
-
-    if not silent then self:bang(i) end
-end
-
-function channels:bang(i)
-    self[i].action(self[i].note, self[i].transposition, self[i].slew, self[i].state)
-end
-
-function channels:play_note(i, degree, octave, gate, silent)
-    self[i].degree = degree
-    self[i].octave = octave
-    self[i].gate = gate
-
-    self:update_cv(i, silent)
-
-    -- crops.dirty.grid = true
+                    + ((off_oct) * 12)
+    return note
 end
 
 return channels

@@ -178,6 +178,8 @@ eggs.keymap_view_height = eggs.keymap_rows
 eggs.keymap_wrap = eggs.keymap_columns
 eggs.keymap_size = eggs.keymap_columns * eggs.keymap_rows
 
+eggs.max_intervals = 7
+
 eggs.NORMAL, eggs.LATCH, eggs.ARQ = 1, 2, 3
 eggs.mode_names = { 'normal', 'latch', 'arq' }
 
