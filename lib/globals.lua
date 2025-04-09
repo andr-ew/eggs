@@ -94,7 +94,7 @@ eggs.set_param = function(id, v)
     end
 end
 
-local pat_count = { mono = 4, poly = 4, arq = 4, aux = 2 }
+local pat_count = { mono = 4, poly = 4, arq = 4, aux = 1 }
 eggs.pattern_groups = {}
 -- eggs.pattern_param_shims = {}
 eggs.pattern_factories = {}

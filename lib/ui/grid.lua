@@ -223,22 +223,14 @@ local function Page(args)
         snapshot_count = eggs.snapshot_count,
     }
 
+    --TODO: becomes view transport
     local view_scroll = 0
-    local _view_scroll = Grid.momentary()
+    -- local _view_scroll = Grid.momentary()
     
-    local _column = Patcher.grid.destination(Produce.grid.integer_trigger())
-    local _row = Patcher.grid.destination(Produce.grid.integer_trigger())
-
     local _frets = Tune.grid.fretboard()
     local _keymap = { mono = Keymap.grid.mono(), poly = Keymap.grid.poly() }
 
     local _tonic = Patcher.grid.destination(Tune.grid.tonic())
-    
-    local _degs_bg = Patcher.grid.destination(Tune.grid.scale_degrees_background())
-    local _degs = {}
-    for i = 1, 12 do 
-        _degs[i] = Patcher.grid.destination(Tune.grid.scale_degree())
-    end
     
     local _fill = {
         slew_pulse = Grid.fill(), rev = Grid.fill(),
@@ -254,7 +246,7 @@ local function Page(args)
 
         if wide or view_scroll == 0 then
             _view_scale{
-                x = nudge + (wide and 15 or 8), y = 1, levels = { 2, 15 },
+                x = wide and 13 or 8, y = 1, levels = { 4, 15 },
                 state = crops.of_variable(
                     eggs.view_focus==eggs.SCALE and 1 or 0,
                     function(v)
@@ -265,7 +257,7 @@ local function Page(args)
                 )
             }
             _view_key{
-                x = nudge + (wide and 15 or 8), y = 2, levels = { 2, 15 },
+                x = (wide and 14 or 8), y = wide and 1 or 2, levels = { 4, 15 },
                 state = crops.of_variable(
                     eggs.view_focus==eggs.KEY and 1 or 0,
                     function(v)
@@ -281,7 +273,7 @@ local function Page(args)
 
         if eggs.view_focus == eggs.NORMAL then
             _mode_arq('mode_'..track, eggs.mapping, {
-                x = nudge + 3, y = 1, levels = { 4, 15 },
+                x = wide and 6 or 3, y = 1, levels = { 4, 15 },
                 state = crops.of_variable(
                     mode==eggs.ARQ and 1 or 0,
                     function(v)
@@ -290,7 +282,7 @@ local function Page(args)
                 )
             })
             _mode_latch('mode_'..track, eggs.mapping, {
-                x = nudge + (wide and 8 or 5), y = 1, levels = { 4, 15 },
+                x = wide and 7 or 5, y = 1, levels = { 4, 15 },
                 state = crops.of_variable(
                     mode==eggs.LATCH and 1 or 0,
                     function(v)
@@ -325,7 +317,7 @@ local function Page(args)
 
                 for i = 1, wide and #eggs.pattern_groups[track].poly or 1 do
                     _patrecs.manual[i](nil, eggs.mapping, {
-                        x = nudge + 4 + i - 1, y = 1,
+                        x = wide and (i) or 4, y = wide and 1 or 2,
                         pattern = eggs.pattern_groups[track][voicing][i],
                     })
                 end
@@ -352,19 +344,19 @@ local function Page(args)
                     _rate_rev{
                         track = track, voicing = voicing, wide = wide,
                     }
-                    if not wide then
-                        _view_scroll{
-                            x = nudge + 7, y = 2, levels = { 4, 15 },
-                            state = crops.of_variable(view_scroll, function(v) 
-                                view_scroll = v
-                                crops.dirty.grid = true
-                            end)
-                        }
-                    end
+                    -- if not wide then
+                    --     _view_scroll{
+                    --         x = nudge + 7, y = 2, levels = { 4, 15 },
+                    --         state = crops.of_variable(view_scroll, function(v) 
+                    --             view_scroll = v
+                    --             crops.dirty.grid = true
+                    --         end)
+                    --     }
+                    -- end
                 end
 
-                if wide or view_scroll == 0 then
-                    for i = 1, wide and eggs.snapshot_count or 2 do
+                if wide then
+                    for i = 1, wide and eggs.snapshot_count or 3 do
                         local filled = (ss[i] and next(ss[i]))
 
                         local function snapshot()
@@ -377,17 +369,19 @@ local function Page(args)
                         local function recall()
                             eggs.keymaps[track]:set(ss[i] or {})
                         end
+
+                        local xx = (wide and 8 or 5) + i - 1
                         
                         if mode==eggs.LATCH then
                             _snapshots[i].latch(nil, eggs.mapping, {
-                                x = nudge + (wide and 9 or 6) + i - 1, y = 1,
+                                x = xx, y = 1,
                                 levels = { filled and 4 or 0, filled and 15 or 8 },
                                 action_tap = filled and recall or snapshot,
                                 action_hold = clear_snapshot,
                             })
                         else
                             _snapshots[i].normal(nil, eggs.mapping, {
-                                x = nudge + (wide and 9 or 6) + i - 1, y = 1,
+                                x = xx, y = 1,
                                 levels = { filled and 4 or 0, filled and 15 or 8 },
                                 state = crops.of_variable(snapshots_normal_held[i], function(v)
                                     snapshots_normal_held[i] = v
@@ -426,70 +420,17 @@ local function Page(args)
             }
         end
 
-        if wide or view_scroll > 0 then
-            local id = out.param_ids.row
-            _row(id, eggs.mapping, {
-                x = nudge + (wide and 16 or 8), y = 2, flow = 'up', size = 2,
-                levels = { 4, 15 }, wrap = false,
-                min = params:lookup_param(id).min,
-                max = params:lookup_param(id).max,
-                state = eggs.of_param(id)
-            })
-        end
-
         if eggs.view_focus == eggs.NORMAL then 
-            if (wide or view_scroll > 0) then
-                local id = out.param_ids.column
-                _column(id, eggs.mapping, {
-                    x = nudge + (wide and 13 or 6), y = 1, size = 2,
-                    levels = { 4, 15 }, wrap = false,
-                    min = params:lookup_param(id).controlspec.minval,
-                    max = params:lookup_param(id).controlspec.maxval,
-                    step = eggs.volts_per_column,
-                    state = eggs.of_param(id)
-                })
-            end
             if wide then
                 for i = 1, #eggs.pattern_groups[track].aux do
                     _patrecs.aux[i](nil, eggs.mapping, {
-                        x = nudge + 13 + i - 1, y = 2,
+                        x = 12 + i - 1, y = 2,
                         pattern = eggs.pattern_groups[track].aux[i],
                     })
                 end
             end
         elseif eggs.view_focus == eggs.SCALE then
-            _degs_bg(nil, eggs.mapping, {
-                left = nudge + (wide and 3 or 1), top = 1, level = 4,
-                -- width = 7, nudge = 6, -- 8x8 sizing
-                width = wide and 12 or 7, nudge = wide and 3 or 6,
-            })
-            for i,_deg in ipairs(_degs) do
-                local id = tune:get_param_id('enable_'..i)
-                _deg(id, eggs.mapping, {
-                    left = nudge + (wide and 3 or 1), top = 1, levels = { 8, 15 },
-                    tune = tune, degree = i, 
-                    -- width = 7, nudge = 6, -- 8x8 sizing
-                    width = wide and 12 or 7, nudge = wide and 3 or 6,
-                    state = eggs.of_param(id),
-                })
-            end
         elseif eggs.view_focus == eggs.KEY then
-            --TODO: support pattern recording & retriggers as I did in ndls
-            local id = tune:get_param_id('tonic')
-            _tonic(id, eggs.mapping, {
-                left = nudge + (wide and 3 or 1), top = 1, levels = { 4, 15 },
-                -- width = 7, nudge = 6, -- 8x8 sizing
-                width = wide and 12 or 7, nudge = wide and 3 or 6,
-                -- state = Tune.of_param(eggs.get_tune(track), 'tonic'), 
-                state = crops.of_variable(
-                    params:get(id), 
-                    function(v)
-                        params:set(id, v, true) 
-                        params:lookup_param(id):bang()
-                    end
-                ),
-                tune = tune,
-            })
         end
     end
 end
