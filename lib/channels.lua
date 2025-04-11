@@ -91,7 +91,7 @@ function channels.new(count)
         }
     end
 
-    self.channel_params_count = tab.count(self.param_ids[1]) * count
+    self.channel_params_count = tab.count(self.param_ids[1])
     self.params_count = 1 + (self.count) --?
 
     return self
@@ -392,15 +392,16 @@ function channels:idx_to_deg_oct(i, idx)
 end
 
 function channels:get_semitones(i, idx, column)
+    local grp = self:group_index(i)
     local deg, oct = self:idx_to_deg_oct(i, idx)
 
-    local deg = (self[i].degree + column - 1)
+    local deg = (deg + column)
     local scale = scales[self[i].intervals][self[grp].mode]
     local st = scale[(deg + (self[i].intervals * 48)) % self[i].intervals + 1]
     local off_oct = deg // self[i].intervals
-    local note = st + self[grp].modulation_semitones 
-                    + self[grp].transposition_semitones 
-                    + ((off_oct) * 12)
+    local note = 1 + st + self[grp].modulation_semitones 
+                   + self[grp].transposition_semitones 
+                   + ((off_oct + oct - 3) * 12)
     return note
 end
 

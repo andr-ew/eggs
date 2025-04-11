@@ -20,6 +20,7 @@ local wide = g and g.device and g.device.cols >= 16 or false
 
 cs = require 'controlspec'
 -- lfos = require 'lfo'
+musicutil = require 'musicutil'
 
 --git submodule libs
 
@@ -42,6 +43,7 @@ Keymap = include 'lib/keymap/ui'
 tune = include 'lib/tune/tune'                              --diatonic tuning lib
 tunings, scale_groups = include 'lib/tune/scales'
 Tune = include 'lib/tune/ui'
+channels = include 'lib/channels'                           --tuning class
 
 arqueggiator = include 'lib/arqueggiator/arqueggiator'      --arqueggiation (arquencing) lib
 Arqueggiator = include 'lib/arqueggiator/ui'

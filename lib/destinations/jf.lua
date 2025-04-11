@@ -17,9 +17,8 @@ local held = {}
 dest.voicing = 'poly'
 
 local function get_volts(idx)
-    local x = (idx-1)%eggs.keymap_wrap + 1 + dest.column 
-    local y = (idx-1)//eggs.keymap_wrap + 1 + dest.row 
-    return eggs.tunes[dest.preset]:volts(x, y, nil, dest.oct - 2) - 3/12
+    local semitones = eggs.channels:get_semitones(dest.track, idx, dest.column) - 3
+    return semitones/12
 end
 
 dest.note_on = function(_, idx)

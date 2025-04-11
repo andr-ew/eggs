@@ -1,5 +1,5 @@
 local function Arq(args)
-    local _frets = Tune.grid.fretboard()
+    -- local _frets = Tune.grid.fretboard()
     local _keymap = Arqueggiator.grid.keymap()
 
     local arq = args.arq
@@ -124,15 +124,15 @@ local function Arq(args)
             end
         end
 
-        _frets{
-            x = 1, y = 2 + props.rows, size = eggs.keymap_wrap * props.rows, 
-            flow = 'right', flow_wrap = 'up',
-            levels = { 0, 1 },
-            tune = tune,
-            toct = 0, --?
-            column_offset = props.out.column,
-            row_offset = props.out.row,
-        }
+        -- _frets{
+        --     x = 1, y = 2 + props.rows, size = eggs.keymap_wrap * props.rows, 
+        --     flow = 'right', flow_wrap = 'up',
+        --     levels = { 0, 1 },
+        --     tune = tune,
+        --     toct = 0, --?
+        --     column_offset = props.out.column,
+        --     row_offset = props.out.row,
+        -- }
         _keymap{
             x = 1, y = 2 + props.rows, size = eggs.keymap_wrap * props.rows, 
             flow = 'right', flow_wrap = 'up', levels = { 4, 8, 15 }, 
@@ -227,7 +227,7 @@ local function Page(args)
     local view_scroll = 0
     -- local _view_scroll = Grid.momentary()
     
-    local _frets = Tune.grid.fretboard()
+    -- local _frets = Tune.grid.fretboard()
     local _keymap = { mono = Keymap.grid.mono(), poly = Keymap.grid.poly() }
 
     local _tonic = Patcher.grid.destination(Tune.grid.tonic())
@@ -334,7 +334,7 @@ local function Page(args)
                         ),
                     })
                 else
-                    _fill.slew_pulse{ x = nudge + 3, y = 2, level = 4 }
+                    _fill.slew_pulse{ x = nudge + 3, y = 2, level = 2 }
                     _fill.rev{ x = nudge + 4, y = 2, level = 4 }
                     if wide then
                         _fill.rate_mark{ x = nudge + 8, y = 2, level = 4 }
@@ -401,15 +401,15 @@ local function Page(args)
                 end
             end
 
-            _frets{
-                x = 1, y = 2 + props.rows, size = eggs.keymap_wrap * props.rows, 
-                flow = 'right', flow_wrap = 'up',
-                levels = { 0, 4 },
-                tune = tune,
-                toct = 0, --?
-                column_offset = out.column,
-                row_offset = params:get(out.param_ids.row),
-            }
+            -- _frets{
+            --     x = 1, y = 2 + props.rows, size = eggs.keymap_wrap * props.rows, 
+            --     flow = 'right', flow_wrap = 'up',
+            --     levels = { 0, 4 },
+            --     tune = tune,
+            --     toct = 0, --?
+            --     column_offset = out.column,
+            --     row_offset = params:get(out.param_ids.row),
+            -- }
             _keymap[out.voicing]{
                 x = 1, y = 2 + props.rows, size = eggs.keymap_wrap * props.rows, 
                 wrap = eggs.keymap_wrap,
@@ -454,7 +454,7 @@ local function UI(args)
         if wide or eggs.view_focus == eggs.NORMAL then 
             _track{
                 x = wide and 15 or 1, y = 1, size = #_pages, 
-                levels = { 0, props.focused and 15 or 4 },
+                levels = { 2, props.focused and 15 or 4 },
                 wrap = 2,
                 state = { 
                     eggs.track_focus, 

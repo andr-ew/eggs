@@ -30,12 +30,13 @@ function destination:new(id_postfix)
 end
 
 function destination:get_note_hz(idx)
-    local x = (idx-1)%eggs.keymap_wrap + 1 + self.column 
-    local y = (idx-1)//eggs.keymap_wrap + 1 + self.row 
-    local note = eggs.tunes[self.preset]:midi(x, y, nil, self.oct) + 33
-    local hz = eggs.tunes[self.preset]:hz(x, y, nil, self.oct) * 55
+    local semitones = eggs.channels:get_semitones(self.track, idx, self.column)
 
-    return note, hz
+    local note_num = semitones + 33
+    local hz = musicutil.note_num_to_freq(note_num)
+    -- local hz = eggs.tunes[self.preset]:hz(x, y, nil, self.oct) * 55
+
+    return note_num, hz
 end
 
 function destination:note_on(idx)

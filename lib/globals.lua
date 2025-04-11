@@ -199,6 +199,9 @@ for i = 1,eggs.track_count do
     eggs.snapshots[i] = { mono = {}, poly = {}, arq = {} }
 end
 
+eggs.channels = channels.new(eggs.track_count)
+
+
 function eggs.noteOn(note_number, hz) end
 function eggs.noteOff(note_number) end
 
@@ -216,6 +219,7 @@ function eggs.set_dest(track, v)
     if eggs.keymaps[i] then eggs.keymaps[i]:clear() end
 
     eggs.track_dest[i] = eggs.dests[i][v]
+    eggs.track_dest[i].track = i
 
     local out = eggs.track_dest[i]
     local voicing = out.voicing

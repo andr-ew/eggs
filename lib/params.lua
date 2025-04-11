@@ -174,6 +174,32 @@ function p.add_keymap_params()
             end)
         end
     end
+    do
+        params:add_group(
+            'tuning_group', 'tuning', 
+            1 + eggs.track_count * (1 + eggs.channels.channel_params_count) + eggs.channels.params_count
+        )
+        params:add{
+            type = 'number', name = 'base key', id = 'base_key', 
+            min = -11, max = 11, default = tab.key(channels.modulation_names, 'A'),
+            action = function(v)
+                crops.dirty.screen = true 
+
+                for i = 1,eggs.channels.count do
+                    eggs.channels:update_modulation(i)
+                end
+            end,
+            --TODO
+            formatter = function(p)
+                return channels.modulation_names[p:get()]
+            end
+        }
+        for i = 1,eggs.channels.count do
+            params:add_separator('track '..i)
+            eggs.channels:add_channel_params(i)
+        end
+        eggs.channels:add_params()
+    end
 end
 
 function p.add_pattern_params()
