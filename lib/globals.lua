@@ -100,6 +100,7 @@ eggs.pattern_groups = {}
 eggs.pattern_factories = {}
 eggs.mute_groups = {}
 eggs.pattern_keymap_shims = {}
+eggs.arq_setters = {}
 
 for i = 1,eggs.track_count do
     eggs.pattern_groups[i] = { mono = {}, poly = {}, arq = {}, aux = {} }
@@ -158,6 +159,23 @@ for i = 1,eggs.track_count do
     for _,pat in ipairs(eggs.pattern_groups[i].aux) do
         pat.process = function(t)
             if t[1] == 'param' then process_param(t[2], t[3]) end
+        end
+    end
+
+    do
+        local track = i
+
+        local mute_group = eggs.pattern_keymap_shims[track].arq
+        local function process_arq(new)
+            eggs.arqs[track]:set_sequence(new)
+
+            crops.dirty.grid = true;
+        end
+        mute_group.process = process_arq
+
+        eggs.arq_setters[track] = function(new)
+            process_arq(new)
+            mute_group:watch(new)
         end
     end
 end

@@ -1,3 +1,84 @@
+local function Frets()
+    return function(props)
+        if crops.mode == 'redraw' and crops.device == 'grid' then
+            local g = crops.handler
+
+            local ivs = props.intervals
+            local rows = props.rows
+            local columns = props.columns
+            local view_width = props.view_width
+            local offset = props.offset
+
+            local count = math.ceil(columns / ivs)
+            local lvl = props.level
+            -- print('rows, count, ivs', rows, count, ivs)
+
+            if lvl>0 then for i = 1, count do
+                local x = props.x + ((i - 1) * ivs) - props.offset
+
+                if x >= props.x and x <= props.x + view_width - 1 then
+                    for ii = 1, rows do
+                        local y = props.y - ii + 1
+                        g:led(x, y, lvl)
+                    end
+                end
+            end
+        end end
+    end
+end
+
+local function Keymaps(args)
+    local track = args.track
+    local arq = eggs.arqs[track]
+
+    local _frets = Frets()
+
+    local _keymap = {
+        mono = Keymap.grid.mono(),
+        poly = Keymap.grid.poly(),
+        arq = Arqueggiator.grid.keymap()
+    }
+
+    return function(props)
+        local mode = params:get('mode_'..track)
+        local out = eggs.track_dest[track]
+        local voicing = out.voicing
+        local typ = mode==eggs.ARQ and 'arq' or voicing
+
+        _frets{
+            x = 1, y = 8, 
+            rows = eggs.keymap_view_height, columns = eggs.keymap_columns, 
+            view_width = eggs.keymap_view_width,
+            intervals = params:get('intervals_'..track), offset = eggs.get_view(track),
+            -- flow = 'right', flow_wrap = 'up',
+            level = mode==eggs.ARQ and 1 or props.levels[1],
+        }
+        do
+            local keymap_props = {
+                x = 1, y = 8, 
+                view_width = eggs.keymap_view_width,
+                view_height = eggs.keymap_view_height,
+                view_x = eggs.get_view(track),
+                view_y = 0,
+                size = eggs.keymap_size, wrap = eggs.keymap_wrap,
+                flow = 'right', flow_wrap = 'up', 
+                levels = mode==eggs.ARQ and props.levels or { 0, props.levels[3] },  
+                step = arq.step, gate = arq.gate,
+                mode = eggs.mode_names[mode],
+                action_latch = function()
+                end,
+                state = mode==eggs.ARQ 
+                            and crops.of_variable(arq.sequence, eggs.arq_setters[track]) 
+                            or eggs.keymaps[track]:get_state(mode==LATCH)
+                        ,
+                -- action_replace = function() arq:restart() end
+            }
+
+            _keymap[typ](keymap_props)
+        end
+    end
+end
+
 local function Arq(args)
     -- local _frets = Tune.grid.fretboard()
     local _keymap = Arqueggiator.grid.keymap()
@@ -123,23 +204,6 @@ local function Arq(args)
                 end
             end
         end
-
-        -- _frets{
-        --     x = 1, y = 2 + props.rows, size = eggs.keymap_wrap * props.rows, 
-        --     flow = 'right', flow_wrap = 'up',
-        --     levels = { 0, 1 },
-        --     tune = tune,
-        --     toct = 0, --?
-        --     column_offset = props.out.column,
-        --     row_offset = props.out.row,
-        -- }
-        _keymap{
-            x = 1, y = 2 + props.rows, size = eggs.keymap_wrap * props.rows, 
-            flow = 'right', flow_wrap = 'up', levels = { 4, 8, 15 }, 
-            step = arq.step, gate = arq.gate,
-            state = crops.of_variable(arq.sequence, set_arq),
-            -- action_replace = function() arq:restart() end
-        }
     end
 end
 
@@ -228,14 +292,14 @@ local function Page(args)
     -- local _view_scroll = Grid.momentary()
     
     -- local _frets = Tune.grid.fretboard()
-    local _keymap = { mono = Keymap.grid.mono(), poly = Keymap.grid.poly() }
-
     local _tonic = Patcher.grid.destination(Tune.grid.tonic())
     
     local _fill = {
         slew_pulse = Grid.fill(), rev = Grid.fill(),
         rate_mark = Grid.fill(), loop = Grid.fill()
     }
+
+    local _view = Patcher.grid.destination(Produce.grid.integer_trigger())
 
     return function(props)
         local out = eggs.track_dest[track]
@@ -400,24 +464,6 @@ local function Page(args)
                     end
                 end
             end
-
-            -- _frets{
-            --     x = 1, y = 2 + props.rows, size = eggs.keymap_wrap * props.rows, 
-            --     flow = 'right', flow_wrap = 'up',
-            --     levels = { 0, 4 },
-            --     tune = tune,
-            --     toct = 0, --?
-            --     column_offset = out.column,
-            --     row_offset = params:get(out.param_ids.row),
-            -- }
-            _keymap[out.voicing]{
-                x = 1, y = 2 + props.rows, size = eggs.keymap_wrap * props.rows, 
-                wrap = eggs.keymap_wrap,
-                flow = 'right', flow_wrap = 'up',
-                levels = { 0, 15 },
-                state = eggs.keymaps[track]:get_state(),
-                mode = eggs.mode_names[mode]
-            }
         end
 
         if eggs.view_focus == eggs.NORMAL then 
@@ -428,6 +474,18 @@ local function Page(args)
                         pattern = eggs.pattern_groups[track].aux[i],
                     })
                 end
+            end
+
+            --TODO: support view in mono keymap
+            if mode==eggs.ARQ or voicing=='poly' then
+                local id = 'view_'..track
+                _view(nil, eggs.mapping, {
+                    x = wide and 13 or 5, y = 2, size = 2, flow = 'right',
+                    levels = { 0, 15 }, wrap = false,
+                    min = params:lookup_param(id).min,
+                    max = params:lookup_param(id).max,
+                    state = crops.of_param(id, true)
+                })
             end
         elseif eggs.view_focus == eggs.SCALE then
         elseif eggs.view_focus == eggs.KEY then
@@ -444,6 +502,12 @@ local function UI(args)
     for track = 1,eggs.track_count do
         _pages[track] = Page{ track = track }
     end
+    
+    local _keymaps = {}
+    for track = 1,eggs.track_count do
+        _keymaps[track] = Keymaps{ track = track }
+    end
+
 
     -- local _fill = {
     --     slew_pulse = Grid.fill(), rev = Grid.fill(),
@@ -482,6 +546,8 @@ local function UI(args)
         --     _fill.rate_mark{ x = 8, y = 2, level = 4 }
         --     _fill.loop{ x = 12, y = 2, level = 4 }
         -- end
+        
+        _keymaps[eggs.track_focus]{ levels = { 4, 8, 15 } }
     
         _pages[eggs.track_focus]{ wide = args.wide, rows = props.rows }
     end

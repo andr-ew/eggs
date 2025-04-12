@@ -75,7 +75,7 @@ end
 function p.add_keymap_params()
     params:add_separator('keymap')
     for i = 1,eggs.track_count do
-        params:add_group('keymap_track_'..i, 'track '..i, 1)
+        params:add_group('keymap_track_'..i, 'track '..i, 2)
 
         params:add{
             type = 'option', id = 'mode_'..i, name = 'mode',
@@ -96,6 +96,13 @@ function p.add_keymap_params()
                 
                 crops.dirty.grid = true 
             end
+        }
+        local max_intervals = eggs.max_intervals
+        params:add{
+            type = 'number', id = 'view_'..i, name = 'view', 
+            min = -max_intervals, 
+            max = eggs.keymap_columns - eggs.keymap_view_width - max_intervals, 
+            default = 0,
         }
     end
 
