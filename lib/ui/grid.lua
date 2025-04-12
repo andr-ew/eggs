@@ -131,31 +131,6 @@ local function Arq(args)
                 })
             end
 
-            if wide or props.view_scroll == 0 then
-                for i = 1, wide and eggs.snapshot_count or 2 do
-                    local filled = (ss[i] and #ss[i] > 0)
-
-                    local function snapshot()
-                        ss[i] = arq.sequence
-                    end
-                    local function clear_snapshot()
-                        ss[i] = {}
-                        -- arq.sequence = {}
-                    end
-                    local function recall()
-                        if #(ss[i] or {}) > 0 then 
-                            set_arq(ss[i])
-                        end
-                    end
-                    _snapshots[i](nil, eggs.mapping, {
-                        x = nudge + (wide and 9 or 6) + i - 1, y = 1,
-                        levels = { filled and 4 or 0, filled and 15 or 8 },
-                        action_tap = filled and recall or snapshot,
-                        action_hold = clear_snapshot,
-                    })
-                end
-            end
-            
             -- if #arq.sequence > 0 then
             if true then
                 do
@@ -204,6 +179,31 @@ local function Arq(args)
                 end
             end
         end
+
+        if wide or props.view_scroll == 0 then
+            for i = 1, wide and eggs.snapshot_count or 2 do
+                local filled = (ss[i] and #ss[i] > 0)
+
+                local function snapshot()
+                    ss[i] = arq.sequence
+                end
+                local function clear_snapshot()
+                    ss[i] = {}
+                    -- arq.sequence = {}
+                end
+                local function recall()
+                    if #(ss[i] or {}) > 0 then 
+                        set_arq(ss[i])
+                    end
+                end
+                _snapshots[i](nil, eggs.mapping, {
+                    x = nudge + (wide and 9 or 6) + i - 1, y = 1,
+                    levels = { filled and 4 or 0, filled and 15 or 8 },
+                    action_tap = filled and recall or snapshot,
+                    action_hold = clear_snapshot,
+                })
+            end
+        end
     end
 end
 
@@ -242,6 +242,91 @@ local function Rate_reverse()
                     levels = { 0, 15 }, wrap = false,
                     min = -8, max = 8,
                     state = eggs.of_param(prefix..'_time_factor')
+                })
+            end
+        end
+    end
+end
+
+local function Scale_key()
+    local chans = eggs.channels
+
+    local _grouper = Patcher.grid.destination(Grid.toggle())
+    
+    local _mode = Patcher.grid.destination(Grid.integer())
+    local _intervals = Patcher.grid.destination(Components.grid.fader())
+
+    local _transpose = Patcher.grid.destination(Produce.grid.integer_trigger())
+    local _offset = Patcher.grid.destination(Produce.grid.integer_trigger())
+    local _modulate = Patcher.grid.destination(Produce.grid.integer_trigger())
+
+    return function(props)
+        local i = props.track
+        local out = eggs.track_dest[i]
+
+        if eggs.view_focus ~= eggs.NORMAL then
+            _grouper(nil, eggs.mapping, {
+                x = 14, y = 2, levels = { 4, 15 },
+                state = crops.of_param('grouper_'..i)
+            })
+        end
+
+        if eggs.view_focus == eggs.KEY then
+            do
+                local id = chans:get_param_id(i, 'transposition', true)
+                _transpose(id, eggs.mapping, {
+                    x = 1, y = 1, size = 2, flow = 'right',
+                    levels = { 4, 15 }, wrap = false,
+                    min = params:lookup_param(id).min,
+                    max = params:lookup_param(id).max,
+                    state = eggs.of_param(id)
+                })
+            end
+            do
+                local id = out.param_ids.column
+                _offset(id, eggs.mapping, {
+                    x = 3, y = 1, size = 2, flow = 'right',
+                    levels = { 2, 15 }, wrap = false,
+                    min = params:lookup_param(id).controlspec.minval,
+                    max = params:lookup_param(id).controlspec.maxval,
+                    step = eggs.volts_per_column,
+                    state = eggs.of_param(id)
+                })
+            end
+            do
+                local id = chans:get_param_id(i, 'modulation', true)
+                _modulate(id, eggs.mapping, {
+                    x = 5, y = 1, size = 2, flow = 'right',
+                    levels = { 4, 15 }, wrap = false,
+                    min = params:lookup_param(id).min,
+                    max = params:lookup_param(id).max,
+                    state = eggs.of_param(id)
+                })
+            end
+        elseif eggs.view_focus == eggs.SCALE then
+            if crops.device == 'grid' and crops.mode == 'redraw' then
+                local g = crops.handler
+
+                local ivs = chans[i].intervals
+                for i = channels.intervals_min,channels.intervals_max do
+                    if not channels.base_exists[ivs][i] then
+                        g:led(i, 1, 4)
+                    end
+                end
+            end
+
+            do
+                local id = chans:get_param_id(i, 'mode', true)
+                _mode(id, eggs.mapping, {
+                    x = 1, y = 1, size = channels.intervals_max, min = 1, flow = 'right',
+                    state = eggs.of_param(id, true)
+                })
+            end
+            do
+                local id = 'intervals_'..i
+                _intervals(id, eggs.mapping, {
+                    x = 1, y = 2, size = 7, levels = { 4, 15, 15 }, 
+                    state = eggs.of_param(id, true)
                 })
             end
         end
@@ -301,6 +386,8 @@ local function Page(args)
 
     local _view = Patcher.grid.destination(Produce.grid.integer_trigger())
 
+    local _scale_key = Scale_key()
+
     return function(props)
         local out = eggs.track_dest[track]
         local voicing = out.voicing
@@ -354,6 +441,26 @@ local function Page(args)
                     end
                 )
             })
+            if wide then
+                for i = 1, #eggs.pattern_groups[track].aux do
+                    _patrecs.aux[i](nil, eggs.mapping, {
+                        x = 12 + i - 1, y = 2,
+                        pattern = eggs.pattern_groups[track].aux[i],
+                    })
+                end
+            end
+
+            --TODO: support view in mono keymap
+            if mode==eggs.ARQ or voicing=='poly' then
+                local id = 'view_'..track
+                _view(nil, eggs.mapping, {
+                    x = wide and 13 or 5, y = 2, size = 2, flow = 'right',
+                    levels = { 0, 15 }, wrap = false,
+                    min = params:lookup_param(id).min,
+                    max = params:lookup_param(id).max,
+                    state = crops.of_param(id, true)
+                })
+            end
         end
 
         if mode==eggs.ARQ then
@@ -369,6 +476,8 @@ local function Page(args)
                 wide = wide, view_scroll = view_scroll, out = out, rows = props.rows,
             }
         else
+            local ss = eggs.snapshots[track][voicing] or {}
+
             if eggs.view_focus == eggs.NORMAL then
                 if out.param_ids.slew_enable then
                     _slew_enable{
@@ -377,7 +486,6 @@ local function Page(args)
                     }
                 end
                     
-                local ss = eggs.snapshots[track][voicing] or {}
 
                 for i = 1, wide and #eggs.pattern_groups[track].poly or 1 do
                     _patrecs.manual[i](nil, eggs.mapping, {
@@ -418,78 +526,55 @@ local function Page(args)
                     --     }
                     -- end
                 end
+            end
 
-                if wide then
-                    for i = 1, wide and eggs.snapshot_count or 3 do
-                        local filled = (ss[i] and next(ss[i]))
+            if wide or props.view_scroll == 0 then
+                for i = 1, wide and eggs.snapshot_count or 3 do
+                    local filled = (ss[i] and next(ss[i]))
 
-                        local function snapshot()
-                            ss[i] = eggs.keymaps[track]:get()
-                        end
-                        local function clear_snapshot()
-                            ss[i] = {}
-                            -- eggs.keymaps[track]:clear()
-                        end
-                        local function recall()
-                            eggs.keymaps[track]:set(ss[i] or {})
-                        end
+                    local function snapshot()
+                        ss[i] = eggs.keymaps[track]:get()
+                    end
+                    local function clear_snapshot()
+                        ss[i] = {}
+                        -- eggs.keymaps[track]:clear()
+                    end
+                    local function recall()
+                        eggs.keymaps[track]:set(ss[i] or {})
+                    end
 
-                        local xx = (wide and 8 or 5) + i - 1
-                        
-                        if mode==eggs.LATCH then
-                            _snapshots[i].latch(nil, eggs.mapping, {
-                                x = xx, y = 1,
-                                levels = { filled and 4 or 0, filled and 15 or 8 },
-                                action_tap = filled and recall or snapshot,
-                                action_hold = clear_snapshot,
-                            })
-                        else
-                            _snapshots[i].normal(nil, eggs.mapping, {
-                                x = xx, y = 1,
-                                levels = { filled and 4 or 0, filled and 15 or 8 },
-                                state = crops.of_variable(snapshots_normal_held[i], function(v)
-                                    snapshots_normal_held[i] = v
+                    local xx = (wide and 8 or 5) + i - 1
+                    
+                    if mode==eggs.LATCH then
+                        _snapshots[i].latch(nil, eggs.mapping, {
+                            x = xx, y = 1,
+                            levels = { filled and 4 or 0, filled and 15 or 8 },
+                            action_tap = filled and recall or snapshot,
+                            action_hold = clear_snapshot,
+                        })
+                    else
+                        _snapshots[i].normal(nil, eggs.mapping, {
+                            x = xx, y = 1,
+                            levels = { filled and 4 or 0, filled and 15 or 8 },
+                            state = crops.of_variable(snapshots_normal_held[i], function(v)
+                                snapshots_normal_held[i] = v
 
-                                    if v > 0 then
-                                        if filled then recall() 
-                                        elseif next(eggs.keymaps[track]:get()) then snapshot() end
-                                    else
-                                        eggs.keymaps[track]:set({})
-                                    end
+                                if v > 0 then
+                                    if filled then recall() 
+                                    elseif next(eggs.keymaps[track]:get()) then snapshot() end
+                                else
+                                    eggs.keymaps[track]:set({})
+                                end
 
-                                    crops.dirty.grid = true
-                                end)
-                            })
-                        end
+                                crops.dirty.grid = true
+                            end)
+                        })
                     end
                 end
             end
         end
 
-        if eggs.view_focus == eggs.NORMAL then 
-            if wide then
-                for i = 1, #eggs.pattern_groups[track].aux do
-                    _patrecs.aux[i](nil, eggs.mapping, {
-                        x = 12 + i - 1, y = 2,
-                        pattern = eggs.pattern_groups[track].aux[i],
-                    })
-                end
-            end
-
-            --TODO: support view in mono keymap
-            if mode==eggs.ARQ or voicing=='poly' then
-                local id = 'view_'..track
-                _view(nil, eggs.mapping, {
-                    x = wide and 13 or 5, y = 2, size = 2, flow = 'right',
-                    levels = { 0, 15 }, wrap = false,
-                    min = params:lookup_param(id).min,
-                    max = params:lookup_param(id).max,
-                    state = crops.of_param(id, true)
-                })
-            end
-        elseif eggs.view_focus == eggs.SCALE then
-        elseif eggs.view_focus == eggs.KEY then
-        end
+        _scale_key{ track = track }
     end
 end
 

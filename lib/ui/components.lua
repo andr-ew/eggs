@@ -1,6 +1,7 @@
 local Components = {
     enc_screen = {},
     key_screen = {},
+    grid = {},
 }
 
 do
@@ -194,6 +195,206 @@ do
                     and 4 or 15 
                 },
             })
+        end
+    end
+end
+
+do
+    --default values for every valid prop.
+    local defaults = {
+        state = {1},
+        x = 1,                      --x position of the component
+        y = 1,                      --y position of the component
+        edge = 'rising',            --input edge sensitivity. 'rising' or 'falling'.
+        input = function(n, z) end, --input callback, passes last key state on any input
+        levels = { 0, 15, 15 },     --brightness levels. expects a table of 3 ints 0-15
+        size = 128,                 --total number of keys
+        wrap = 16,                  --wrap to the next row/column every n keys
+        flow = 'right',             --primary direction to flow: 'up', 'down', 'left', 'right'
+        flow_wrap = 'down',         --direction to flow when wrapping. must be perpendicular to flow
+        padding = 0,                --add blank spaces before the first key
+        min = 1,                    --value of lowest key. max = min + size
+    }
+    defaults.__index = defaults
+
+    function Components.grid.fader()
+        return function(props)
+            if crops.device == 'grid' then 
+                setmetatable(props, defaults) 
+
+                if crops.mode == 'input' then 
+                    local x, y, z = table.unpack(crops.args) 
+                    local n = Grid.util.xy_to_index(props, x, y)
+
+                    if n then 
+                        local v = n + props.min - 1
+
+                        if
+                            (z == 1 and props.edge == 'rising')
+                            or (z == 0 and props.edge == 'falling')
+                        then
+                            crops.set_state(props.state, v) 
+                        end
+                        
+                        props.input(v, z)
+                    end
+                elseif crops.mode == 'redraw' then 
+                    local g = crops.handler 
+
+                    local n = crops.get_state(props.state) - props.min + 1
+                    for i = 1, props.size do
+                        local lvl = props.levels[(i == n) and 3 or (i < n) and 2 or 1] 
+
+                        local x, y = Grid.util.index_to_xy(props, i)
+
+                        if lvl>0 then g:led(x, y, lvl) end
+                    end
+                end
+            end
+        end
+    end
+end
+
+do
+    --default values for every valid prop.
+    local defaults = {
+        state = {1},
+        state_secondary = { nil },
+        x = 1,                      --x position of the component
+        y = 1,                      --y position of the component
+        edge = 'rising',            --input edge sensitivity. 'rising' or 'falling'.
+        input = function(n, z) end, --input callback, passes last key state on any input
+        levels = { 0, 4, 15 },      --brightness levels. expects a table of 3 ints 0-15
+        size = 128,                 --total number of keys
+        wrap = 16,                  --wrap to the next row/column every n keys
+        flow = 'right',             --primary direction to flow: 'up', 'down', 'left', 'right'
+        flow_wrap = 'down',         --direction to flow when wrapping. must be perpendicular to flow
+        padding = 0,                --add blank spaces before the first key
+        min = 1,                    --value of lowest key. max = min + size
+    }
+    defaults.__index = defaults
+    
+    local dtaptime = 0.25
+
+    function Components.grid.integer_two_layers()
+        local lasttime = 0
+
+        return function(props)
+            if crops.device == 'grid' then 
+                setmetatable(props, defaults) 
+
+                if crops.mode == 'input' then 
+                    local x, y, z = table.unpack(crops.args) 
+                    local n = Grid.util.xy_to_index(props, x, y)
+
+                    if n then 
+                        local v = n + props.min - 1
+
+                        if
+                            (z == 1 and props.edge == 'rising')
+                            or (z == 0 and props.edge == 'falling')
+                        then
+                            local tlast = util.time() - lasttime
+
+                            crops.set_state(props.state, v) 
+                                
+                            if tlast < dtaptime then
+                                if crops.get_state(props.state_secondary) then
+                                    crops.set_state(props.state_secondary, nil) 
+                                else
+                                    crops.set_state(props.state_secondary, v) 
+                                end
+                            end
+                            
+                            lasttime = util.time()
+                        end
+                        
+                        props.input(v, z)
+                    end
+                elseif crops.mode == 'redraw' then 
+                    local g = crops.handler 
+
+                    local n = crops.get_state(props.state) - props.min + 1
+                    local n_secondary = crops.get_state(props.state_secondary) 
+                    if n_secondary then
+                        n_secondary = n_secondary - props.min + 1
+                    end
+
+                    for i = 1, props.size do
+                        local lvl
+                        if not n_secondary then
+                            lvl = props.levels[(i == n) and 3 or 1] 
+                        else
+                            lvl = props.levels[
+                                (i == n) and 2 
+                                or (i == n_secondary) and 3
+                                or 1
+                            ]
+                        end
+
+                        local x, y = Grid.util.index_to_xy(props, i)
+
+                        if lvl>0 then g:led(x, y, lvl) end
+                    end
+                end
+            end
+        end
+    end
+end
+
+do
+    local defaults = {
+        state = {0},
+        state_locked = {0},
+        x = 1,                   
+        y = 1,                   
+        levels = { 0, 15 },      
+    }
+    defaults.__index = defaults
+        
+    local dtaptime = 0.25
+
+    function Components.grid.momentary_lock() 
+        local lasttime = 0
+
+        return function(props) 
+            if crops.device == 'grid' then 
+                setmetatable(props, defaults) 
+
+                if crops.mode == 'input' then 
+                    local x, y, z = table.unpack(crops.args) 
+                    local v = z 
+
+                    if x == props.x and y == props.y then 
+                        if z==1 then 
+                            if crops.get_state(props.state) == 1 then
+                                crops.set_state(props.state_locked, 0) 
+                            end
+
+                            crops.set_state(props.state, 1) 
+                        else
+                            local tlast = util.time() - lasttime
+                        
+                            if tlast > dtaptime then
+                                if crops.get_state(props.state_locked) == 0 then
+                                    crops.set_state(props.state, 0) 
+                                end
+                            else
+                                crops.set_state(props.state_locked, 1) 
+                            end
+
+                            lasttime = util.time()
+                        end
+                    end
+                elseif crops.mode == 'redraw' then 
+                    local g = crops.handler 
+                    local v = crops.get_state(props.state) or 0 
+
+                    local lvl = props.levels[v + 1] 
+
+                    if lvl>0 then g:led(props.x, props.y, lvl) end 
+                end
+            end
         end
     end
 end

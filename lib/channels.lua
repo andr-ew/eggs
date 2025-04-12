@@ -10,7 +10,7 @@ channels.intervals_min, channels.intervals_max = intervals_min, intervals_max
 local mode_names = {
     [7] = {
         -- 'lydian', 'myxlyd', 'aeoln', 'locrn', 'ionian', 'dorian', 'phrygn', 
-        'lydian', 'myxolydian', 'aeolean', 'locrean', 'ionian', 'dorian', 'phrygian', 
+         'lydian', 'myxolydian', 'aeolean', 'locrean', 'ionian', 'dorian', 'phrygian', 
     },
     [5] = { 
         'gong', 'shang', 'jue', 'zhi', 'yu',
@@ -185,10 +185,13 @@ table.concat(mode(build_scale(7), lookup_base[7][tab.key(base_names[7], 'aeolian
 local base_exists = {}
 local lookup_base = {}
 local base_names = {}
+local interval_names = {
+    '1 tone', '2 tones', '3 tones', '4 tones', 'pentatonic', '6 tones', 'heptatonic'
+}
 
-channels.base_exists, channels.lookup_base, channels.base_names 
+channels.base_exists, channels.lookup_base, channels.base_names, channels.interval_names
     = 
-base_exists, lookup_base, base_names
+base_exists, lookup_base, base_names, interval_names
 
 for i = intervals_min, intervals_max do
     base_exists[i] = {}
@@ -395,11 +398,11 @@ function channels:get_semitones(i, idx, column)
     local grp = self:group_index(i)
     local deg, oct = self:idx_to_deg_oct(i, idx)
 
-    local deg = (deg + column)
+    local deg = (deg + column - 1)
     local scale = scales[self[i].intervals][self[grp].mode]
     local st = scale[(deg + (self[i].intervals * 48)) % self[i].intervals + 1]
     local off_oct = deg // self[i].intervals
-    local note = 1 + st + self[grp].modulation_semitones 
+    local note = st + self[grp].modulation_semitones 
                    + self[grp].transposition_semitones 
                    + ((off_oct + oct - 3) * 12)
     return note

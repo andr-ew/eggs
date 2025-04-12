@@ -32,7 +32,7 @@ end
 function destination:get_note_hz(idx)
     local semitones = eggs.channels:get_semitones(self.track, idx, self.column)
 
-    local note_num = semitones + 33
+    local note_num = semitones + 48
     local hz = musicutil.note_num_to_freq(note_num)
     -- local hz = eggs.tunes[self.preset]:hz(x, y, nil, self.oct) * 55
 

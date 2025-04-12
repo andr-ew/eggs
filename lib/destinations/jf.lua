@@ -17,8 +17,8 @@ local held = {}
 dest.voicing = 'poly'
 
 local function get_volts(idx)
-    local semitones = eggs.channels:get_semitones(dest.track, idx, dest.column) - 3
-    return semitones/12
+    local semitones = eggs.channels:get_semitones(dest.track, idx, dest.column)
+    return semitones/12 - 2
 end
 
 dest.note_on = function(_, idx)

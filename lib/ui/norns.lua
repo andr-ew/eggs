@@ -1,88 +1,46 @@
 local x, y, e, k = eggs.x, eggs.y, eggs.e, eggs.k
 
 local function Tuning()
-    local _degs = Tune.screen.scale_degrees()    
-    
-    local _scale = { enc = Enc.integer(), screen = Screen.list() }
-    local _rows = { enc = Enc.integer(), screen = Screen.list() }
-    local _frets = { key = Key.integer(), screen = Screen.list() }
-
-    local _tuning = { enc = Enc.integer(), screen = Screen.list() }
-    local _base_key = { enc = Enc.integer(), screen = Screen.list() }
-
     return function(props)
-        local track = props.track
-        local view = props.view
-        local out = eggs.track_dest[track]
-        local tune = eggs.tunes[params:get(out.param_ids.tuning_preset)]
+        if crops.device == 'screen' and crops.mode == 'redraw' then 
+            local i = props.track
+            local view = props.view
+            local out = eggs.track_dest[i]
+            local bottom = e[2].y - 10
+            local xx = x[1]
+            local current, nxt, prev = eggs.channels:get_key_names(i)
+            local keys = { prev, current, nxt }
+                
+            screen.font_face(1)
+            screen.font_size(8)
 
-        _degs{
-            x = x[1], y = y[1.5], tune = tune,
-            -- width = 7, nudge = 6, -- 8x8 sizing
-            width = 12, nudge = 3,
-        }
+            local yy = bottom - 1
+            for ii,key in ipairs(keys) do
+                screen.level(ii == 2 and 10 or 4)
+                screen.move(xx, yy)
+                screen.text(key)
 
-        if view == eggs.SCALE then
-            do
-                local id = tune:get_scale_param_id()
-                _scale.enc{
-                    n = 1, max = #params:lookup_param(id).options,
-                    state = crops.of_param(id)
-                }
-                _scale.screen{
-                    x = x[1], y = e[1].y,
-                    text = { scale = params:string(id) }
-                }
+                yy = yy - 12
             end
-            do
-                local id = tune:get_param_id('row_tuning')
-                _rows.enc{
-                    n = 2, max = params:lookup_param(id).max,
-                    state = crops.of_param(id)
-                }
-                _rows.screen{
-                    x = x[1], y = y[2], flow = 'down',
-                    text = { rows = params:string(id) }
-                }
-            end
-            do
-                local fret_id = tune:get_param_id('fret_marks')
-                local fret_opts = params:lookup_param(fret_id).options
-                local frets_text = { 'frets' }
-                for _,v in ipairs(fret_opts) do table.insert(frets_text, v) end
 
-                _frets.key{
-                    n_prev = 2, n_next = 3, max = #fret_opts,
-                    state = crops.of_param(fret_id)
-                }
-                _frets.screen{
-                    x = x[1], y = y[3],
-                    text = frets_text, focus = params:get(fret_id) + 1,
-                }
+            local yy = yy + 24
+
+            if out.column ~= 0 then
+                screen.level(10)
+                screen.move(x[1] + 8, yy)
+                screen.text((out.column >= 0 and '+ ' or '- ')..math.abs(math.floor(out.column)))
             end
-        elseif view == eggs.KEY then
-            do
-                local id = tune:get_param_id('tuning')
-                _tuning.enc{
-                    n = 1, max = #params:lookup_param(id).options,
-                    state = crops.of_param(id)
-                }
-                _tuning.screen{
-                    x = x[1], y = e[1].y,
-                    text = { tuning = params:string(id) }
-                }
-            end
-            do
-                local id = 'base_tonic'
-                _tuning.enc{
-                    n = 2, state = crops.of_param(id),
-                    min = params:lookup_param(id).min, max = params:lookup_param(id).max,
-                }
-                _tuning.screen{
-                    x = x[1], y = y[2], flow = 'down',
-                    text = { ['base key'] = params:string(id) },
-                }
-            end
+
+            screen.level(10)
+            screen.move(x[1] + 24, yy)
+            screen.text(
+                channels.base_names[eggs.channels[i].intervals][
+                    params:get(eggs.channels:get_param_id(i, 'mode', true))
+                ]
+            )
+
+            screen.move(64, yy)
+            screen.text(channels.interval_names[eggs.channels[i].intervals])
         end
     end
 end
@@ -250,7 +208,7 @@ local function App()
     return function()
         if eggs.change_engine_modal then
             _change_engine_modal()
-        elseif eggs.view_focus == eggs.NORMAL then 
+        else
             _map{
                 n = 1, state = crops.of_variable(eggs.mapping, function(v) 
                     eggs.mapping = v>0
@@ -263,7 +221,9 @@ local function App()
             }
 
             local i_dest = params:get('dest_track_'..eggs.track_focus)
-            _dest_pages[eggs.track_focus][i_dest]{ dest = eggs.track_dest[eggs.track_focus] }
+            _dest_pages[eggs.track_focus][i_dest]{ 
+                dest = eggs.track_dest[eggs.track_focus]
+            }
 
             local top = { 21, 36, 40, 43, }
 
@@ -272,30 +232,35 @@ local function App()
                     x_left = x[1], x_right = x[2], y = 30,
                 }
             else
-                if crops.device == 'screen' and crops.mode == 'redraw' then
-                    for i = 1,2 do
-                        local out = eggs.crow_dests[i]
-                        for ii,k in ipairs{ 'cv', 'gate' } do
-                            screen.level(8)
-                            screen.move(eggs.x[i], top[2 + ii])
-                            screen.line_width(1)
-                            screen.line_rel(out.volts[k] * (eggs.w/2) * (1/10) * 1 + 1, 0)
-                            screen.stroke()
+                if eggs.view_focus == eggs.NORMAL then 
+                    if crops.device == 'screen' and crops.mode == 'redraw' then
+                        for i = 1,2 do
+                            local out = eggs.crow_dests[i]
+                            for ii,k in ipairs{ 'cv', 'gate' } do
+                                screen.level(8)
+                                screen.move(eggs.x[i], top[2 + ii])
+                                screen.line_width(1)
+                                screen.line_rel(out.volts[k] * (eggs.w/2) * (1/10) * 1 + 1, 0)
+                                screen.stroke()
+                            end
                         end
+
+                        screen.display_png(eggs.img_path..'grid_bg.png', x[1], top[1] - 10)
                     end
 
-                    screen.display_png(eggs.img_path..'grid_bg.png', x[1], top[1] - 10)
-                end
-
-                for i,_keymap in ipairs(_keymaps) do
-                    _keymaps[i]{
-                        track = i, x = x[(i - 1)%2 + 1], y = top[(i - 1)//2 + 1], 
-                        voicing = eggs.track_dest[i].voicing, 
-                        arq = params:get('mode_'..i) == eggs.ARQ,
-                    }
+                    for i,_keymap in ipairs(_keymaps) do
+                        _keymaps[i]{
+                            track = i, x = x[(i - 1)%2 + 1], y = top[(i - 1)//2 + 1], 
+                            voicing = eggs.track_dest[i].voicing, 
+                            arq = params:get('mode_'..i) == eggs.ARQ,
+                        }
+                    end
+                
+                else
+                    _tuning{ track = eggs.track_focus, view = eggs.view_focus }
                 end
             end
-            
+
             if crops.device == 'screen' and crops.mode == 'redraw' then
                 do
                     local w = 88
@@ -326,8 +291,6 @@ local function App()
                     screen.text(eggs.track_dest[i].shortname)
                 end
             end
-        else
-            _tuning{ track = eggs.track_focus, view = eggs.view_focus }
         end
     end
 end
