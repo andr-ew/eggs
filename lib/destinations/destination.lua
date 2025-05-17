@@ -5,10 +5,6 @@ function destination:new(id_postfix)
     self.__index = self
     
     o.id_postfix = id_postfix or ''
-    o.preset = 1
-    o.oct = 0
-    o.column = 0
-    o.row = -2
     o.macro_ids = {}
     o.cc_value = {}
     o.cc_index = {}
@@ -19,49 +15,32 @@ function destination:new(id_postfix)
 
     o.held = {}
 
-    o.param_ids = {
-        tuning_preset = 'tuning_preset_'..o.id_postfix,
-        oct = 'oct_'..o.id_postfix,
-        row = 'row_'..o.id_postfix,
-        column = 'column_'..o.id_postfix,
-    }
+    o.param_ids = {}
 
     return o
 end
 
-function destination:get_note_hz(idx)
-    local semitones = eggs.channels:get_semitones(self.track, idx, self.column)
-
-    local note_num = semitones + 48
-    local hz = musicutil.note_num_to_freq(note_num)
-    -- local hz = eggs.tunes[self.preset]:hz(x, y, nil, self.oct) * 55
-
-    return note_num, hz
-end
-
-function destination:note_on(idx)
-    local note, hz = self:get_note_hz(idx)
+function destination:note_on(idx, semitones)
+    local note = semitones + 48
+    local hz = musicutil.note_num_to_freq(note)
     self:action_on(note, hz)
 
     table.insert(self.held, { idx = idx, note = note })
 end
-function destination:note_off(idx) 
-    local note = self:get_note_hz(idx)
+function destination:note_off(idx, semitones) 
+    local note = semitones + 48
     self:action_off(note)
 
-    for i,h in ipairs(self.held) do if h.note==note then
+    for i,h in ipairs(self.held) do if h.idx==idx then
         table.remove(self.held, i)
         break
     end end
 end
-function destination:update_notes()
+function destination:kill_all()
     for i,h in ipairs(self.held) do
         self:action_off(h.note)
-
-        local new_note, new_hz = self:get_note_hz(h.idx)
-        h.note = new_note
-        self:action_on(new_note, new_hz)
     end
+    self.held = {}
 end
     
 function destination:add_params()
@@ -79,47 +58,6 @@ function destination:add_params()
                 t:update_tuning()
             end 
         end,
-    }
-    params:add{
-        type = 'number', id = param_ids.oct, name = 'oct',
-        min = -5, max = 5, default = self.oct,
-        action = function(v) 
-            self.oct = v; self:update_notes()
-
-            crops.dirty.grid = true 
-        end
-    }
-    do
-        local min, max = -12, 12
-        params:add{
-            type = 'control', id = param_ids.column, name = 'column',
-            controlspec = cs.def{ 
-                min = min, max = max, default = self.column * eggs.volts_per_column, 
-                quantum = (1/(max - min)) * eggs.volts_per_column, units = 'v',
-            },
-            action = function(v) 
-                local last = self.column
-                self.column = v // eggs.volts_per_column
-        
-                if last ~= self.column then self:update_notes() end
-
-                crops.dirty.grid = true 
-                crops.dirty.screen = true 
-            end
-        }
-    end
-    params:add{
-        type = 'number', id = param_ids.row, name = 'row',
-        min = -16, max = 16, default = self.row,
-        action = function(v) 
-            local last = self.row
-            self.row = v
-    
-            if last ~= self.row then self:update_notes() end
-
-            crops.dirty.grid = true 
-            crops.dirty.screen = true 
-        end
     }
 end
 
@@ -207,6 +145,5 @@ destination.Components.norns.page_macros = function()
         crops.dirty.screen = true --ahahahah
     end
 end
-
 
 return destination

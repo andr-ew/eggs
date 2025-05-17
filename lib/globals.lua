@@ -47,24 +47,13 @@ eggs.cc_count = eggs.cc_page_count * ccs_per_page
 local tune_count = 8
 eggs.tunes = {}
 
+--TODO: byebye
 for i = 1,tune_count do
     eggs.tunes[i] = tune.new{ 
         tunings = tunings, id = i,
         scale_groups = scale_groups,
         add_param_separator = false,
         add_param_group = true,
-        visibility_condition = function() 
-            local visible = false
-
-            for track = 1,eggs.track_count do
-                if params:get(eggs.track_dest[track].param_ids.tuning_preset) == i then
-                    visible = true
-                    break
-                end
-            end
-
-            return visible
-        end,
         action = function() 
             crops.dirty.grid = true 
             crops.dirty.screen = true
@@ -135,6 +124,8 @@ for i = 1,eggs.track_count do
     end
 
     eggs.pattern_keymap_shims[i] = {}
+    --TODO: bye
+    --TODO: bye
     for k,mute_group in pairs(eggs.mute_groups[i]) do
         local shim = {}
 
@@ -203,7 +194,7 @@ eggs.mode_names = { 'normal', 'latch', 'arq' }
 
 eggs.snapshot_count = 4
 
-eggs.volts_per_column = 1/8
+eggs.offset_volts_per_step = 1/8
 
 eggs.img_path = norns.state.lib..'img/'
     
@@ -244,24 +235,39 @@ function eggs.set_dest(track, v)
     local poly = voicing == 'poly'
     local mono = voicing == 'mono'
 
+    local function poly_note_on(idx)
+        local semitones = eggs.channels:get_semitones(i, idx)
+        eggs.track_dest[i]:note_on(idx, semitones)
+    end
+    local function poly_note_off(idx)
+        local semitones = eggs.channels:get_semitones(i, idx)
+        eggs.track_dest[i]:note_off(idx, semitones) 
+    end
+    local function mono_setter(idx, gate)
+        eggs.channels:set_note(i, idx, gate)
+    end
+
     eggs.keymaps[i] = keymap[voicing].new{
-        action_on = poly and function(...) eggs.track_dest[i]:note_on(...) end,
-        action_off = poly and function(...) eggs.track_dest[i]:note_off(...) end,
-        action = mono and function(...) eggs.track_dest[i]:set_note(...) end,
+        action_on = poly and poly_note_on,
+        action_off = poly and poly_note_off,
+        action = mono and mono_setter,
         pattern = eggs.pattern_keymap_shims[i][voicing],
         size = eggs.keymap_size,
     }
 
-    eggs.arqs[i].action_on = poly and (
-        function(...) eggs.track_dest[i]:note_on(...) end
-    ) or (
-        function(idx) eggs.track_dest[i]:set_note(idx, 1) end
+    eggs.arqs[i].action_on = poly and poly_note_on or (
+        function(idx) mono_setter(idx, 1) end
     )
-    eggs.arqs[i].action_off = poly and (
-        function(...) eggs.track_dest[i]:note_off(...) end
-    ) or (
-        function(idx) eggs.track_dest[i]:set_note(idx, 0) end
+    eggs.arqs[i].action_off = poly and poly_note_off or (
+        function(idx) mono_setter(idx, 0) end
     )
+
+    eggs.channels[i].action = poly and function()
+        eggs.keymaps[i]:clear()
+        eggs.track_dest[i]:kill_all()
+    end or function(semitones, gate)
+        eggs.track_dest[i]:set_note(semitones, gate)
+    end
 end
 
 return eggs

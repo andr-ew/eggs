@@ -119,7 +119,6 @@ local function Arq(args)
 
     return function(props)
         local ss = props.snapshots
-        local tune = props.tune
         local wide = props.wide
         local nudge = wide and -2 or 0
 
@@ -283,13 +282,13 @@ local function Scale_key()
                 })
             end
             do
-                local id = out.param_ids.column
+                local id = chans:get_param_id(i, 'offset', true)
                 _offset(id, eggs.mapping, {
                     x = 3, y = 1, size = 2, flow = 'right',
                     levels = { 2, 15 }, wrap = false,
                     min = params:lookup_param(id).controlspec.minval,
                     max = params:lookup_param(id).controlspec.maxval,
-                    step = eggs.volts_per_column,
+                    step = eggs.offset_volts_per_step,
                     state = eggs.of_param(id)
                 })
             end
@@ -391,7 +390,6 @@ local function Page(args)
     return function(props)
         local out = eggs.track_dest[track]
         local voicing = out.voicing
-        local tune = eggs.tunes[params:get(out.param_ids.tuning_preset)]
         local wide = props.wide
         local nudge = wide and -2 or 0
 
@@ -472,7 +470,7 @@ local function Page(args)
             end
 
             _arq{ 
-                track = track, snapshots = eggs.snapshots[track].arq, tune = tune, 
+                track = track, snapshots = eggs.snapshots[track].arq,
                 wide = wide, view_scroll = view_scroll, out = out, rows = props.rows,
             }
         else

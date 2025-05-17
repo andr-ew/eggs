@@ -154,31 +154,9 @@ function p.add_keymap_params()
         -- for i = 1,eggs.track_count do
         -- end
 
+        --TODO: byeeee
         for i,t in ipairs(eggs.tunes) do
             t:add_params('preset '..i)
-
-            params:set_action(eggs.tunes[i]:get_param_id('tonic'), function()
-                crops.dirty.grid = true 
-                crops.dirty.screen = true
-
-                for track = 1,eggs.track_count do
-                    if params:get(eggs.track_dest[track].param_ids.tuning_preset) == i then
-                        local dest = eggs.track_dest[i]
-
-                        local arq = eggs.arqs[track]
-                        local voicing = dest.voicing
-                        local pat = eggs.mute_groups[track][voicing]:get_playing_pattern()
-
-                        if params:get('mode_'..track) == eggs.ARQ then
-                            if params:get(arq:pfix('loop')) == 0 then arq:restart() end
-                        elseif pat and (not pat.loop) then
-                            pat:start()
-                        end
-
-                        dest:update_notes()
-                    end
-                end
-            end)
         end
     end
     do

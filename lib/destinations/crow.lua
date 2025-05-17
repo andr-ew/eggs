@@ -44,11 +44,7 @@ for i = 1,2 do
     local dest = {}
     
     dest.mode = SUSTAIN
-    dest.preset = 2 + i
-    dest.oct = 0
-    dest.column = 0
-    dest.row = -2
-    dest.index = 0
+    dest.semitones = 0
     dest.volts = { cv = 0, gate = 0 }
     dest.patched = 1
 
@@ -61,10 +57,7 @@ for i = 1,2 do
     dest.update_notes = function() end
 
     local function update_volts_cv()
-        local x = (dest.index-1)%eggs.keymap_wrap + 1 + dest.column 
-        local y = (dest.index-1)//eggs.keymap_wrap + 1 + dest.row 
-
-        local cv = math.max(0, eggs.tunes[dest.preset]:volts(x, y, nil, dest.oct))
+        local cv = util.clamp(0, 12, dest.semitones/12 + 2)
         crow.output[jacks.cv].volts = cv
         dest.cv_callback(cv)
                 
@@ -94,10 +87,10 @@ for i = 1,2 do
 
     dest.voicing = 'mono'
 
-    dest.set_note = function(_, idx, gate)
-        if gate > 0 then
-            dest.index = idx; update_volts_cv()
-        end
+    dest.set_note = function(_, semitones, gate)
+        -- if gate > 0 then
+            dest.semitones = semitones; update_volts_cv()
+        -- end
 
         dest.keyboard_gate = gate; update_gate()
     end
@@ -168,10 +161,6 @@ for i = 1,2 do
     dest.shortname = '^^'
 
     local param_ids = {
-        tuning_preset = 'tuning_preset_crow_dests_'..i,
-        oct = 'oct_crow_dests_'..i,
-        row = 'row_crow_dests_'..i,
-        column = 'column_crow_dests_'..i,
         shape = 'shape_crow_dests_'..i,
         mode = 'mode_crow_dests_'..i,
         retrigger = 'retrigger_crow_dests_'..i,
@@ -272,52 +261,6 @@ for i = 1,2 do
 
         params:add_separator('crow_cv_'..i, 'CV')
 
-        params:add{
-            type = 'number', id = param_ids.tuning_preset, name = 'tuning preset',
-            min = 1, max = #eggs.tunes, default = dest.preset, 
-            action = function(v) 
-                dest.preset = v
-
-                for _,t in ipairs(eggs.tunes) do
-                    t:update_tuning()
-                end 
-            end,
-        }
-        params:add{
-            type = 'number', id = param_ids.oct, name = 'oct',
-            min = -5, max = 5, default = dest.oct,
-            action = function(v) 
-                dest.oct = v; update_volts_cv()
-
-                crops.dirty.grid = true 
-            end
-        }
-        do
-            local min, max = -12, 12
-            patcher.add_destination_and_param{
-                type = 'control', id = param_ids.column, name = 'column',
-                controlspec = cs.def{ 
-                    min = min, max = max, default = dest.column * eggs.volts_per_column, 
-                    quantum = (1/(max - min)) * eggs.volts_per_column, units = 'v',
-                },
-                action = function(v) 
-                    dest.column = v // eggs.volts_per_column; update_volts_cv()
-
-                    crops.dirty.grid = true 
-                    crops.dirty.screen = true 
-                end
-            }
-        end
-        patcher.add_destination_and_param{
-            type = 'number', id = param_ids.row, name = 'row',
-            min = -16, max = 16, default = dest.row,
-            action = function(v) 
-                dest.row = v; update_volts_cv()
-
-                crops.dirty.grid = true 
-                crops.dirty.screen = true 
-            end
-        }
         params:add{
             id = param_ids.slew_enable, name = 'slew enable',
             type = 'binary', behavior = 'momentary', default = slew_enable,
