@@ -3,58 +3,46 @@ local dest = {}
 local NOTE, PITCH = 1, 2
 local note_mode_names = { 'note', 'pitch' }
 
-dest.preset = 2
-dest.oct = 0
-dest.column = 0
-dest.row = -2
-
 local shift = 0
 local level = 3.5
 local robin = 1
 local note_mode = NOTE
 local held = {}
 
+dest.held = held
+
 dest.voicing = 'poly'
 
-local function get_volts(idx)
-    local semitones = eggs.channels:get_semitones(dest.track, idx, dest.column)
-    return semitones/12 - 2
-end
-
-dest.note_on = function(_, idx)
-    local volts = get_volts(idx)
+dest.note_on = function(_, idx, semitones)
+    local volts = semitones/12 - 2
     local vel = math.random()*0.2 + 0.85
 
     if note_mode == NOTE then
-        table.insert(held, { idx = idx, volts = volts, vel = vel })
         crow.ii.jf.play_note(volts, level * vel)
     elseif note_mode == PITCH then
         crow.ii.jf.pitch(robin, volts)
         robin = robin%6 + 1
     end
+    
+    table.insert(held, volts)
 end
-dest.note_off = function(_, idx) 
-    local volts = get_volts(idx)
+dest.note_off = function(_, idx, semitones) 
+    local volts = semitones/12 - 2
 
-    for i,h in ipairs(held) do if h.volts==volts then
+    crow.ii.jf.play_note(volts, 0)
+    
+    for i,h in ipairs(held) do if h==volts then
         table.remove(held, i)
         break
     end end
-
-    crow.ii.jf.play_note(volts, 0)
 end
 
-local function update_notes()
-    for i,h in ipairs(held) do
-        crow.ii.jf.play_note(h.volts, 0)
-
-        local new_volts = get_volts(h.idx)
-        h.volts = new_volts
-        crow.ii.jf.play_note(new_volts, level * h.vel)
+dest.kill_all = function()
+    for i,volts in ipairs(held) do
+        crow.ii.jf.play_note(volts, 0)
     end
+    held = {}
 end
-
-dest.update_notes = update_notes
 
 -- local function setup()
 --     crow.ii.jf.event = function(e, value)
@@ -65,10 +53,6 @@ dest.update_notes = update_notes
 -- setup()
 
 local param_ids = {
-    tuning_preset = 'tuning_preset_jf_dest',
-    oct = 'oct_jf_dest',
-    row = 'row_jf_dest',
-    column = 'column_jf_dest',
     mode = 'mode_jf_dest',
     level = 'level_jf_dest',
     shift = 'shift_jf_dest',
@@ -143,11 +127,11 @@ dest.add_params = function(_)
             crops.dirty.screen = true
         end
     }
-    --TODO: clear held{} table ???
     params:add{
         id = param_ids.panic, name = 'panic !',
         type = 'binary', behavior = 'trigger',
         action = function()
+            -- dest.kill_all()
             for i = 1,6 do crow.ii.jf.trigger(i, 0) end
 
             crops.dirty.screen = true
@@ -162,57 +146,12 @@ dest.add_params = function(_)
         end,
     }
     
+    --TODO: bye
     params:add{
         type = 'number', id = param_ids.tuning_preset, name = 'tuning preset',
         min = 1, max = #eggs.tunes, default = dest.preset, 
         action = function(v) 
-            dest.preset = v; update_notes()
-
-            for _,t in ipairs(eggs.tunes) do
-                t:update_tuning()
-            end 
         end,
-    }
-    params:add{
-        type = 'number', id = param_ids.oct, name = 'oct',
-        min = -5, max = 5, default = dest.oct,
-        action = function(v) 
-            dest.oct = v; update_notes()
-
-            crops.dirty.grid = true 
-        end
-    }
-    do
-        local min, max = -12, 12
-        patcher.add_destination_and_param{
-            type = 'control', id = param_ids.column, name = 'column',
-            controlspec = cs.def{ 
-                min = min, max = max, default = dest.column * eggs.volts_per_column, 
-                quantum = (1/(max - min)) * eggs.volts_per_column, units = 'v',
-            },
-            action = function(v) 
-                local last = dest.column
-                dest.column = v // eggs.volts_per_column
-
-                if last ~= dest.column then update_notes() end
-
-                crops.dirty.grid = true 
-                crops.dirty.screen = true 
-            end
-        }
-    end
-    patcher.add_destination_and_param{
-        type = 'number', id = param_ids.row, name = 'row',
-        min = -16, max = 16, default = dest.row,
-        action = function(v) 
-            local last = dest.row
-            dest.row = v
-                
-            if last ~= dest.row then update_notes() end
-
-            crops.dirty.grid = true 
-            crops.dirty.screen = true 
-        end
     }
 end
         

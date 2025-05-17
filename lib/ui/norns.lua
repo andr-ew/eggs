@@ -25,17 +25,21 @@ local function Tuning()
 
             local yy = yy + 24
 
-            if out.column ~= 0 then
+            local offset = (
+                patcher.get_value(eggs.channels:get_param_id(i, 'offset', true)) 
+                / eggs.offset_volts_per_step
+            )
+            if offset ~= 0 then
                 screen.level(10)
                 screen.move(x[1] + 8, yy)
-                screen.text((out.column >= 0 and '+ ' or '- ')..math.abs(math.floor(out.column)))
+                screen.text((offset >= 0 and '+ ' or '- ')..math.abs(math.floor(offset)))
             end
 
             screen.level(10)
             screen.move(x[1] + 24, yy)
             screen.text(
                 channels.base_names[eggs.channels[i].intervals][
-                    params:get(eggs.channels:get_param_id(i, 'mode', true))
+                    patcher.get_value(eggs.channels:get_param_id(i, 'mode', true))
                 ]
             )
 
@@ -116,7 +120,6 @@ local function Keymap()
     return function(props)
         local track = props.track
         local out = eggs.track_dest[track]
-        local tune = eggs.tunes[params:get(out.param_ids.tuning_preset)]
         local keymap = eggs.keymaps[track]
         local arq = eggs.arqs[track]
 

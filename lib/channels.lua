@@ -66,14 +66,24 @@ function channels.new(count)
         --params
         self[i].intervals = 5
         self[i].modulation = 0 
+        self[i].offset = 0
         self[i].transposition_semitones = 0
         self[i].mode = 1-- 1==lydian
 
+        --in values
+        self[i].idx = 1
+        self[i].gate = 0
+
+        --out values
+        self[i].semitones = 0
+        -- self[i].state = false
+
         --private
-        self[i].scale = { 0, 2, 4, 7, 9, }
         self[i].modulation_semitones = 0
         self[i].current_key_action = nil
         self[i].last_transposition_semitones = 0
+
+        self[i].action = function(semitones, gate) end
     end
     
     self.param_ids = {}
@@ -86,6 +96,7 @@ function channels.new(count)
             modulation = 'modulation_'..pfx,
             transposition = 'transposition_'..pfx,
             mode = 'musical_mode_'..pfx,
+            offset = 'offset_'..pfx,
             ['scale degrees'] = 'intervals_'..pfx,
             -- tuning_preset = 'tuning_preset_'..pfx,
         }
@@ -268,6 +279,7 @@ function channels:add_params()
             type = 'binary', behavior = 'toggle', id = 'grouper_'..i, name = 'channel '..i,
             default = self.grouper[i], action = function(v) 
                 self.grouper[i] = v
+                self:bang()
 
                 crops.dirty.grid = true
                 crops.dirty.screen = true
@@ -288,6 +300,7 @@ function channels:add_channel_params(i)
             action = function(v)
                 self[i].intervals = v
 
+                self:bang(i)
                 crops.dirty.grid = true 
             end
         }
@@ -305,6 +318,7 @@ function channels:add_channel_params(i)
                 self[i].current_key_action = name
                 self:update_modulation(i)
 
+                self:bang(i)
                 crops.dirty.grid = true
                 crops.dirty.screen = true
             end,
@@ -312,6 +326,25 @@ function channels:add_channel_params(i)
             -- formatter = function(p)
             --     return modulation_names[util.wrap(params:get('base_key') + p:get(), -11,  11)]
             -- end
+        }
+    end
+    do
+        local name = 'offset'
+        patcher.add_destination_and_param{
+            type = 'control', name = name, id = ids[name],
+            controlspec = cs.def{ 
+                min = min, max = max, default = self[i].offset * eggs.offset_volts_per_step, 
+                quantum = (1/(max - min)) * eggs.offset_volts_per_step, 
+                step = eggs.offset_volts_per_step,
+                units = 'v',
+            },
+            action = function(v) 
+                self[i][name] = v // eggs.offset_volts_per_step
+
+                self:bang(i)
+                crops.dirty.grid = true
+                crops.dirty.screen = true
+            end
         }
     end
     do
@@ -324,6 +357,7 @@ function channels:add_channel_params(i)
                 self[i].transposition_semitones = v
                 self[i].current_key_action = name
 
+                self:bang(i)
                 crops.dirty.grid = true
                 crops.dirty.screen = true
             end,
@@ -338,6 +372,8 @@ function channels:add_channel_params(i)
             action = function(v)
                 self[i][name] = v
                 -- self:update_scale(i)
+                
+                self:bang(i)
                 crops.dirty.grid = true
                 crops.dirty.screen = true
             end,
@@ -348,7 +384,6 @@ function channels:add_channel_params(i)
             end
         }
     end
-    
 end
 
 function channels:update_modulation(i)
@@ -384,6 +419,33 @@ function channels:get_key_names(i)
     return current, nxt, prev
 end
 
+function channels:update(i)
+    --TODO: flag to bypass since we don't use this for poly
+    self[i].semitones = self:get_semitones(i, self[i].idx)
+    self[i].action(self[i].semitones, self[i].gate)
+end
+
+function channels:bang(channel)
+    if not channel then
+        for i = 1,self.count do
+            self:update(i)
+        end
+        return
+    end
+
+    local i = channel
+    repeat --there's a first time for everything
+        self:update(i)
+        i = i + 1 
+    until self.grouper[i - 1] ~= self.grouper[i]
+    
+    i = channel
+    while self.grouper[i] == self.grouper[i - 1] do
+        self:update(i)
+        i = i - 1
+    end
+end
+
 function channels:idx_to_deg_oct(i, idx)
     local ivs = self[i].intervals
     local x = (idx-1)%eggs.keymap_wrap
@@ -394,11 +456,11 @@ function channels:idx_to_deg_oct(i, idx)
     return deg, oct
 end
 
-function channels:get_semitones(i, idx, column)
+function channels:get_semitones(i, idx)
     local grp = self:group_index(i)
     local deg, oct = self:idx_to_deg_oct(i, idx)
 
-    local deg = (deg + column - 1)
+    local deg = (deg + self[i].offset - 1)
     local scale = scales[self[i].intervals][self[grp].mode]
     local st = scale[(deg + (self[i].intervals * 48)) % self[i].intervals + 1]
     local off_oct = deg // self[i].intervals
@@ -406,6 +468,12 @@ function channels:get_semitones(i, idx, column)
                    + self[grp].transposition_semitones 
                    + ((off_oct + oct - 3) * 12)
     return note
+end
+
+function channels:set_note(i, idx, gate)
+    self[i].idx = idx
+    self[i].gate = gate
+    self:update(i)
 end
 
 return channels
