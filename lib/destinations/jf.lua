@@ -67,7 +67,7 @@ dest.param_ids = param_ids
 dest.name = 'just friends'
 dest.shortname = 'jf'
 
-dest.params_count = 12
+dest.params_count = tab.count(dest.param_ids)
 
 dest.add_params = function(_)
     patcher.add_destination_and_param{

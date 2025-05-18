@@ -214,12 +214,60 @@ eggs.channels = channels.new(eggs.track_count)
 function eggs.noteOn(note_number, hz) end
 function eggs.noteOff(note_number) end
 
-eggs.track_dest = {}
-eggs.keymaps = {}
-
 function eggs.get_view(track)
     -- return util.clamp(5 + params:get('view_'..track), 0, eggs.keymap_columns - eggs.keymap_view_width)
     return util.clamp(params:get('intervals_'..track) + params:get('view_'..track), 0, eggs.keymap_columns - eggs.keymap_view_width)
+end
+
+eggs.track_dest = {}
+eggs.keymaps = {}
+
+eggs.midi_devices = {}
+eggs.midi_device_names = {}
+for i = 1,#midi.vports do
+    eggs.midi_devices[i] = midi.connect(i)
+    eggs.midi_device_names[i] = util.trim_string_to_width(eggs.midi_devices[i].name,80)
+end
+
+eggs.midi_echo_device = nil
+
+function eggs.midi_echo_process(data)
+    local msg = midi.to_msg(data)
+    if msg.type == 'note_on' or msg.type == 'note_off' then
+        local gate = (msg.type == 'note_on') and 1 or 0
+        local i = msg.ch
+        local semitones = msg.note - 48
+        local km = eggs.keymaps[i]
+        local poly = km.voicing == 'poly'
+
+        local idx = eggs.channels:semitones_to_idx(i, semitones)
+
+        if idx then
+            if poly then
+                km:set_at(idx, gate, false, false)
+            else
+                km:set({ idx, gate }, false, false)
+            end
+        else
+            --if the note doesn't exist in the scale, don't show on grid & just play the dest
+            local dest = eggs.track_dest[i]
+
+            if poly then
+                                     --negative value idx for midi-only intervals
+                dest[msg.type](dest, -1 * semitones, semitones) 
+            else
+                dest:set_note(semitones, gate)
+            end
+        end
+    end
+end
+
+function eggs.midi_echo(i, action, semitones)
+    local dev = eggs.midi_echo_device
+    if dev then
+        local note = semitones + 48
+        dev[action](dev, note, 127, i)
+    end
 end
 
 function eggs.set_dest(track, v)
@@ -235,14 +283,18 @@ function eggs.set_dest(track, v)
     local poly = voicing == 'poly'
     local mono = voicing == 'mono'
 
-    local function poly_note_on(idx)
-        local semitones = eggs.channels:get_semitones(i, idx)
-        eggs.track_dest[i]:note_on(idx, semitones)
+    local function poly_action(action)
+        return function(idx)
+            local dest = eggs.track_dest[i]
+            local semitones = eggs.channels:get_semitones(i, idx)
+            dest[action](dest, idx, semitones)
+            eggs.midi_echo(i, action, semitones)
+        end
     end
-    local function poly_note_off(idx)
-        local semitones = eggs.channels:get_semitones(i, idx)
-        eggs.track_dest[i]:note_off(idx, semitones) 
-    end
+
+    local poly_note_on = poly_action('note_on')
+    local poly_note_off = poly_action('note_off')
+
     local function mono_setter(idx, gate)
         eggs.channels:set_note(i, idx, gate)
     end
@@ -261,12 +313,22 @@ function eggs.set_dest(track, v)
     eggs.arqs[i].action_off = poly and poly_note_off or (
         function(idx) mono_setter(idx, 0) end
     )
+    
+    local mono_last = nil
 
     eggs.channels[i].action = poly and function()
         eggs.keymaps[i]:clear()
         eggs.track_dest[i]:kill_all()
     end or function(semitones, gate)
         eggs.track_dest[i]:set_note(semitones, gate)
+
+        if mono_last and (mono_last ~= semitones) then
+            eggs.midi_echo(i, 'note_off', mono_last)
+            mono_last = nil
+        end
+        eggs.midi_echo(i, gate>0 and 'note_on' or 'note_off', semitones)
+        
+        mono_last = gate>0 and semitones
     end
 end
 

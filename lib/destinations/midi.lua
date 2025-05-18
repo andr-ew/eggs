@@ -1,12 +1,5 @@
 local midi_dest = destination:new()
 
-midi_dest.devices = {}
-midi_dest.device_names = {}
-for i = 1,#midi.vports do
-    midi_dest.devices[i] = midi.connect(i)
-    midi_dest.device_names[i] = util.trim_string_to_width(midi_dest.devices[i].name,80)
-end
-
 local alph = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H' }
 
 function midi_dest:new(id)
@@ -38,17 +31,17 @@ function midi_dest:new(id)
 end
     
 function midi_dest:update_cc(idx)
-    midi_dest.devices[self.target]:cc(self.cc_index[idx], self.cc_value[idx], 1)
+    eggs.midi_devices[self.target]:cc(self.cc_index[idx], self.cc_value[idx], 1)
 
     crops.dirty.screen = true
 end
 
 function midi_dest:action_on(note, hz)
-    midi_dest.devices[self.target]:note_on(note)
+    eggs.midi_devices[self.target]:note_on(note)
 end
 
 function midi_dest:action_off(note)
-    midi_dest.devices[self.target]:note_off(note)
+    eggs.midi_devices[self.target]:note_off(note)
 end
     
 function midi_dest:add_params()
@@ -56,7 +49,7 @@ function midi_dest:add_params()
 
     params:add{
         type = 'option', id = param_ids.target, name = 'destination',
-        options = midi_dest.device_names, default = self.target,
+        options = eggs.midi_device_names, default = self.target,
         action = function(v)
             self.target = v
             crops.dirty.screen = true

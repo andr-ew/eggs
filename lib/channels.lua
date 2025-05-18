@@ -266,6 +266,16 @@ for ivs = intervals_min, intervals_max do
     end
 end
 
+local elacss = {}
+channels.elacss = elacss
+
+for ivs,_ in ipairs(scales) do
+    elacss[ivs] = {}
+    for md,_ in ipairs(scales[ivs]) do
+        elacss[ivs][md] = tab.invert(scales[ivs][md])
+    end
+end
+
 function channels:get_param_id(channel, name, grouped)
     local i = grouped and self:group_index(channel) or channel
     return self.param_ids[i][name]
@@ -456,18 +466,60 @@ function channels:idx_to_deg_oct(i, idx)
     return deg, oct
 end
 
+--NOTE: this should match pitch but not neccesarily index (i.e. - different fingering)
+--TODO: put every other oct on the right to match typical fingering
+function channels:deg_oct_to_idx(i, deg, oct)
+    local ivs = self[i].intervals
+
+    local o = oct - 1
+    local ymax = eggs.keymap_rows - 1
+    local x, y
+    if o > ymax then
+        y = ymax 
+        x = ((o - ymax) * ivs) + deg
+    else
+        y = o
+        x = deg
+    end
+    x = x + ivs
+
+    return (y * eggs.keymap_wrap) + x
+end
+
+function channels:semitones_to_idx(i, semitones)
+    local grp = self:group_index(i)
+
+    local untransposed = semitones - ((- 3) * 12)
+                    - self[grp].transposition_semitones
+                    - self[grp].modulation_semitones 
+    local st = untransposed%12
+    local oct = untransposed//12
+
+    local elacs = elacss[self[i].intervals][self[grp].mode]
+    local deg = elacs[st]
+
+    --nil return if note does not exist in scale
+    if deg then
+        -- could be interesting not accounting for offset but we'll leave it for now
+        deg = deg - 1 - self[i].offset + 1
+
+        return self:deg_oct_to_idx(i, deg, oct)
+    end
+end
+
 function channels:get_semitones(i, idx)
     local grp = self:group_index(i)
     local deg, oct = self:idx_to_deg_oct(i, idx)
 
-    local deg = (deg + self[i].offset - 1)
+    deg = (deg + self[i].offset - 1)
     local scale = scales[self[i].intervals][self[grp].mode]
     local st = scale[(deg + (self[i].intervals * 48)) % self[i].intervals + 1]
     local off_oct = deg // self[i].intervals
-    local note = st + self[grp].modulation_semitones 
+    local transposed = st + self[grp].modulation_semitones 
                    + self[grp].transposition_semitones 
                    + ((off_oct + oct - 3) * 12)
-    return note
+
+    return transposed
 end
 
 function channels:set_note(i, idx, gate)

@@ -72,6 +72,27 @@ function p.add_nb_params()
     end
 end
 
+function p.add_midi_echo_params()
+    local options = { 'off' }
+    for _,name in ipairs(eggs.midi_device_names) do table.insert(options, name) end
+
+    params:add_separator('sep_echo', 'midi echo')
+    params:add{
+        type = 'option', id = 'midi_echo_device', name = 'device',
+        options = options, action = function(v)
+            if eggs.midi_echo_device then 
+                eggs.midi_echo_device.event = function() end 
+            end
+
+            eggs.midi_echo_device = eggs.midi_devices[v - 1]
+
+            if eggs.midi_echo_device then 
+                eggs.midi_echo_device.event = eggs.midi_echo_process
+            end
+        end
+    }
+end
+
 function p.add_keymap_params()
     params:add_separator('keymap')
     for i = 1,eggs.track_count do
@@ -103,6 +124,9 @@ function p.add_keymap_params()
             min = -max_intervals, 
             max = eggs.keymap_columns - eggs.keymap_view_width - max_intervals, 
             default = 0,
+            action = function()
+                crops.dirty.grid = true
+            end
         }
     end
 
@@ -146,20 +170,6 @@ function p.add_keymap_params()
     do
         params:add_separator('tuning')
 
-        tune.add_global_params(function() 
-            crops.dirty.screen = true
-            crops.dirty.grid = true
-        end)
-        
-        -- for i = 1,eggs.track_count do
-        -- end
-
-        --TODO: byeeee
-        for i,t in ipairs(eggs.tunes) do
-            t:add_params('preset '..i)
-        end
-    end
-    do
         params:add_group(
             'tuning_group', 'tuning', 
             1 + eggs.track_count * (1 + eggs.channels.channel_params_count) + eggs.channels.params_count
@@ -238,6 +248,8 @@ function p.add_all_track_params()
         
         crow_dest.add_params()
     end
+
+    eggs.params.add_midi_echo_params()
 
     eggs.params.add_keymap_params()
     eggs.params.add_pattern_params()
