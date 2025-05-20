@@ -78,7 +78,7 @@ local function Keymaps(args)
         end
     end
 end
-
+        
 local function Arq(args)
     -- local _frets = Tune.grid.fretboard()
     local _keymap = Arqueggiator.grid.keymap()
@@ -120,12 +120,12 @@ local function Arq(args)
     return function(props)
         local ss = props.snapshots
         local wide = props.wide
-        local nudge = wide and -2 or 0
+        local nudge = props.nudge
 
         if eggs.view_focus == eggs.NORMAL then
             for i = 1, wide and #pattern_group or 1 do
                 _patrecs[i](nil, eggs.mapping, {
-                    x = nudge + 4 + i - 1, y = 1,
+                    x = wide and (nudge + 3) or 4 + i - 1, y = 1,
                     pattern = pattern_group[i],
                 })
             end
@@ -196,7 +196,7 @@ local function Arq(args)
                     end
                 end
                 _snapshots[i](nil, eggs.mapping, {
-                    x = nudge + (wide and 9 or 6) + i - 1, y = 1,
+                    x = (wide and (nudge + 10) or 6) + i - 1, y = 1,
                     levels = { filled and 4 or 0, filled and 15 or 8 },
                     action_tap = filled and recall or snapshot,
                     action_hold = clear_snapshot,
@@ -215,8 +215,8 @@ local function Rate_reverse()
 
     return function(props)
         local wide = props.wide
+        local nudge = props.nudge
         local prefix = 'pattern_track_'..props.track..'_'..props.voicing
-        local nudge = wide and -2 or 0
 
         _reverse(prefix..'_reverse', eggs.mapping, {
             x = nudge + 4, y = 2, levels = { 4, 15 },
@@ -262,10 +262,12 @@ local function Scale_key()
     return function(props)
         local i = props.track
         local out = eggs.track_dest[i]
+        local wide = props.wide
+        local nudge = wide and 2 or 0
 
         if eggs.view_focus ~= eggs.NORMAL then
             _grouper(nil, eggs.mapping, {
-                x = 14, y = 2, levels = { 4, 15 },
+                x = 1, y = 2, levels = { 4, 15 },
                 state = crops.of_param('grouper_'..i)
             })
         end
@@ -274,7 +276,7 @@ local function Scale_key()
             do
                 local id = chans:get_param_id(i, 'transposition', true)
                 _transpose(id, eggs.mapping, {
-                    x = 1, y = 1, size = 2, flow = 'right',
+                    x = nudge + 1, y = 1, size = 2, flow = 'right',
                     levels = { 4, 15 }, wrap = false,
                     min = params:lookup_param(id).min,
                     max = params:lookup_param(id).max,
@@ -284,7 +286,7 @@ local function Scale_key()
             do
                 local id = chans:get_param_id(i, 'offset', true)
                 _offset(id, eggs.mapping, {
-                    x = 3, y = 1, size = 2, flow = 'right',
+                    x = nudge + 3, y = 1, size = 2, flow = 'right',
                     levels = { 2, 15 }, wrap = false,
                     min = params:lookup_param(id).controlspec.minval,
                     max = params:lookup_param(id).controlspec.maxval,
@@ -295,7 +297,7 @@ local function Scale_key()
             do
                 local id = chans:get_param_id(i, 'modulation', true)
                 _modulate(id, eggs.mapping, {
-                    x = 5, y = 1, size = 2, flow = 'right',
+                    x = nudge + 5, y = 1, size = 2, flow = 'right',
                     levels = { 4, 15 }, wrap = false,
                     min = params:lookup_param(id).min,
                     max = params:lookup_param(id).max,
@@ -309,7 +311,7 @@ local function Scale_key()
                 local ivs = chans[i].intervals
                 for i = channels.intervals_min,channels.intervals_max do
                     if not channels.base_exists[ivs][i] then
-                        g:led(i, 1, 4)
+                        g:led(nudge + i, 1, 4)
                     end
                 end
             end
@@ -317,21 +319,21 @@ local function Scale_key()
             do
                 local id = chans:get_param_id(i, 'mode', true)
                 _mode(id, eggs.mapping, {
-                    x = 1, y = 1, size = channels.intervals_max, min = 1, flow = 'right',
+                    x = nudge + 1, y = 1, size = channels.intervals_max, min = 1, flow = 'right',
                     state = eggs.of_param(id, true)
                 })
             end
             do
                 local id = 'intervals_'..i
                 _intervals(id, eggs.mapping, {
-                    x = 1, y = 2, size = 7, levels = { 4, 15, 15 }, 
+                    x = nudge + 1, y = 2, size = 7, levels = { 4, 15, 15 }, 
                     state = eggs.of_param(id, true)
                 })
             end
         end
     end
 end
-
+        
 local function Page(args)
     local track = args.track
     local _view_scale = Grid.momentary()
@@ -391,11 +393,11 @@ local function Page(args)
         local out = eggs.track_dest[track]
         local voicing = out.voicing
         local wide = props.wide
-        local nudge = wide and -2 or 0
+        local nudge = 0
 
         if wide or view_scroll == 0 then
             _view_scale{
-                x = wide and 13 or 8, y = 1, levels = { 4, 15 },
+                x = wide and 1 or 8, y = 1, levels = { 4, 15 },
                 state = crops.of_variable(
                     eggs.view_focus==eggs.SCALE and 1 or 0,
                     function(v)
@@ -406,7 +408,7 @@ local function Page(args)
                 )
             }
             _view_key{
-                x = (wide and 14 or 8), y = wide and 1 or 2, levels = { 4, 15 },
+                x = (wide and 2 or 8), y = wide and 1 or 2, levels = { 4, 15 },
                 state = crops.of_variable(
                     eggs.view_focus==eggs.KEY and 1 or 0,
                     function(v)
@@ -422,7 +424,7 @@ local function Page(args)
 
         if eggs.view_focus == eggs.NORMAL then
             _mode_arq('mode_'..track, eggs.mapping, {
-                x = wide and 6 or 3, y = 1, levels = { 4, 15 },
+                x = wide and (nudge + 8) or 3, y = 1, levels = { 4, 15 },
                 state = crops.of_variable(
                     mode==eggs.ARQ and 1 or 0,
                     function(v)
@@ -431,7 +433,7 @@ local function Page(args)
                 )
             })
             _mode_latch('mode_'..track, eggs.mapping, {
-                x = wide and 7 or 5, y = 1, levels = { 4, 15 },
+                x = wide and (nudge + 9) or 5, y = 1, levels = { 4, 15 },
                 state = crops.of_variable(
                     mode==eggs.LATCH and 1 or 0,
                     function(v)
@@ -442,7 +444,7 @@ local function Page(args)
             if wide then
                 for i = 1, #eggs.pattern_groups[track].aux do
                     _patrecs.aux[i](nil, eggs.mapping, {
-                        x = 12 + i - 1, y = 2,
+                        x = nudge + 14 + i - 1, y = 2,
                         pattern = eggs.pattern_groups[track].aux[i],
                     })
                 end
@@ -452,7 +454,7 @@ local function Page(args)
             if mode==eggs.ARQ or voicing=='poly' then
                 local id = 'view_'..track
                 _view(nil, eggs.mapping, {
-                    x = wide and 13 or 5, y = 2, size = 2, flow = 'right',
+                    x = wide and 1 or 5, y = 2, size = 2, flow = 'right',
                     levels = { 0, 15 }, wrap = false,
                     min = params:lookup_param(id).min,
                     max = params:lookup_param(id).max,
@@ -472,6 +474,7 @@ local function Page(args)
             _arq{ 
                 track = track, snapshots = eggs.snapshots[track].arq,
                 wide = wide, view_scroll = view_scroll, out = out, rows = props.rows,
+                nudge = nudge,
             }
         else
             local ss = eggs.snapshots[track][voicing] or {}
@@ -487,7 +490,7 @@ local function Page(args)
 
                 for i = 1, wide and #eggs.pattern_groups[track].poly or 1 do
                     _patrecs.manual[i](nil, eggs.mapping, {
-                        x = wide and (i) or 4, y = wide and 1 or 2,
+                        x = wide and (nudge + 3 + i - 1) or 4, y = wide and 1 or 2,
                         pattern = eggs.pattern_groups[track][voicing][i],
                     })
                 end
@@ -512,7 +515,7 @@ local function Page(args)
                     end
 
                     _rate_rev{
-                        track = track, voicing = voicing, wide = wide,
+                        track = track, voicing = voicing, wide = wide, nudge = nudge,
                     }
                     -- if not wide then
                     --     _view_scroll{
@@ -541,7 +544,7 @@ local function Page(args)
                         eggs.keymaps[track]:set(ss[i] or {})
                     end
 
-                    local xx = (wide and 8 or 5) + i - 1
+                    local xx = (wide and (nudge + 10) or 5) + i - 1
                     
                     if mode==eggs.LATCH then
                         _snapshots[i].latch(nil, eggs.mapping, {
@@ -572,7 +575,7 @@ local function Page(args)
             end
         end
 
-        _scale_key{ track = track }
+        _scale_key{ track = track, wide = wide }
     end
 end
 
