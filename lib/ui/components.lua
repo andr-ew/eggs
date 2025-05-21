@@ -1,3 +1,5 @@
+local Patcher = Map_patcher
+
 local Components = {
     enc_screen = {},
     key_screen = {},

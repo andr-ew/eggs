@@ -49,7 +49,7 @@ arqueggiator = include 'lib/arqueggiator/arqueggiator'      --arqueggiation (arq
 Arqueggiator = include 'lib/arqueggiator/ui'
 
 patcher = include 'lib/patcher/patcher'                     --modulation maxtrix
-Patcher = include 'lib/patcher/ui/using_map_key'            --mod matrix patching UI utilities
+Map_patcher = include 'lib/patcher/ui/using_map_key'        --mod matrix patching UI utilities
 
 nb = include 'lib/nb/lib/nb'                                --nb
 

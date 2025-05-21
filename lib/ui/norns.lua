@@ -1,4 +1,5 @@
 local x, y, e, k = eggs.x, eggs.y, eggs.e, eggs.k
+local Patcher = Map_patcher
 
 local function Tuning()
     return function(props)

@@ -1,3 +1,5 @@
+local Patcher = Map_patcher
+
 local function Frets()
     return function(props)
         if crops.mode == 'redraw' and crops.device == 'grid' then
