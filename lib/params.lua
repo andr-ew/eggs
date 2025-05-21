@@ -268,7 +268,7 @@ function p.action_read(file, silent, slot)
     params:lookup_param('engine_eggs'):bang()
 
     if (not eggs.change_engine_modal) and (not silent) then
-        local name = 'pset-'..string.format("%02d", slot)
+        local name = 'eggs-'..string.format("%02d", slot)
         local fname = norns.state.data..name..'.data'
         local data, err = tab.load(fname)
         
@@ -297,7 +297,7 @@ end
 function p.action_write(file, silent, slot)
     print('pset action write', file, silent, slot)
 
-    local name = 'pset-'..string.format("%02d", slot)
+    local name = 'eggs-'..string.format("%02d", slot)
     local fname = norns.state.data..name..'.data'
 
     local data = {
