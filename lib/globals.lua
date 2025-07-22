@@ -30,6 +30,7 @@ eggs.mapping = false
 
 eggs.NORMAL, eggs.SCALE, eggs.KEY = 1, 2, 3
 eggs.view_focus = eggs.NORMAL
+eggs.view_lock = 0
 
 eggs.change_engine_modal = false
 eggs.current_engine = nil

@@ -338,8 +338,8 @@ end
         
 local function Page(args)
     local track = args.track
-    local _view_scale = Grid.momentary()
-    local _view_key = Grid.momentary()
+    local _view_scale = Components.grid.momentary_lock()
+    local _view_key = Components.grid.momentary_lock()
     
     local _mode_arq = Patcher.grid.destination(Grid.toggle())
     local _mode_latch = Patcher.grid.destination(Grid.toggle())
@@ -398,6 +398,10 @@ local function Page(args)
         local nudge = 0
 
         if wide or view_scroll == 0 then
+            local state_locked = crops.of_variable(eggs.view_lock, function(v) 
+                eggs.view_lock = v
+            end)
+
             _view_scale{
                 x = wide and 1 or 8, y = 1, levels = { 4, 15 },
                 state = crops.of_variable(
@@ -407,7 +411,8 @@ local function Page(args)
                         crops.dirty.grid = true
                         crops.dirty.screen = true
                     end
-                )
+                ),
+                state_locked = state_locked
             }
             _view_key{
                 x = (wide and 2 or 8), y = wide and 1 or 2, levels = { 4, 15 },
@@ -418,7 +423,8 @@ local function Page(args)
                         crops.dirty.grid = true
                         crops.dirty.screen = true
                     end
-                )
+                ),
+                state_locked = state_locked
             }
         end
 
