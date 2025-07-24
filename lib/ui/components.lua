@@ -324,15 +324,15 @@ do
 
                     for i = 1, props.size do
                         local lvl
-                        if not n_secondary then
-                            lvl = props.levels[(i == n) and 3 or 1] 
-                        else
+                        -- if not n_secondary then
+                        --     lvl = props.levels[(i == n) and 3 or 1] 
+                        -- else
                             lvl = props.levels[
-                                (i == n) and 2 
-                                or (i == n_secondary) and 3
+                                (i == n_secondary) and 2
+                                or (i == n) and 3 
                                 or 1
                             ]
-                        end
+                        -- end
 
                         local x, y = Grid.util.index_to_xy(props, i)
 

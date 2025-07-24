@@ -25,6 +25,7 @@ end
 
 eggs.track_count = 4
 eggs.track_focus = 1
+eggs.split_track_focus = nil
 
 eggs.mapping = false
 

@@ -46,38 +46,43 @@ local function Keymaps(args)
         local out = eggs.track_dest[track]
         local voicing = out.voicing
         local typ = mode==eggs.ARQ and 'arq' or voicing
+        local height = eggs.keymap_view_height
+        local size = eggs.keymap_size
+        if eggs.split_track_focus then 
+            height = height/2 
+            size = size/2
+        end
+        -- local y = eggs.split_track_focus and 5 or 8
+        local y = props.y
+        local lvl = props.levels
 
         _frets{
-            x = 1, y = 8, 
-            rows = eggs.keymap_view_height, columns = eggs.keymap_columns, 
+            x = 1, y = y, 
+            rows = height, columns = eggs.keymap_columns, 
             view_width = eggs.keymap_view_width,
             intervals = params:get('intervals_'..track), offset = eggs.get_view(track),
             -- flow = 'right', flow_wrap = 'up',
-            level = mode==eggs.ARQ and 1 or props.levels[1],
+            level = mode==eggs.ARQ and 2 or lvl[1],
         }
-        do
-            local keymap_props = {
-                x = 1, y = 8, 
-                view_width = eggs.keymap_view_width,
-                view_height = eggs.keymap_view_height,
-                view_x = eggs.get_view(track),
-                view_y = 0,
-                size = eggs.keymap_size, wrap = eggs.keymap_wrap,
-                flow = 'right', flow_wrap = 'up', 
-                levels = mode==eggs.ARQ and props.levels or { 0, props.levels[3] },  
-                step = arq.step, gate = arq.gate,
-                mode = eggs.mode_names[mode],
-                action_latch = function()
-                end,
-                state = mode==eggs.ARQ 
-                            and crops.of_variable(arq.sequence, eggs.arq_setters[track]) 
-                            or eggs.keymaps[track]:get_state(mode==LATCH)
-                        ,
-                -- action_replace = function() arq:restart() end
-            }
-
-            _keymap[typ](keymap_props)
-        end
+        _keymap[typ]{
+            x = 1, y = y, 
+            view_width = eggs.keymap_view_width,
+            view_height = height,
+            view_x = eggs.get_view(track),
+            view_y = 0,
+            size = size, wrap = eggs.keymap_wrap,
+            flow = 'right', flow_wrap = 'up', 
+            levels = mode==eggs.ARQ and lvl or { 0, lvl[3] },  
+            step = arq.step, gate = arq.gate,
+            mode = eggs.mode_names[mode],
+            action_latch = function()
+            end,
+            state = mode==eggs.ARQ 
+                        and crops.of_variable(arq.sequence, eggs.arq_setters[track]) 
+                        or eggs.keymaps[track]:get_state(mode==LATCH)
+                    ,
+            -- action_replace = function() arq:restart() end
+        }
     end
 end
         
@@ -590,7 +595,7 @@ end
 local function UI(args)
     local wide = args.wide
 
-    local _track = Grid.integer()
+    local _track = Components.grid.integer_two_layers()
 
     local _pages = {}
     for track = 1,eggs.track_count do
@@ -612,9 +617,9 @@ local function UI(args)
         if wide or eggs.view_focus == eggs.NORMAL then 
             _track{
                 x = wide and 15 or 1, y = 1, size = #_pages, 
-                levels = { 2, props.focused and 15 or 4 },
+                levels = { 2, 8, props.focused and 15 or 4 },
                 wrap = 2,
-                state = { 
+                state = crops.of_variable(
                     eggs.track_focus, 
                     function(v) 
                         eggs.track_focus = v
@@ -622,7 +627,16 @@ local function UI(args)
                         crops.dirty.grid = true 
                         crops.dirty.screen = true 
                     end
-                },
+                ),
+                state_secondary = crops.of_variable(
+                    eggs.split_track_focus, 
+                    function(v) 
+                        eggs.split_track_focus = v
+
+                        crops.dirty.grid = true 
+                        crops.dirty.screen = true 
+                    end
+                ),
                 input = function(v, z)
                     if z==1 then
                         script_focus = 'eggs'
@@ -641,7 +655,15 @@ local function UI(args)
         --     _fill.loop{ x = 12, y = 2, level = 4 }
         -- end
         
-        _keymaps[eggs.track_focus]{ levels = { 4, 8, 15 } }
+        _keymaps[eggs.track_focus]{ 
+            levels = { 4, 8, 15 },
+            y = eggs.split_track_focus and 5 or 8
+        }
+        if eggs.split_track_focus then
+            _keymaps[eggs.split_track_focus]{ 
+                levels = { 2, 8, 15 }, y = 8
+            }
+        end
     
         _pages[eggs.track_focus]{ wide = args.wide, rows = props.rows }
     end
