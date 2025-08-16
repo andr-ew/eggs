@@ -462,9 +462,7 @@ local function Page(args)
                     })
                 end
             end
-
-            --TODO: support view in mono keymap
-            if mode==eggs.ARQ or voicing=='poly' then
+            do
                 local id = 'view_'..track
                 _view(nil, eggs.mapping, {
                     x = wide and 1 or 5, y = 2, size = 2, flow = 'right',
