@@ -432,7 +432,9 @@ end
 function channels:update(i)
     --TODO: flag to bypass since we don't use this for poly
     self[i].semitones = self:get_semitones(i, self[i].idx)
-    self[i].action(self[i].semitones, self[i].gate)
+    if eggs.initialized then
+        self[i].action(self[i].semitones, self[i].gate)
+    end
 end
 
 function channels:bang(channel)

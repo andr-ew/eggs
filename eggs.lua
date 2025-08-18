@@ -130,6 +130,8 @@ function init()
     eggs.setup.init()
 
     crops.connect_grid(_app.grid, g, 240)
+
+    eggs.initialized = true
 end
 
 function cleanup()

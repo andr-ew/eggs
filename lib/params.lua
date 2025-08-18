@@ -286,6 +286,7 @@ end
 
 function p.action_read(file, silent, slot)
     print('pset action read', file, silent, slot)
+    eggs.initialized = false
 
     -- params:bang()
     params:lookup_param('engine_eggs'):bang()
@@ -315,6 +316,8 @@ function p.action_read(file, silent, slot)
         else
             print('pset action read: no data file found at '..fname)
         end
+
+        eggs.initialized = true
     end
 end
 function p.action_write(file, silent, slot)

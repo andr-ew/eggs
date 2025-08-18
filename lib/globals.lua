@@ -23,6 +23,8 @@ do
     }
 end
 
+eggs.initialized = false
+
 eggs.track_count = 4
 eggs.track_focus = 1
 eggs.split_track_focus = nil
@@ -275,7 +277,7 @@ end
 function eggs.set_dest(track, v)
     local i = track
     
-    if eggs.keymaps[i] then eggs.keymaps[i]:clear() end
+    if eggs.keymaps[i] and eggs.initialized then eggs.keymaps[i]:clear() end
 
     eggs.track_dest[i] = eggs.dests[i][v]
     eggs.track_dest[i].track = i
