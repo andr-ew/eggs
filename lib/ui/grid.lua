@@ -89,7 +89,7 @@ end
         
 local function Arq(args)
     -- local _frets = Tune.grid.fretboard()
-    local _keymap = Arqueggiator.grid.keymap()
+    -- local _keymap = Arqueggiator.grid.keymap()
 
     local arq = args.arq
     local mute_group = args.mute_group
@@ -342,13 +342,16 @@ local function Scale_key()
     end
 end
 
-local function get_bit(number, bit)
-    return (((number - 1) & ( 1 << bit )) >> bit) + 1
+-- local 
+function get_bit(number, bit)
+    return (((number - 1) & ( 1 << bit )) >> bit)
 end
-local function set_bit(number, bit)
+-- local 
+function set_bit(number, bit)
     return ((number - 1) | (1 << bit)) + 1
 end
-local function reset_bit(number, bit)
+-- local 
+function reset_bit(number, bit)
     return ((number - 1) & ~(1 << bit)) + 1
 end
         
