@@ -38,14 +38,15 @@ local function Keymaps(args)
     local _keymap = {
         mono = Keymap.grid.mono(),
         poly = Keymap.grid.poly(),
-        arq = Arqueggiator.grid.keymap()
+        arq = Arqueggiator.grid.sequencer(),
+        arp = Arqueggiator.grid.arpeggiator()
     }
 
     return function(props)
         local mode = params:get('mode_'..track)
         local out = eggs.track_dest[track]
         local voicing = out.voicing
-        local typ = mode==eggs.ARQ and 'arq' or voicing
+        local typ = mode==eggs.ARQ and 'arq' or eggs.ARP and 'arp' or voicing
         local height = eggs.keymap_view_height
         local size = eggs.keymap_size
         if eggs.split_track_focus then 
@@ -62,7 +63,7 @@ local function Keymaps(args)
             view_width = eggs.keymap_view_width,
             intervals = params:get('intervals_'..track), offset = eggs.get_view(track),
             -- flow = 'right', flow_wrap = 'up',
-            level = mode==eggs.ARQ and 2 or lvl[1],
+            level = (mode==eggs.ARQ or mode==eggs.ARP) and 2 or lvl[1],
         }
         _keymap[typ]{
             x = 1, y = y, 
@@ -72,12 +73,12 @@ local function Keymaps(args)
             view_y = 0,
             size = size, wrap = eggs.keymap_wrap,
             flow = 'right', flow_wrap = 'up', 
-            levels = mode==eggs.ARQ and lvl or { 0, lvl[3] },  
+            levels = (mode==eggs.ARQ or mode==eggs.ARP) and lvl or { 0, lvl[3] },  
             step = arq.step, gate = arq.gate,
             mode = eggs.mode_names[mode],
             action_latch = function()
             end,
-            state = mode==eggs.ARQ 
+            state = (mode==eggs.ARQ or mode==eggs.ARP)
                         and crops.of_variable(arq.sequence, eggs.arq_setters[track]) 
                         or eggs.keymaps[track]:get_state(mode==LATCH)
                     ,
@@ -340,6 +341,16 @@ local function Scale_key()
         end
     end
 end
+
+local function get_bit(number, bit)
+    return (((number - 1) & ( 1 << bit )) >> bit) + 1
+end
+local function set_bit(number, bit)
+    return ((number - 1) | (1 << bit)) + 1
+end
+local function reset_bit(number, bit)
+    return ((number - 1) & ~(1 << bit)) + 1
+end
         
 local function Page(args)
     local track = args.track
@@ -396,6 +407,17 @@ local function Page(args)
 
     local _scale_key = Scale_key()
 
+    -- local arp, latch = 0, 0
+    -- local function update_mode()
+    --     params:set(
+    --         'mode_'..track, 
+    --         (arp==0 and latch==0) and eggs.NORMAL
+    --         or (arp==1 and latch==0) and eggs.ARP
+    --         or (arp==0 and latch==1) and eggs.LATCH
+    --         or (arp==1 and latch==1) and eggs.ARQ
+    --     )
+    -- end
+
     return function(props)
         local out = eggs.track_dest[track]
         local voicing = out.voicing
@@ -439,18 +461,18 @@ local function Page(args)
             _mode_arq('mode_'..track, eggs.mapping, {
                 x = wide and (nudge + 8) or 3, y = 1, levels = { 4, 15 },
                 state = crops.of_variable(
-                    mode==eggs.ARQ and 1 or 0,
+                    get_bit(mode, 1),
                     function(v)
-                        params:set('mode_'..track, v==1 and eggs.ARQ or eggs.NORMAL)
+                        params:set('mode_'..track, v==1 and set_bit(mode, 1) or reset_bit(mode, 1))
                     end
                 )
             })
             _mode_latch('mode_'..track, eggs.mapping, {
                 x = wide and (nudge + 9) or 5, y = 1, levels = { 4, 15 },
                 state = crops.of_variable(
-                    mode==eggs.LATCH and 1 or 0,
+                    get_bit(mode, 0),
                     function(v)
-                        params:set('mode_'..track, v==1 and eggs.LATCH or eggs.NORMAL)
+                        params:set('mode_'..track, v==1 and set_bit(mode, 0) or reset_bit(mode, 0))
                     end
                 )
             })
@@ -474,7 +496,7 @@ local function Page(args)
             end
         end
 
-        if mode==eggs.ARQ then
+        if (mode==eggs.ARQ or mode==eggs.ARP) then
             _fill.slew_pulse{ x = nudge + 3, y = 2, level = 4 }
             _fill.rev{ x = nudge + 4, y = 2, level = 4 }
             if wide then
