@@ -46,7 +46,7 @@ local function Keymaps(args)
         local mode = params:get('mode_'..track)
         local out = eggs.track_dest[track]
         local voicing = out.voicing
-        local typ = mode==eggs.ARQ and 'arq' or eggs.ARP and 'arp' or voicing
+        local typ = mode==eggs.ARQ and 'arq' or mode==eggs.ARP and 'arp' or voicing
         local height = eggs.keymap_view_height
         local size = eggs.keymap_size
         if eggs.split_track_focus then 
@@ -342,16 +342,13 @@ local function Scale_key()
     end
 end
 
--- local 
-function get_bit(number, bit)
+local function get_bit(number, bit)
     return (((number - 1) & ( 1 << bit )) >> bit)
 end
--- local 
-function set_bit(number, bit)
+local function set_bit(number, bit)
     return ((number - 1) | (1 << bit)) + 1
 end
--- local 
-function reset_bit(number, bit)
+local function reset_bit(number, bit)
     return ((number - 1) & ~(1 << bit)) + 1
 end
         
@@ -466,7 +463,10 @@ local function Page(args)
                 state = crops.of_variable(
                     get_bit(mode, 1),
                     function(v)
-                        params:set('mode_'..track, v==1 and set_bit(mode, 1) or reset_bit(mode, 1))
+                        params:set(
+                            'mode_'..track, 
+                            v==1 and set_bit(mode, 1) or reset_bit(mode, 1)
+                        )
                     end
                 )
             })
@@ -475,7 +475,10 @@ local function Page(args)
                 state = crops.of_variable(
                     get_bit(mode, 0),
                     function(v)
-                        params:set('mode_'..track, v==1 and set_bit(mode, 0) or reset_bit(mode, 0))
+                        params:set(
+                            'mode_'..track, 
+                            v==1 and set_bit(mode, 0) or reset_bit(mode, 0)
+                        )
                     end
                 )
             })
