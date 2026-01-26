@@ -132,7 +132,7 @@ local function Arq(args)
         if eggs.view_focus == eggs.NORMAL then
             for i = 1, wide and #pattern_group or 1 do
                 _patrecs[i](nil, eggs.mapping, {
-                    x = wide and (nudge + 3) or 4 + i - 1, y = 1,
+                    x = wide and (nudge + 3 + i - 1) or 4 , y = 1,
                     pattern = pattern_group[i],
                 })
             end
