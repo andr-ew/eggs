@@ -104,7 +104,7 @@ function p.add_keymap_params()
             action = function(v) 
                 eggs.keymaps[i]:set_latch(v == eggs.LATCH)
 
-                if v ~= eggs.ARQ then
+                if v ~= eggs.ARQ or v~= eggs.ARP then
                     eggs.mute_groups[i].arq:stop()
                     eggs.arqs[i].sequence = {}
                 else
@@ -130,7 +130,7 @@ function p.add_keymap_params()
         }
     end
 
-    params:add_separator('arquencer')
+    params:add_separator('arp / sequencer')
     for i = 1,eggs.track_count do
         local arq = eggs.arqs[i]
 

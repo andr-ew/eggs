@@ -191,8 +191,9 @@ eggs.keymap_size = eggs.keymap_columns * eggs.keymap_rows
 
 eggs.max_intervals = 7
 
-eggs.NORMAL, eggs.LATCH, eggs.ARQ = 1, 2, 3
-eggs.mode_names = { 'normal', 'latch', 'arq' }
+--   00      01          10        11
+eggs.NORMAL, eggs.LATCH, eggs.ARP, eggs.ARQ = 1, 2, 3, 4
+eggs.mode_names = { 'normal', 'latch', 'arp', 'arq' }
 
 eggs.snapshot_count = 4
 
