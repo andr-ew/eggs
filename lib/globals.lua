@@ -137,6 +137,9 @@ for i = 1,eggs.track_count do
         shim.set_all_hooks = function(shim, ...)
             mute_group:set_all_hooks(...)
         end
+        shim.set_hook = function(shim, ...)
+            mute_group:set_hook(...)
+        end
         shim.stop = function(shim, ...)
             mute_group:stop(...)
         end
@@ -309,6 +312,11 @@ function eggs.set_dest(track, v)
         pattern = eggs.pattern_keymap_shims[i][voicing],
         size = eggs.keymap_size,
     }
+
+    eggs.mute_groups[i].arq:set_hook('post_stop', function(...) 
+        eggs.arqs[i]:set_sequence({})
+        crops.dirty.grid = true;
+    end)
 
     eggs.arqs[i].action_on = poly and poly_note_on or (
         function(idx) mono_setter(idx, 1) end
