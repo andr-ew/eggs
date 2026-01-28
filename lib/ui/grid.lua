@@ -115,8 +115,11 @@ local function Arq(args)
 
     local _snapshots = {}
     for i = 1, eggs.snapshot_count do
-        _snapshots[i] = Patcher.grid.destination(Produce.grid.triggerhold())
+        _snapshots[i] = {}
+        _snapshots[i].latch = Patcher.grid.destination(Produce.grid.triggerhold())
+        _snapshots[i].normal = Patcher.grid.destination(Grid.momentary())
     end
+    local snapshots_normal_held = {}
     
     -- local _rate_mark = Patcher.grid.destination(Grid.fill())
     local _rate = Patcher.grid.destination(Grid.integer(), { levels = { nil, { 4, 8 } } })
@@ -129,6 +132,7 @@ local function Arq(args)
         local ss = props.snapshots
         local wide = props.wide
         local nudge = props.nudge
+        local mode = props.mode
 
         if eggs.view_focus == eggs.NORMAL then
             for i = 1, wide and #pattern_group or 1 do
@@ -203,12 +207,40 @@ local function Arq(args)
                         set_arq(ss[i])
                     end
                 end
-                _snapshots[i](nil, eggs.mapping, {
-                    x = (wide and (nudge + 10) or 6) + i - 1, y = 1,
-                    levels = { filled and 4 or 0, filled and 15 or 8 },
-                    action_tap = filled and recall or snapshot,
-                    action_hold = clear_snapshot,
-                })
+
+                local xx = (wide and (nudge + 10) or 6) + i - 1
+
+                -- _snapshots[i](nil, eggs.mapping, {
+                --     x = xx, y = 1,
+                --     levels = { filled and 4 or 0, filled and 15 or 8 },
+                --     action_tap = filled and recall or snapshot,
+                --     action_hold = clear_snapshot,
+                -- })
+                if mode==eggs.ARQ then
+                    _snapshots[i].latch(nil, eggs.mapping, {
+                        x = xx, y = 1,
+                        levels = { filled and 4 or 0, filled and 15 or 8 },
+                        action_tap = filled and recall or snapshot,
+                        action_hold = clear_snapshot,
+                    })
+                else
+                    _snapshots[i].normal(nil, eggs.mapping, {
+                        x = xx, y = 1,
+                        levels = { filled and 4 or 0, filled and 15 or 8 },
+                        state = crops.of_variable(snapshots_normal_held[i], function(v)
+                            snapshots_normal_held[i] = v
+
+                            if v > 0 then
+                                if filled then recall() 
+                                elseif next(arq.sequence) then snapshot() end
+                            else
+                                set_arq({})
+                            end
+
+                            crops.dirty.grid = true
+                        end)
+                    })
+                end
             end
         end
     end
@@ -513,7 +545,7 @@ local function Page(args)
             _arq{ 
                 track = track, snapshots = eggs.snapshots[track].arq,
                 wide = wide, view_scroll = view_scroll, out = out, rows = props.rows,
-                nudge = nudge,
+                nudge = nudge, mode = mode
             }
         else
             local ss = eggs.snapshots[track][voicing] or {}
