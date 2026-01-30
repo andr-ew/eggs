@@ -1,31 +1,42 @@
 local Patcher = Map_patcher
 
 local function Frets()
+    local function column(props, i, iv, lvl)
+        local ivs = props.intervals
+        local rows = props.rows
+        local columns = props.columns
+        local view_width = props.view_width
+        local offset = props.offset
+
+        local x = props.x + iv - 1 + ((i - 1) * ivs) - offset
+
+        if x >= props.x and x <= props.x + view_width - 1 then
+            for ii = 1, rows do
+                local y = props.y - ii + 1
+                g:led(x, y, lvl)
+            end
+        end
+    end
+
     return function(props)
         if crops.mode == 'redraw' and crops.device == 'grid' then
             local g = crops.handler
 
+            local i = props.track
             local ivs = props.intervals
-            local rows = props.rows
             local columns = props.columns
-            local view_width = props.view_width
-            local offset = props.offset
-
             local count = math.ceil(columns / ivs)
-            local lvl = props.level
+            local chan = eggs.channels[i]
             -- print('rows, count, ivs', rows, count, ivs)
 
-            if lvl>0 then for i = 1, count do
-                local x = props.x + ((i - 1) * ivs) - props.offset
+            for i = 1, count do
+                column(props, i, 1, props.levels[2])
 
-                if x >= props.x and x <= props.x + view_width - 1 then
-                    for ii = 1, rows do
-                        local y = props.y - ii + 1
-                        g:led(x, y, lvl)
-                    end
+                for _,iv in ipairs(channels.accidentals[chan.intervals][chan.mode]) do
+                    column(props, i, iv, props.levels[1])
                 end
             end
-        end end
+        end
     end
 end
 
@@ -61,9 +72,11 @@ local function Keymaps(args)
             x = 1, y = y, 
             rows = height, columns = eggs.keymap_columns, 
             view_width = eggs.keymap_view_width,
-            intervals = params:get('intervals_'..track), offset = eggs.get_view(track),
+            intervals = params:get('intervals_'..track), 
+            offset = eggs.get_view(track),
+            track = track,
             -- flow = 'right', flow_wrap = 'up',
-            level = (mode==eggs.ARQ or mode==eggs.ARP) and 2 or lvl[1],
+            levels = { 1, (mode==eggs.ARQ or mode==eggs.ARP) and 3 or lvl[1] },
         }
         _keymap[typ]{
             x = 1, y = y, 

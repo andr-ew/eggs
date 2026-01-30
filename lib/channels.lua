@@ -276,6 +276,20 @@ for ivs,_ in ipairs(scales) do
     end
 end
 
+local accidentals = {}
+channels.accidentals = accidentals
+
+for ivs,_ in ipairs(scales) do
+    accidentals[ivs] = {}
+    local ionian = scales[ivs][(ivs==7) and 5 or 1]
+    for md,_ in ipairs(scales[ivs]) do
+        accidentals[ivs][md] = {}
+        for i,iv in ipairs(scales[ivs][md]) do
+            if iv ~= ionian[i] then table.insert(accidentals[ivs][md], i) end
+        end
+    end
+end
+
 function channels:get_param_id(channel, name, grouped)
     local i = grouped and self:group_index(channel) or channel
     return self.param_ids[i][name]
