@@ -50,6 +50,8 @@ local key_names = {
 }
 channels.key_names = key_names
 
+local ungrouped_params = { 'intervals', 'offset' }
+
 function channels.new(count)
     local self = setmetatable({}, channels)
 
@@ -291,8 +293,13 @@ for ivs,_ in ipairs(scales) do
 end
 
 function channels:get_param_id(channel, name, grouped)
-    local i = grouped and self:group_index(channel) or channel
+    local i = (grouped and (not tab.contains(ungrouped_params, name))) and self:group_index(channel) or channel
     return self.param_ids[i][name]
+end
+
+function channels:get(channel, name)
+    local i = tab.contains(ungrouped_params, name) and channel or self:group_index(channel)
+    return self[i][name]
 end
 
 function channels:add_params()

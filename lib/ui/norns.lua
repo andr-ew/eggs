@@ -26,10 +26,7 @@ local function Tuning()
 
             local yy = yy + 24
 
-            local offset = (
-                patcher.get_value(eggs.channels:get_param_id(i, 'offset', true)) 
-                / eggs.offset_volts_per_step
-            )
+            local offset = eggs.channels:get(i, 'offset')
             if offset ~= 0 then
                 screen.level(10)
                 screen.move(x[1] + 8, yy)
@@ -39,13 +36,13 @@ local function Tuning()
             screen.level(10)
             screen.move(x[1] + 24, yy)
             screen.text(
-                channels.base_names[eggs.channels[i].intervals][
-                    patcher.get_value(eggs.channels:get_param_id(i, 'mode', true))
+                channels.base_names[eggs.channels:get(i, 'intervals')][
+                    eggs.channels:get(i, 'mode')
                 ]
             )
 
             screen.move(64, yy)
-            screen.text(channels.interval_names[eggs.channels[i].intervals])
+            screen.text(channels.interval_names[eggs.channels:get(i, 'intervals')])
         end
     end
 end

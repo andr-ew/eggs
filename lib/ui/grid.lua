@@ -22,17 +22,18 @@ local function Frets()
         if crops.mode == 'redraw' and crops.device == 'grid' then
             local g = crops.handler
 
-            local i = props.track
+            local track = props.track
             local ivs = props.intervals
             local columns = props.columns
             local count = math.ceil(columns / ivs)
-            local chan = eggs.channels[i]
-            -- print('rows, count, ivs', rows, count, ivs)
+            local accidentals = channels.accidentals[eggs.channels:get(track, 'intervals')][
+                eggs.channels:get(track, 'mode')
+            ]
 
             for i = 1, count do
                 column(props, i, 1, props.levels[2])
 
-                for _,iv in ipairs(channels.accidentals[chan.intervals][chan.mode]) do
+                for _,iv in ipairs(accidentals) do
                     column(props, i, iv, props.levels[1])
                 end
             end
@@ -89,8 +90,7 @@ local function Keymaps(args)
             levels = (mode==eggs.ARQ or mode==eggs.ARP) and lvl or { 0, lvl[3] },  
             step = arq.step, gate = arq.gate,
             mode = eggs.mode_names[mode],
-            action_latch = function()
-            end,
+            offset = eggs.channels:get(track, 'offset'),
             state = (mode==eggs.ARQ or mode==eggs.ARP)
                         and crops.of_variable(arq.sequence, eggs.arq_setters[track]) 
                         or eggs.keymaps[track]:get_state(mode==LATCH)
